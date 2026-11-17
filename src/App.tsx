@@ -4,12 +4,14 @@ import { AuthProvider, useAuth } from './auth/AuthProvider'
 import { LoginScreen } from './auth/LoginScreen'
 import { OnboardingWizard } from './onboarding/OnboardingWizard'
 import { isSupabaseConfigured } from './lib/supabase'
+import { PosScreen } from './features/pos/PosScreen'
+import { StockScreen } from './features/stock/StockScreen'
 
 type Tab = 'home' | 'sales' | 'stock' | 'money' | 'more'
 const tabs: Tab[] = ['home', 'sales', 'stock', 'money', 'more']
 
 /** App shell. Module screens arrive in later phases; a tab says so plainly instead of faking data. */
-function Shell() {
+export function Shell() {
   const { t } = useTranslation()
   const { membership, signOut } = useAuth()
   const [tab, setTab] = useState<Tab>('home')
@@ -23,7 +25,11 @@ function Shell() {
       </header>
       <main className="flex-1 p-4">
         <h2 className="mb-2 text-xl font-semibold">{t(`nav.${tab}`)}</h2>
-        <p className="text-slate-600 dark:text-slate-300">{t('app.notBuilt')}</p>
+        {tab === 'sales' && <PosScreen />}
+        {tab === 'stock' && <StockScreen />}
+        {(tab === 'home' || tab === 'money' || tab === 'more') && (
+          <p className="text-slate-600 dark:text-slate-300">{t('app.notBuilt')}</p>
+        )}
         {tab === 'more' && (
           <button onClick={() => void signOut()} className="mt-4 min-h-12 rounded border border-slate-300 px-4">
             {t('auth.signOut')}

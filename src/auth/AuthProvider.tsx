@@ -7,6 +7,9 @@ export interface Membership {
   tenantName: string
   role: 'owner' | 'manager' | 'cashier' | 'storekeeper'
   language: 'fr' | 'en'
+  /** The shop this user works in (first assigned shop). */
+  shopId: string
+  oversellPolicy: 'allow_and_flag' | 'block'
 }
 
 interface AuthState {
@@ -18,7 +21,8 @@ interface AuthState {
   signOut: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthState | null>(null)
+export const AuthContext = createContext<AuthState | null>(null)
+export type { AuthState }
 
 const cacheKey = (userId: string) => `stockcm.membership.${userId}`
 
@@ -40,21 +44,36 @@ function writeCache(userId: string, m: Membership | null) {
   }
 }
 
+interface TenantRow {
+  name: string
+  language: 'fr' | 'en'
+  oversell_policy: 'allow_and_flag' | 'block'
+}
+
 async function fetchMembership(userId: string): Promise<Membership | null | 'unavailable'> {
   if (!supabase) return 'unavailable'
   const { data, error } = await supabase
     .from('memberships')
-    .select('tenant_id, role, tenants(name, language)')
+    .select('tenant_id, role, tenants(name, language, oversell_policy)')
     .eq('user_id', userId)
     .eq('active', true)
     .limit(1)
   if (error) return 'unavailable'
   const row = data?.[0] as
-    | { tenant_id: string; role: Membership['role']; tenants: { name: string; language: 'fr' | 'en' } | { name: string; language: 'fr' | 'en' }[] }
+    | { tenant_id: string; role: Membership['role']; tenants: TenantRow | TenantRow[] }
     | undefined
   if (!row) return null
   const tenant = Array.isArray(row.tenants) ? row.tenants[0] : row.tenants
-  return { tenantId: row.tenant_id, tenantName: tenant?.name ?? '', role: row.role, language: tenant?.language ?? 'fr' }
+  const shops = await supabase.from('shops').select('id').eq('tenant_id', row.tenant_id).limit(1)
+  if (shops.error || !shops.data?.[0]) return 'unavailable'
+  return {
+    tenantId: row.tenant_id,
+    tenantName: tenant?.name ?? '',
+    role: row.role,
+    language: tenant?.language ?? 'fr',
+    shopId: shops.data[0].id as string,
+    oversellPolicy: tenant?.oversell_policy ?? 'allow_and_flag',
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
