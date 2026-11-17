@@ -131,6 +131,19 @@ export function makeDevApi(): AdminApi {
       if (key === 'grace_days' && (Number(value) < 0 || Number(value) > 60)) throw new Error('value out of range')
       settings = { ...settings, [key]: value }; log('setting.changed', null, { key })
     },
+    async reminders() {
+      need('billing')
+      log('reminders.viewed', null, {})
+      return {
+        grace_days: 7, templates: {},
+        rows: [
+          { tenant_id: 'b1', business: 'Boutique Mbarga', language: 'fr' as const, owner_name: 'Jean Mbarga', owner_phone: '+237677123456', plan_code: 'business', price_xaf: 5000, period_end: iso(-3), state: 'active' as SubState, last_reminder: null },
+          { tenant_id: 'b3', business: 'Quincaillerie Fotso', language: 'fr' as const, owner_name: 'Paul Fotso', owner_phone: '+237650119020', plan_code: 'pro', price_xaf: 10000, period_end: iso(3), state: 'grace' as SubState, last_reminder: iso(1) },
+          { tenant_id: 'b4', business: 'Alimentation Njoya', language: 'en' as const, owner_name: 'Ali Njoya', owner_phone: null, plan_code: 'starter', price_xaf: 2500, period_end: iso(15), state: 'expired' as SubState, last_reminder: null },
+        ],
+      }
+    },
+    async noteReminder(tenant, kind) { need('billing'); log('reminder.opened', tenant, { kind, channel: 'whatsapp' }) },
     async webhookSecret() { need('settings'); log('secret.revealed', null, {}); return 'dev-secret-0123456789abcdef' },
   }
 }

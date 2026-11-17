@@ -276,7 +276,7 @@ A confirmed payment extends the subscription, issues an invoice (`INV-YYYY-00000
 ### Billing limitations (honest list)
 - No real aggregator integration, no automatic USSD prompt: payment is "send money with this reference, then it is confirmed".
 - Confirming manual payments and editing plans/prices is done in the admin app (section 14).
-- Renewal reminders appear in the app (5 days, 2 days, then daily in grace). WhatsApp/SMS reminders are not built.
+- Renewal reminders appear in the app (5 days, 2 days, then daily in grace) and staff can send WhatsApp reminders by hand (section 17). Automatic WhatsApp/SMS is not built.
 - Invoices are records with a number, not PDFs; no tax invoice format has been reviewed for Cameroon.
 - Per-staff limits are enforced on creation and reactivation; the existing staff list is not trimmed on a downgrade.
 - The full flow with a real owner login (`src/billing/billing.live.e2e.test.ts`) has not been run.
@@ -387,4 +387,32 @@ with the headline would be a bug, not a rounding choice.
 - A returned product that was not sold in the chosen period shows with a name of "—" in the product table (the return line does not carry the name).
 - Reports use the device's local time zone for "today" and for the day boundaries.
 - Operating profit is not accounting net profit (said on the screen too); no tax filing (VAT) report has been reviewed for Cameroon.
+
+## 17. WhatsApp reminders (click-to-chat, sent by a person)
+
+**Decision:** no WhatsApp Business API. That needs a Meta-verified business, a provider account, approved message templates and
+per-message fees, none of which exist yet, and automatic sending to customers raises consent questions. Instead the app builds
+a `https://wa.me/237XXXXXXXXX?text=...` link; tapping it opens WhatsApp with the message already typed and the person presses
+Send. Zero cost, works on any phone with WhatsApp, and nobody receives a message a human did not choose to send.
+
+- **Shop → customer debt reminders:** Money > Debts has a WhatsApp button per customer who owes (default message in French or
+  English with first name, shop name and amount); the customer's page has the editable message. The Reports "customers who owe us"
+  table has the same button (hidden when printing). "Reminded 3 d ago" is kept on the device so the owner does not nag twice.
+  Customers without a valid Cameroon mobile number show "No number" instead of opening a wrong chat.
+- **Platform → business renewal reminders:** admin app > Renewal reminders (finance and super roles). Lists businesses ending in
+  ≤ 5 days or ended in the last 30 days with the right message (5 days / 2 days / grace / expired), in the owner's language
+  (switchable), using the platform's own wording from System settings > Message templates when set. Because it shows the owner's
+  FULL phone number it needs the billing role and a two-step login, and viewing the list (`reminders.viewed`) and opening a chat
+  (`reminder.opened`, with the kind) are written to the immutable admin audit log. Migration 0017.
+- **Tested:** link building (number formats, wrong numbers refused, accents / line breaks / symbols encoded), templates (no raw
+  placeholders, known placeholders only), which message fits how many days remain, SQL permissions and audit (rolled back), both
+  screens in a browser.
+
+### Reminder limitations (honest list)
+- Fully manual: a person must tap and press Send for every message. There is no automatic daily sending, no delivery or read status,
+  and no way to know whether the message was actually sent (only that the chat was opened).
+- The shop's debt message text is not saved between sessions (edit per message); platform templates are the only saved wording.
+- Customer phone numbers must be Cameroon mobiles (6XXXXXXXX); other countries' numbers are not supported.
+- SMS is not built. The same links pattern could be added (`sms:`) if wanted.
+- Real automatic sending later = a provider (Meta Cloud API or an aggregator) behind an Edge Function reading the same templates.
 

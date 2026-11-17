@@ -121,6 +121,11 @@ const fr = {
     debtors: 'Clients qui nous doivent', customer: 'Client', phone: 'Téléphone', owes: 'Doit', lastActivity: 'Dernier mouvement', debtNote: "Soldes à la fin de la période, toutes boutiques confondues (les dettes clients sont communes à l'entreprise).",
     expenses: 'Dépenses',
   },
+  reminders: {
+    whatsapp: 'WhatsApp', title: 'Rappel par WhatsApp', message: 'Message', open: 'Ouvrir WhatsApp avec ce message',
+    hint: "WhatsApp s'ouvre avec le message déjà écrit ; vous appuyez sur Envoyer. Rien n'est envoyé automatiquement.",
+    last: 'Rappelé : {{when}}', noPhone: 'Pas de numéro', noPhoneLong: "Ajoutez le numéro de téléphone de ce client (6XXXXXXXX) pour pouvoir lui envoyer un rappel par WhatsApp.",
+  },
   shops: {
     title: 'Boutiques', hint: "Ajoutez vos boutiques et choisissez qui peut travailler dans chacune. Une nouvelle boutique n'est accessible qu'à vous au début.",
     planAllows: 'Votre formule autorise {{n}} boutique(s) ({{used}} active(s)).', current: 'Boutique actuelle', here: 'ici', off: 'désactivée',
@@ -360,6 +365,11 @@ const en: typeof fr = {
     stockValue: 'Stock value', stockNote: "Value as of today, at average cost (not tied to the chosen period).", unit: 'Unit', avgCost: 'Average cost', value: 'Value', min: 'Minimum', low: 'low', total: 'Total',
     debtors: 'Customers who owe us', customer: 'Customer', phone: 'Phone', owes: 'Owes', lastActivity: 'Last activity', debtNote: 'Balances at the end of the period, across all shops (customer debts are shared by the business).',
     expenses: 'Expenses',
+  },
+  reminders: {
+    whatsapp: 'WhatsApp', title: 'WhatsApp reminder', message: 'Message', open: 'Open WhatsApp with this message',
+    hint: 'WhatsApp opens with the message already typed; you press Send. Nothing is sent automatically.',
+    last: 'Reminded: {{when}}', noPhone: 'No number', noPhoneLong: "Add this customer's phone number (6XXXXXXXX) to send them a WhatsApp reminder.",
   },
   shops: {
     title: 'Shops', hint: 'Add your shops and choose who can work in each one. A new shop is only open to you at first.',

@@ -30,9 +30,9 @@ describe('admin roles', () => {
     expect(can('hacker' as AdminRole, 'overview')).toBe(false)
   })
   it('menus match the roles', () => {
-    expect(pagesFor('finance')).toEqual(['overview', 'payments', 'plans'])
+    expect(pagesFor('finance')).toEqual(['overview', 'payments', 'reminders', 'plans'])
     expect(pagesFor('support')).toEqual(['overview', 'businesses', 'audit'])
-    expect(pagesFor('super')).toHaveLength(6)
+    expect(pagesFor('super')).toHaveLength(7)
   })
   it('stays identical to the rule in the database migration', () => {
     for (const role of roles) {

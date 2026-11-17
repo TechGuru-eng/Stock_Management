@@ -51,6 +51,12 @@ export interface AuditRow { id: number; admin_id: string; action: string; tenant
 
 export type Settings = Record<string, unknown>
 
+export interface ReminderRow {
+  tenant_id: string; business: string; language: 'fr' | 'en' | null; owner_name: string | null; owner_phone: string | null
+  plan_code: string; price_xaf: number | null; period_end: string; state: SubState; last_reminder: string | null
+}
+export interface Reminders { rows: ReminderRow[]; grace_days: number; templates: Record<string, { fr?: string; en?: string }> }
+
 export interface MfaStart { factorId: string; enroll?: { qr: string; secret: string } }
 
 export interface AdminApi {
@@ -79,6 +85,8 @@ export interface AdminApi {
   settings(): Promise<Settings>
   setSetting(key: string, value: unknown): Promise<void>
   webhookSecret(): Promise<string>
+  reminders(): Promise<Reminders>
+  noteReminder(tenant: string, kind: string): Promise<void>
 }
 
 /** The database's own messages are written to be shown; anything else is shown generically. */
@@ -160,4 +168,6 @@ export const realApi: AdminApi = {
   settings: () => rpc('admin_list_settings'),
   setSetting: (key, value) => rpc('admin_set_setting', { p_key: key, p_value: value }),
   webhookSecret: () => rpc('admin_webhook_secret'),
+  reminders: () => rpc('admin_renewal_reminders'),
+  noteReminder: (tenant, kind) => rpc('admin_note_reminder', { p_tenant: tenant, p_kind: kind }),
 }

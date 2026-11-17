@@ -5,6 +5,7 @@ import { downloadText, reportFileName, toCsv, type Column } from '../../domain/c
 import { formatXaf } from '../../domain/money'
 import { can } from '../../domain/permissions'
 import { dayEnd, dayStart, localDate, periodPreset, type PeriodKind } from '../../domain/reportTables'
+import { QuickReminder } from '../money/DebtReminder'
 import { useReport } from './useReport'
 
 const input = 'min-h-12 rounded border border-slate-300 bg-transparent px-3'
@@ -144,9 +145,9 @@ export function ReportsScreen() {
           <Section title={t('reports.debtors')} onExport={() => save('customer-debts', [
             { label: t('reports.customer'), value: (r) => r.name }, { label: t('reports.phone'), value: (r) => r.phone }, { label: t('reports.owes'), value: (r) => r.balance }, { label: t('reports.lastActivity'), value: (r) => (r.lastActivity ? localDate(r.lastActivity) : '') },
           ], data.debtors.rows)}>
-            <Table head={[t('reports.customer'), t('reports.lastActivity'), t('reports.owes')]} empty={t('money.noDebts')}
-              rows={data.debtors.rows.map((r) => [<span key={r.customerId}>{r.name}{r.phone && <span className="block text-xs text-slate-500">{r.phone}</span>}</span>, r.lastActivity ? d(r.lastActivity) : '—', formatXaf(r.balance)])}
-              foot={data.debtors.rows.length ? [t('reports.total'), '', formatXaf(data.debtors.total)] : undefined} />
+            <Table head={[t('reports.customer'), t('reports.lastActivity'), t('reports.owes'), '']} empty={t('money.noDebts')}
+              rows={data.debtors.rows.map((r) => [<span key={r.customerId}>{r.name}{r.phone && <span className="block text-xs text-slate-500">{r.phone}</span>}</span>, r.lastActivity ? d(r.lastActivity) : '—', formatXaf(r.balance), <span key={`w${r.customerId}`} className="print:hidden"><QuickReminder customer={{ id: r.customerId, name: r.name, phone: r.phone }} balance={r.balance} /></span>])}
+              foot={data.debtors.rows.length ? [t('reports.total'), '', formatXaf(data.debtors.total), ''] : undefined} />
             <p className="mt-1 text-xs text-slate-500">{t('reports.debtNote')}</p>
           </Section>
 

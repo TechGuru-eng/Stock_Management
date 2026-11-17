@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../data/db'
+import { customerBalance } from '../../data/repo'
 import { closeCashSession, currentSession, moveCash, openCashSession, openSalesForCustomer, recentClosures, recordExpense, repayDebt } from '../../data/financeRepo'
 import type { Ctx } from '../../data/repo'
 import { useCtx } from '../../data/useCtx'
@@ -9,6 +10,7 @@ import { expenseCategories, sessionTotals, expectedClosing, type ExpenseCategory
 import { formatXaf } from '../../domain/money'
 import { can } from '../../domain/permissions'
 import { dayRange } from '../../domain/reports'
+import { DebtReminder, QuickReminder } from './DebtReminder'
 import { ReportsScreen } from '../reports/ReportsScreen'
 import { useBalances, useSummary } from './useSummary'
 
@@ -85,6 +87,7 @@ function DebtDetail({ ctx, customerId, onBack }: { ctx: Ctx; customerId: string;
   const [method, setMethod] = useState<Method>('cash')
   const [msg, setMsg] = useState<string | null>(null)
   const owed = open.reduce((x, o) => x + o.outstanding, 0)
+  const balance = useLiveQuery(() => customerBalance(customerId), [customerId]) ?? 0
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -108,6 +111,7 @@ function DebtDetail({ ctx, customerId, onBack }: { ctx: Ctx; customerId: string;
           <li key={o.saleId}>{sales.find((x) => x.id === o.saleId)?.saleNumber} · {o.createdAt.slice(0, 10)} · {formatXaf(o.outstanding)}</li>
         ))}
       </ul>
+      {customer && <DebtReminder customer={customer} balance={balance} />}
       {can(ctx.role, 'payments.receive') && owed > 0 && (
         <form onSubmit={submit} className="flex flex-col gap-3 rounded border border-slate-200 p-3">
           <h4 className="font-semibold">{t('money.repay')}</h4>
@@ -132,13 +136,14 @@ function DebtsView({ ctx }: { ctx: Ctx }) {
       {list.length === 0 && <p className="text-slate-500">{t('money.noDebts')}</p>}
       <ul className="divide-y divide-slate-200 dark:divide-slate-800">
         {list.map(({ customer, balance }) => (
-          <li key={customer.id}>
-            <button onClick={() => setSel(customer.id)} className="flex min-h-14 w-full items-center justify-between py-2 text-left">
+          <li key={customer.id} className="flex items-center gap-2">
+            <button onClick={() => setSel(customer.id)} className="flex min-h-14 flex-1 items-center justify-between py-2 text-left">
               <span>{customer.name}</span>
               <span className={balance > 0 ? 'font-semibold text-red-700' : 'text-teal-700'}>
                 {balance > 0 ? `${t('money.owes')} ${formatXaf(balance)}` : `${t('money.inCredit')} ${formatXaf(-balance)}`}
               </span>
             </button>
+            <QuickReminder customer={customer} balance={balance} />
           </li>
         ))}
       </ul>
