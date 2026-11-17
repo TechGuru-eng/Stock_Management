@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { removeLocalPin } from './localPin'
+import { clearLockState } from './lock'
 
 export interface Membership {
   tenantId: string
@@ -120,7 +122,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session) await load(session)
       },
       signOut: async () => {
-        if (session) writeCache(session.user.id, null)
+        if (session) {
+          writeCache(session.user.id, null)
+          await removeLocalPin(session.user.id)
+        }
+        clearLockState()
         await supabase?.auth.signOut()
       },
     }),

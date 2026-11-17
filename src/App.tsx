@@ -10,6 +10,9 @@ import { HomeScreen } from './features/home/HomeScreen'
 import { MoneyScreen } from './features/money/MoneyScreen'
 import { SyncBadge } from './features/sync/SyncBadge'
 import { SyncScreen } from './features/sync/SyncScreen'
+import { StaffScreen } from './features/staff/StaffScreen'
+import { LockScreen } from './auth/LockScreen'
+import { useIdleLock } from './auth/lock'
 import { startAutoSync } from './sync/auto'
 import { supabaseTransport } from './sync/supabaseTransport'
 
@@ -42,6 +45,7 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
         <h2 className="mb-2 text-xl font-semibold">{t(`nav.${tab}`)}</h2>
         {tab === 'sales' && <SalesHub />}
         {tab === 'stock' && <StockHub />}
+        {tab === 'more' && membership?.role === 'owner' && <StaffScreen />}
         {tab === 'more' && <SyncScreen canSync={autoSync} />}
         {tab === 'home' && (
           <HomeScreen go={(next, sub) => { if (sub) setMoneySub(sub); setTab(next) }} />
@@ -71,10 +75,13 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
 
 function Gate() {
   const { t } = useTranslation()
-  const { loading, session, membership } = useAuth()
+  const { loading, session, membership, signOut } = useAuth()
+  // Staff devices lock themselves when idle; the owner (phone login) has no PIN, so nothing to lock.
+  const [locked, setLocked] = useIdleLock(Boolean(membership && membership.role !== 'owner'), signOut)
   if (loading) return <p className="p-6">{t('app.loading')}</p>
   if (!session) return <LoginScreen />
   if (!membership) return <OnboardingWizard />
+  if (membership.role !== 'owner' && locked) return <LockScreen onUnlocked={() => setLocked(false)} />
   return <Shell />
 }
 

@@ -194,3 +194,42 @@ it does up to three separate things, each as its own ledger record:
 - No combined exchange screen; no store-credit / voucher refunds; no returns without the original sale.
 - Returns after a customer was already refunded through another route are limited to what the ledger shows.
 - Approval requests are checked when filed and again when approved, but a request can wait for a manager indefinitely.
+
+## 12. Staff PIN login, registered devices and sessions
+
+**Who signs in how.** The owner signs in with a phone number and SMS code. Staff (manager, cashier, storekeeper)
+sign in with a PIN on a device the owner has registered. A successful staff login gives a normal Supabase session for
+that person, so roles, row-level security and the audit trail apply to them exactly as before.
+
+**Registering a device.** The owner creates a one-time enrollment code (10 characters, valid 15 minutes, used once;
+only its hash is stored). The new device redeems it and receives a random secret; only the secret's hash is stored.
+A device can be revoked at any time: its secret stops working and sync is refused.
+
+**PIN checking happens on the server** (`verify_staff_pin`, called only by the `staff-auth` Edge Function):
+- PINs are 4 to 6 digits and bcrypt-hashed. Sequences (1234), repeats (0000) and common PINs are refused by both the
+  app and the database.
+- 5 wrong PINs in a row lock the person for 5 minutes, doubling per further wrong PIN up to an hour. The owner can unlock.
+- More than 20 wrong PINs from one device in 10 minutes throttles the whole device.
+- A wrong PIN, an unknown person and an inactive person all get the same answer. Everything is written to the audit log.
+
+**Minting the session.** After a correct PIN the Edge Function creates a session through the Auth admin API (a single-use
+link verified on the server). No password exists for staff logins. The service-role key never leaves the function.
+
+**Session controls.**
+- The device locks after 5 minutes idle (and after a long gap, e.g. a closed tab). Unlocking needs the PIN again.
+- After 12 hours the server must confirm the person again (when online).
+- Deactivating a staff member deletes all their sessions at once and blocks their login.
+- Owner-only actions: add staff, set or reset a PIN, deactivate, unlock, create a device code, revoke a device.
+
+**Offline.** Unlocking a device that was already signed in works offline: the PIN is checked against a salted PBKDF2
+verifier kept on the device (the PIN itself is never stored), with its own lockout.
+
+### Staff login limitations (honest list)
+- **Switching to a different person needs the internet.** Offline, only the person already signed in can unlock. A
+  server-issued session is what attributes records to a person, so we do not let a device pretend to be someone else offline.
+- The local lockout counter can be reset by someone who clears this browser's storage. It only protects an unattended
+  device; it does not protect against someone with full control of the device.
+- The device secret is kept in browser storage, so a script injected into the app (XSS) could read it. Keep the app free
+  of third-party scripts.
+- Per-person limits by plan (number of staff) are not enforced yet; that comes with subscriptions.
+- The full end-to-end flow (`src/auth/staff.live.e2e.test.ts`) needs an owner test login and has not been run.
