@@ -113,6 +113,7 @@ async function pushAll(transport: SyncTransport, manual: boolean, tenantId: stri
       await transport.push(
         deviceId(),
         rs.map((r) => ({ op_id: r.id, table: r.table, payload: toServer(r.table, r.payload as Record<string, unknown>) })),
+        rs[0].actorId,
       )
       await db.outbox.where('groupId').equals(groupId).delete()
       await log(groupId, 'ok')

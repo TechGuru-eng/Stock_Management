@@ -39,6 +39,8 @@ export function useIdleLock(enabled: boolean, onSessionExpired: () => void) {
     const touch = () => { if (get(LOCKED) !== '1') set(ACTIVITY, String(Date.now())) }
     const events = ['pointerdown', 'keydown', 'touchstart'] as const
     events.forEach((e) => window.addEventListener(e, touch, { passive: true }))
+    const onLock = () => { lockNow(); setLocked(true) }
+    window.addEventListener('stockcm-lock', onLock)
     const timer = setInterval(() => {
       if (isLocked()) { lockNow(); setLocked(true) }
       const at = loggedInAt()
@@ -47,11 +49,15 @@ export function useIdleLock(enabled: boolean, onSessionExpired: () => void) {
     }, 15_000)
     return () => {
       events.forEach((e) => window.removeEventListener(e, touch))
+      window.removeEventListener('stockcm-lock', onLock)
       clearInterval(timer)
     }
   }, [enabled, onSessionExpired])
 
   return [locked, setLocked] as const
 }
+
+/** Lock the till right now (the "Switch person" button). */
+export const requestLock = () => window.dispatchEvent(new Event('stockcm-lock'))
 
 export const lockMinutes = IDLE_LOCK_MINUTES

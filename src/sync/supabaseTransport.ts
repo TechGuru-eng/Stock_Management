@@ -12,9 +12,13 @@ export const supabaseTransport: SyncTransport = {
     const { error } = await supabase.rpc('register_device', { p_device: deviceId, p_tenant: tenantId, p_name: name })
     if (error) fail(error)
   },
-  async push(deviceId, ops) {
+  async push(deviceId, ops, actorId) {
     if (!supabase) throw new TransportError('network', 'not configured')
-    const { data, error } = await supabase.rpc('sync_push', { p_device: deviceId, p_ops: ops })
+    // Records made by someone else at a shared till are uploaded "as" that person; the server checks it is allowed (migration 0018).
+    const me = actorId ? (await supabase.auth.getSession()).data.session?.user.id : undefined
+    const { data, error } = actorId && actorId !== me
+      ? await supabase.rpc('sync_push_as', { p_device: deviceId, p_actor: actorId, p_ops: ops })
+      : await supabase.rpc('sync_push', { p_device: deviceId, p_ops: ops })
     if (error) fail(error)
     return data as { applied: number; skipped: number }
   },

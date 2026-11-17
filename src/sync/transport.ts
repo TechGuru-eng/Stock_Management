@@ -19,7 +19,8 @@ export interface PullResponse {
  */
 export interface SyncTransport {
   registerDevice(deviceId: string, tenantId: string, name: string): Promise<void>
-  push(deviceId: string, ops: WireOp[]): Promise<{ applied: number; skipped: number }>
+  /** `actorId`: the staff member these records belong to, when the device is signed in under someone else's session. */
+  push(deviceId: string, ops: WireOp[], actorId?: string): Promise<{ applied: number; skipped: number }>
   pull(since: string, limit: number): Promise<PullResponse>
   /**
    * OPTIONAL, best effort: tell the platform that an event was refused here, so support can help. Only the kind and

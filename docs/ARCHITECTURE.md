@@ -225,8 +225,8 @@ link verified on the server). No password exists for staff logins. The service-r
 verifier kept on the device (the PIN itself is never stored), with its own lockout.
 
 ### Staff login limitations (honest list)
-- **Switching to a different person needs the internet.** Offline, only the person already signed in can unlock. A
-  server-issued session is what attributes records to a person, so we do not let a device pretend to be someone else offline.
+- **Switching person offline now works for people who have signed in on this device before** (section 19). Someone who has
+  never signed in on this device needs the internet once.
 - The local lockout counter can be reset by someone who clears this browser's storage. It only protects an unattended
   device; it does not protect against someone with full control of the device.
 - The device secret is kept in browser storage, so a script injected into the app (XSS) could read it. Keep the app free
@@ -442,4 +442,43 @@ only when someone asks for a PDF (a separate chunk), and everything the invoice 
 - StockCM's own legal details (company name, address, NIU) are not configured, so subscription invoices show only "StockCM".
 - Language is the app's language at the time; no logo, no custom template, no thermal-printer (80 mm) layout (the plain-text receipt remains).
 - Standard font only: names in scripts outside Latin-1 (e.g. some symbols) would not print correctly.
+
+## 19. Several staff on one shared device, switching offline
+
+**Problem.** A shop till is shared. The server attributes records to whoever uploads them, but offline the next cashier cannot get
+a server session. Letting the device simply "be" that person would let anyone claim to be anyone.
+
+**Design: a session and a person are separate things.**
+- The device stays signed in under ONE session. The person at the till (the "actor") can change offline: the lock screen (idle, or
+  the header's "Switch person" button) lists everyone who has signed in on this device, you pick your name and type your PIN. The
+  PIN is checked on the device against that person's own salted PBKDF2 verifier, with their own lockout (5 wrong = locked for them,
+  others unaffected). Roles, shop access and the screen follow the new person at once; their own saved shop is restored.
+- Every record queued for upload is stamped with the actor. On upload each group goes up *as* that person (`sync_push_as`).
+- **The server decides whether to believe it** (migration 0018), because it cannot check a PIN: it accepts only when the person has
+  signed in on THIS device while online (`device_actors`, filled by every sync), is an active non-owner member of the business, the
+  device is not revoked, and the session vouching is the owner or someone enrolled on the same device. Then it runs the normal upload
+  with the actor as the signed-in identity, so row-level security and role permissions apply to THEM (a cashier cannot slip in a
+  manager's stock adjustment; a manager's offline adjustment is accepted). Each such upload is written to the audit log
+  (`sync.uploaded_as`, with who vouched). A forged or unknown actor makes that group "refused" without holding up the others.
+- **Owners are never switched to.** They sign in online with their phone; an owner session has no lock screen and no roster.
+- After each sync the app asks the server who is still allowed on the device and removes deactivated people from the list together
+  with their offline PIN, so a deactivated cashier stops working offline at the next sync. Setting a new PIN for someone is
+  likewise picked up when they next sign in online.
+
+**Tested.** SQL (rolled back, live): enrolment on sync, owner never enrolled, a cashier cannot do manager-only work as herself but a
+manager's work uploaded by the cashier session is stamped as the manager and audited; refused for people never seen on the device,
+owners, strangers, a session not enrolled on the device, an outsider, a revoked device, a deactivated person. App tests: records
+stamped per person across switches, uploaded per group in order, unknown actor refused without blocking others, independent PIN
+lockouts, roster pruning. The lock screen was exercised in a browser (picker, wrong PIN, correct PIN, role change).
+
+### Shared-device limitations (honest list)
+- **Trust is in the device.** The server can only check that a person *has been* on this device, not that they typed a PIN today. Someone
+  with full control of the device (or its storage) could attribute records to any other person enrolled on that same device. They cannot
+  reach beyond that device's enrolled people, owners, or other businesses, and every such upload is audited with the device and the voucher.
+- A person deactivated *while a device is offline* can still work on it until it next syncs; their records made in between are
+  then refused (shown as refused sync events for the owner) rather than silently credited.
+- A PIN changed by the owner takes effect offline only after that person signs in online on the device once.
+- The acting person's shop list is the one saved when they last signed in; shop changes made later reach them at their next online sign-in.
+- Non-sales server calls (licence refresh, staff and billing screens) use the signed-in session, not the acting person; those screens are owner-only.
+- The offline idle lock is still 5 minutes and the 12-hour session expiry still needs a connection to renew.
 

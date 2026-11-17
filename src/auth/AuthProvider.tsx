@@ -1,7 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { db } from '../data/db'
+import { setOutboxActor } from '../data/actor'
 import { removeLocalPin } from './localPin'
+import { rememberPerson, type Roster, type RosterEntry } from './roster'
 import { clearLockState } from './lock'
 import { pickShop, type ShopInfo } from '../domain/shops'
 
@@ -16,6 +20,7 @@ export interface Membership {
   shops: ShopInfo[]
   /** This person's own membership id (used to look up shop access). */
   membershipId?: string
+  fullName?: string
   oversellPolicy: 'allow_and_flag' | 'block'
 }
 
@@ -27,6 +32,12 @@ interface AuthState {
   refreshMembership: () => Promise<void>
   /** Work in another of the shops this person may use. Remembered on this device. */
   selectShop: (shopId: string) => void
+  /** The person at the till: normally the signed-in person, or someone who took over with their PIN (even offline). */
+  actingUserId: string
+  /** People who have signed in on this device and may take over with their PIN. Empty for owners. */
+  roster: RosterEntry[]
+  /** Take over the till as someone on the roster. Call ONLY after their PIN has been checked. */
+  switchActor: (userId: string) => void
   signOut: () => Promise<void>
 }
 
@@ -34,6 +45,14 @@ export const AuthContext = createContext<AuthState | null>(null)
 export type { AuthState }
 
 const cacheKey = (userId: string) => `stockcm.membership.${userId}`
+
+const actorKey = (sessionUserId: string) => `stockcm.actor.${sessionUserId}`
+function readActor(sessionUserId: string): string | null {
+  try { return localStorage.getItem(actorKey(sessionUserId)) } catch { return null }
+}
+function saveActor(sessionUserId: string, actor: string | null) {
+  try { if (actor) localStorage.setItem(actorKey(sessionUserId), actor); else localStorage.removeItem(actorKey(sessionUserId)) } catch { /* resumes as the signed-in person */ }
+}
 
 const shopKey = (userId: string) => `stockcm.shop.${userId}`
 
@@ -73,13 +92,13 @@ async function fetchMembership(userId: string): Promise<Membership | null | 'una
   if (!supabase) return 'unavailable'
   const { data, error } = await supabase
     .from('memberships')
-    .select('id, tenant_id, role, tenants(name, language, oversell_policy)')
+    .select('id, tenant_id, role, full_name, tenants(name, language, oversell_policy)')
     .eq('user_id', userId)
     .eq('active', true)
     .limit(1)
   if (error) return 'unavailable'
   const row = data?.[0] as
-    | { id: string; tenant_id: string; role: Membership['role']; tenants: TenantRow | TenantRow[] }
+    | { id: string; tenant_id: string; role: Membership['role']; full_name: string | null; tenants: TenantRow | TenantRow[] }
     | undefined
   if (!row) return null
   const tenant = Array.isArray(row.tenants) ? row.tenants[0] : row.tenants
@@ -101,6 +120,7 @@ async function fetchMembership(userId: string): Promise<Membership | null | 'una
     shopId: pickShop(mine, readSavedShop(userId))!,
     shops: mine,
     membershipId: row.id,
+    fullName: row.full_name ?? undefined,
     oversellPolicy: tenant?.oversell_policy ?? 'allow_and_flag',
   }
 }
@@ -108,15 +128,22 @@ async function fetchMembership(userId: string): Promise<Membership | null | 'una
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [session, setSession] = useState<Session | null>(null)
-  const [membership, setMembership] = useState<Membership | null>(null)
+  const [sessionMembership, setMembership] = useState<Membership | null>(null)
+  const [actorId, setActorId] = useState<string | null>(null)
+  const [shopTick, setShopTick] = useState(0)
+  const rosterRec = useLiveQuery(() => db.meta.get('roster'), [])
+  const rosterMap = useMemo(() => (rosterRec?.value as Roster | undefined) ?? {}, [rosterRec])
 
   const load = useCallback(async (s: Session | null) => {
     setSession(s)
     if (!s) {
       setMembership(null)
+      setActorId(null)
       setLoading(false)
       return
     }
+    // The person who took over the till belongs to the session they took over; a new sign-in starts clean.
+    setActorId(readActor(s.user.id))
     const result = await fetchMembership(s.user.id)
     if (result === 'unavailable') {
       // Offline or server unreachable: keep working from the last known membership.
@@ -124,6 +151,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       writeCache(s.user.id, result)
       setMembership(result)
+      // Remember who has worked on this device, so they can take over offline later (owners are never listed).
+      if (result && result.role !== 'owner') {
+        await rememberPerson({ userId: s.user.id, name: result.fullName ?? '', role: result.role, shopIds: result.shops.map((x) => x.id) })
+      }
     }
     setLoading(false)
   }, [])
@@ -140,6 +171,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe()
   }, [load])
 
+  const actor = actorId && sessionMembership && sessionMembership.role !== 'owner' ? rosterMap[actorId] : undefined
+  const membership = useMemo<Membership | null>(() => {
+    if (!sessionMembership || !actor) return sessionMembership
+    const allowed = actor.shopIds.length ? sessionMembership.shops.filter((x) => actor.shopIds.includes(x.id)) : sessionMembership.shops
+    const shops = allowed.length ? allowed : sessionMembership.shops
+    return { ...sessionMembership, role: actor.role, fullName: actor.name, shops, shopId: pickShop(shops, readSavedShop(actor.userId))! }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionMembership, actor, shopTick])
+  const actingUserId = actor?.userId ?? session?.user.id ?? ''
+  const roster = useMemo(() => Object.values(rosterMap), [rosterMap])
+
+  // Everything recorded from now on is credited to the person at the till.
+  useEffect(() => { setOutboxActor(session ? actingUserId : null) }, [session, actingUserId])
+
   const value = useMemo<AuthState>(
     () => ({
       loading,
@@ -150,21 +195,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       selectShop: (shopId: string) => {
         if (!session || !membership || !membership.shops.some((s) => s.id === shopId)) return
-        try { localStorage.setItem(shopKey(session.user.id), shopId) } catch { /* remembered next time */ }
+        try { localStorage.setItem(shopKey(actingUserId), shopId) } catch { /* remembered next time */ }
+        if (actor) { setShopTick((x) => x + 1); return } // the acting person's own choice is re-read
         const next = { ...membership, shopId }
         writeCache(session.user.id, next)
         setMembership(next)
       },
+      actingUserId,
+      roster,
+      switchActor: (userId: string) => {
+        if (!session || sessionMembership?.role === 'owner') return
+        const next = userId === session.user.id ? null : userId
+        if (next && !rosterMap[next]) return
+        saveActor(session.user.id, next)
+        setActorId(next)
+      },
       signOut: async () => {
         if (session) {
           writeCache(session.user.id, null)
+          saveActor(session.user.id, null)
           await removeLocalPin(session.user.id)
         }
         clearLockState()
         await supabase?.auth.signOut()
       },
     }),
-    [loading, session, membership, load],
+    [loading, session, membership, load, actingUserId, roster, actor, rosterMap, sessionMembership],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

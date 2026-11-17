@@ -175,6 +175,7 @@ const fr = {
     exchange: "Échange : enregistrez le retour, puis faites une nouvelle vente.",
   },
   staff: {
+    switchPerson: 'Changer de personne', newPersonHint: "Quelqu'un qui ne s'est jamais connecté sur cet appareil doit le faire une première fois avec internet.",
     mode: { owner: 'Propriétaire', staff: 'Personnel' },
     roles: { manager: 'Responsable', cashier: 'Caissier', storekeeper: 'Magasinier' },
     enrollIntro: "Cet appareil n'est pas encore enregistré. Demandez au propriétaire un code d'enregistrement (valable 15 minutes).",
@@ -424,6 +425,7 @@ const en: typeof fr = {
     exchange: 'Exchange: record the return, then make a new sale.',
   },
   staff: {
+    switchPerson: 'Switch person', newPersonHint: 'Someone who has never signed in on this device must do it once with internet.',
     mode: { owner: 'Owner', staff: 'Staff' },
     roles: { manager: 'Manager', cashier: 'Cashier', storekeeper: 'Storekeeper' },
     enrollIntro: 'This device is not registered yet. Ask the owner for an enrollment code (valid for 15 minutes).',

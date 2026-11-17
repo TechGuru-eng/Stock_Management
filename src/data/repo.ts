@@ -1,3 +1,4 @@
+import { getOutboxActor } from './actor'
 import { planLimit } from '../billing/licenceStore'
 import { db, deviceId, newId, type CustomerRec, type MovementRec, type ProductRec, type UnitRec } from './db'
 import { emptyCostState, issue, receive, type CostState } from '../domain/costing'
@@ -20,6 +21,7 @@ const costKey = (shopId: string, productId: string) => `${shopId}:${productId}`
 
 export function queue(table: string, payload: unknown, groupId: string) {
   return db.outbox.add({
+    actorId: getOutboxActor() ?? undefined,
     id: newId(),
     groupId,
     table,

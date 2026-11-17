@@ -19,6 +19,8 @@ import { installWriteGuard } from './data/writeGuard'
 import { applyGuard, refreshLicence } from './billing/licenceStore'
 import { BillingScreen } from './billing/BillingScreen'
 import { NoticeBanner } from './billing/NoticeBanner'
+import { refreshRoster } from './auth/roster'
+import { SwitchPerson } from './auth/SwitchPerson'
 import { ShopSwitcher } from './features/shops/ShopSwitcher'
 import { ShopsScreen } from './features/shops/ShopsScreen'
 import { SubscriptionBanner } from './billing/SubscriptionBanner'
@@ -35,7 +37,7 @@ const tabs: Tab[] = ['home', 'sales', 'stock', 'money', 'more']
 /** App shell. Module screens arrive in later phases; a tab says so plainly instead of faking data. */
 export function Shell({ autoSync = true }: { autoSync?: boolean }) {
   const { t } = useTranslation()
-  const { membership, signOut } = useAuth()
+  const { membership, signOut, session } = useAuth()
   const [tab, setTab] = useState<Tab>('home')
   const [moneySub, setMoneySub] = useState<'summary' | 'debts' | 'expenses' | 'cash'>('summary')
   const online = navigator.onLine
@@ -54,8 +56,10 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
     }
     void applyGuard()
     if (navigator.onLine) void refresh()
-    return onSyncComplete(refresh)
-  }, [autoSync, membership])
+    const offRoster = onSyncComplete(async () => { if (session) await refreshRoster(session.user.id) })
+    const offLicence = onSyncComplete(refresh)
+    return () => { offRoster(); offLicence() }
+  }, [autoSync, membership, session])
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
@@ -63,6 +67,7 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
         <h1 className="text-lg font-semibold">{membership?.tenantName ?? 'StockCM'}</h1>
         <span className="flex items-center gap-3 text-sm">
           <ShopSwitcher />
+          <SwitchPerson />
           <SyncBadge onClick={() => setTab('more')} />
           <span aria-live="polite">{online ? t('app.online') : t('app.offline')}</span>
         </span>

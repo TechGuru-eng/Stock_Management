@@ -44,8 +44,14 @@ export class FakeServer implements SyncTransport {
     if (this.revoked.has(deviceId)) throw new TransportError('permanent', 'this device is not allowed to sync', '42501')
   }
 
-  async push(deviceId: string, ops: WireOp[]) {
+  /** Who each upload was made for (undefined = the signed-in session itself). Tests may restrict who is allowed. */
+  pushedAs: (string | undefined)[] = []
+  allowedActors: Set<string> | null = null
+
+  async push(deviceId: string, ops: WireOp[], actorId?: string) {
     this.pushCalls++
+    if (actorId && this.allowedActors && !this.allowedActors.has(actorId)) throw new TransportError('permanent', 'unknown or inactive person for this device', '42501')
+    this.pushedAs.push(actorId)
     if (!this.online || this.pushFails) throw new TransportError('network', 'Failed to fetch')
     if (this.revoked.has(deviceId)) throw new TransportError('permanent', 'this device has been revoked', '42501')
 

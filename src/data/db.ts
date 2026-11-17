@@ -72,6 +72,8 @@ export interface OutboxRec {
   attempts: number
   nextAttemptAt?: string
   lastError?: string
+  /** The person at the till when this was recorded (differs from the signed-in session on a shared device). */
+  actorId?: string
 }
 
 /** History of every upload attempt, kept so failures can be investigated. */
