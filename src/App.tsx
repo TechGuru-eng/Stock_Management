@@ -59,7 +59,7 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-      <header className="flex items-center justify-between bg-teal-700 px-4 py-3 text-white">
+      <header className="flex items-center justify-between bg-teal-700 px-4 py-3 text-white print:hidden">
         <h1 className="text-lg font-semibold">{membership?.tenantName ?? 'StockCM'}</h1>
         <span className="flex items-center gap-3 text-sm">
           <ShopSwitcher />
@@ -67,10 +67,12 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
           <span aria-live="polite">{online ? t('app.online') : t('app.offline')}</span>
         </span>
       </header>
-      <SubscriptionBanner onRenew={() => setTab('more')} />
-      <NoticeBanner />
+      <div className="print:hidden">
+        <SubscriptionBanner onRenew={() => setTab('more')} />
+        <NoticeBanner />
+      </div>
       <main key={membership?.shopId} className="flex-1 p-4">
-        <h2 className="mb-2 text-xl font-semibold">{t(`nav.${tab}`)}</h2>
+        <h2 className="mb-2 text-xl font-semibold print:hidden">{t(`nav.${tab}`)}</h2>
         {tab === 'sales' && <SalesHub />}
         {tab === 'stock' && <StockHub />}
         {tab === 'more' && membership?.role === 'owner' && <BillingScreen />}
@@ -88,7 +90,7 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
           </button>
         )}
       </main>
-      <nav className="grid grid-cols-5 border-t border-slate-200 dark:border-slate-800">
+      <nav className="grid grid-cols-5 border-t border-slate-200 dark:border-slate-800 print:hidden">
         {tabs.map((id) => (
           <button
             key={id}

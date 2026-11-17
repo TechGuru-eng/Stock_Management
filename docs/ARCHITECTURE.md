@@ -359,3 +359,32 @@ support access). The screens were exercised in a browser with an in-memory fake 
 - Customer debts are business-wide, not per shop. Receipt numbering is per shop on each device.
 - Not run against a real owner login with two shops (needs the test owner account).
 
+## 16. Reports and export
+
+Money tab > Reports (owner and managers, `reports.operational`). Pick today / last 7 days / this month / last month / any dates,
+and one shop or all shops (the first time all shops can be combined: the data is already on the device for the whole business).
+
+**Tables** (all recomputed from the ledgers, never stored): summary (revenue, cost of goods, gross and operating profit,
+expenses, tax, discounts, returns, money collected by method, customer debts, supplier debts), sales by day, sales by product
+(quantity, revenue, profit, margin), stock value, customers who owe us, expenses by category.
+
+**Reconciliation is tested:** the product table adds up exactly to the summary's revenue, cost of goods and gross profit, with
+and without returns, for each shop and for all shops; the daily table adds up to the summary revenue. A table that disagreed
+with the headline would be a bug, not a rounding choice.
+
+**Export**
+- *CSV per table* for Excel / Google Sheets: UTF-8 with a byte-order mark so accents (é, è, ç) read correctly; separator `;` when
+  the app is in French (French Excel) and `,` in English; text beginning with `= + - @` gets a leading apostrophe so a product
+  or customer name can never run as a spreadsheet formula when the file is opened. Numbers stay plain numbers.
+- *PDF*: "Print / save as PDF" uses the browser's print dialog with the app's header, tabs and banners hidden. No server and no
+  library, so it also works offline. It is the browser's PDF, not a designed invoice template.
+- Files are created on the device and never uploaded.
+
+### Report limitations (honest list)
+- Stock value is "as of now" (the cost projection is current), not as of the end of the chosen period.
+- Customer debts and the balance at period end are business-wide, not per shop. Supplier debts the same.
+- No Excel (.xlsx) file, only CSV; no charts; no scheduled or emailed reports.
+- A returned product that was not sold in the chosen period shows with a name of "—" in the product table (the return line does not carry the name).
+- Reports use the device's local time zone for "today" and for the day boundaries.
+- Operating profit is not accounting net profit (said on the screen too); no tax filing (VAT) report has been reviewed for Cameroon.
+

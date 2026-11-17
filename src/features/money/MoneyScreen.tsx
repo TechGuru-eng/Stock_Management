@@ -9,9 +9,10 @@ import { expenseCategories, sessionTotals, expectedClosing, type ExpenseCategory
 import { formatXaf } from '../../domain/money'
 import { can } from '../../domain/permissions'
 import { dayRange } from '../../domain/reports'
+import { ReportsScreen } from '../reports/ReportsScreen'
 import { useBalances, useSummary } from './useSummary'
 
-type Sub = 'summary' | 'debts' | 'expenses' | 'cash'
+type Sub = 'summary' | 'debts' | 'expenses' | 'cash' | 'reports'
 type Method = 'cash' | 'mtn_momo' | 'orange_money'
 const input = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
 const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
@@ -282,10 +283,10 @@ export function MoneyScreen({ initial = 'summary' }: { initial?: Sub }) {
   const ctx = useCtx()
   const [sub, setSub] = useState<Sub>(initial)
   if (!ctx) return null
-  const tabs: Sub[] = ['summary', 'debts', 'expenses', 'cash']
+  const tabs: Sub[] = can(ctx.role, 'reports.operational') ? ['summary', 'debts', 'expenses', 'cash', 'reports'] : ['summary', 'debts', 'expenses', 'cash']
   return (
     <div className="flex flex-col gap-4">
-      <div role="tablist" className="grid grid-cols-4 gap-1">
+      <div role="tablist" className={`grid gap-1 print:hidden ${tabs.length === 5 ? 'grid-cols-5' : 'grid-cols-4'}`}>
         {tabs.map((k) => (
           <button key={k} role="tab" aria-selected={sub === k} onClick={() => setSub(k)}
             className={`min-h-12 rounded px-1 text-sm ${sub === k ? 'bg-teal-700 font-semibold text-white' : 'border border-slate-300'}`}>
@@ -297,6 +298,7 @@ export function MoneyScreen({ initial = 'summary' }: { initial?: Sub }) {
       {sub === 'debts' && <DebtsView ctx={ctx} />}
       {sub === 'expenses' && <ExpensesView ctx={ctx} />}
       {sub === 'cash' && <CashView ctx={ctx} />}
+      {sub === 'reports' && <ReportsScreen />}
     </div>
   )
 }

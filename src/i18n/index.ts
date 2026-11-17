@@ -89,7 +89,7 @@ const fr = {
     ok: 'réussi', network: 'réseau', rejected: 'refusé', conflictLog: 'conflit',
   },
   money: {
-    summary: 'Résumé', debts: 'Dettes', expenses: 'Dépenses', cash: 'Caisse', today: "Aujourd'hui",
+    reports: 'Rapports', summary: 'Résumé', debts: 'Dettes', expenses: 'Dépenses', cash: 'Caisse', today: "Aujourd'hui",
     salesCount: 'Ventes', revenue: 'Chiffre de ventes (hors taxe)', collected: 'Argent encaissé', repayments: 'dont remboursements de dettes',
     receivables: 'Dettes clients (à recevoir)', cogs: 'Coût des marchandises vendues', grossProfit: 'Marge brute',
     expensesTotal: 'Dépenses', operatingProfit: "Bénéfice d'exploitation",
@@ -109,6 +109,17 @@ const fr = {
     issues: 'Problèmes de synchronisation', profit: 'Marge brute du jour', shortcuts: 'Raccourcis', newSale: 'Nouvelle vente',
     products: 'Produits et stock', expense: 'Dépense', repayment: 'Remboursement de dette', cashRegister: 'Caisse', report: 'Résumé',
     shortage: 'Écarts de caisse récents',
+  },
+  reports: {
+    title: 'Rapport', ownerOnly: 'Réservé au propriétaire et aux gérants.', allShops: 'Toutes les boutiques', shop: 'Boutique', from: 'Du', to: 'Au',
+    period: { today: "Aujourd'hui", last7: '7 derniers jours', thisMonth: 'Ce mois', lastMonth: 'Mois dernier', custom: 'Dates au choix' },
+    print: 'Imprimer / enregistrer en PDF', printHint: "Dans la fenêtre d'impression, choisissez « Enregistrer en PDF ». Les exports CSV s'ouvrent dans Excel.",
+    exportCsv: 'Exporter (CSV)', generated: 'Généré le {{date}}', summary: 'Résumé', item: 'Élément', amount: 'Montant', tax: 'Taxes collectées', discounts: 'Remises accordées',
+    returned: 'Ventes retournées', payables: 'Dettes envers les fournisseurs', daily: 'Ventes par jour', date: 'Date', none: 'Rien sur cette période.',
+    byProduct: 'Ventes par produit', product: 'Produit', qty: 'Quantité', margin: 'Marge', top50: 'Les 50 premiers produits sont affichés ; le fichier CSV contient tout.',
+    stockValue: 'Valeur du stock', stockNote: "Valeur à la date d'aujourd'hui, au coût moyen (non liée à la période choisie).", unit: 'Unité', avgCost: 'Coût moyen', value: 'Valeur', min: 'Seuil', low: 'bas', total: 'Total',
+    debtors: 'Clients qui nous doivent', customer: 'Client', phone: 'Téléphone', owes: 'Doit', lastActivity: 'Dernier mouvement', debtNote: "Soldes à la fin de la période, toutes boutiques confondues (les dettes clients sont communes à l'entreprise).",
+    expenses: 'Dépenses',
   },
   shops: {
     title: 'Boutiques', hint: "Ajoutez vos boutiques et choisissez qui peut travailler dans chacune. Une nouvelle boutique n'est accessible qu'à vous au début.",
@@ -318,7 +329,7 @@ const en: typeof fr = {
     ok: 'done', network: 'network', rejected: 'refused', conflictLog: 'conflict',
   },
   money: {
-    summary: 'Summary', debts: 'Debts', expenses: 'Expenses', cash: 'Cash', today: 'Today',
+    reports: 'Reports', summary: 'Summary', debts: 'Debts', expenses: 'Expenses', cash: 'Cash', today: 'Today',
     salesCount: 'Sales', revenue: 'Sales revenue (excl. tax)', collected: 'Money collected', repayments: 'of which debt repayments',
     receivables: 'Customer debts (receivable)', cogs: 'Cost of goods sold', grossProfit: 'Gross profit',
     expensesTotal: 'Expenses', operatingProfit: 'Operating profit',
@@ -338,6 +349,17 @@ const en: typeof fr = {
     issues: 'Sync problems', profit: "Today's gross profit", shortcuts: 'Shortcuts', newSale: 'New sale',
     products: 'Products and stock', expense: 'Expense', repayment: 'Debt repayment', cashRegister: 'Cash register', report: 'Summary',
     shortage: 'Recent till differences',
+  },
+  reports: {
+    title: 'Report', ownerOnly: 'For the owner and managers only.', allShops: 'All shops', shop: 'Shop', from: 'From', to: 'To',
+    period: { today: 'Today', last7: 'Last 7 days', thisMonth: 'This month', lastMonth: 'Last month', custom: 'Pick dates' },
+    print: 'Print / save as PDF', printHint: 'In the print window choose "Save as PDF". CSV exports open in Excel.',
+    exportCsv: 'Export (CSV)', generated: 'Generated {{date}}', summary: 'Summary', item: 'Item', amount: 'Amount', tax: 'Tax collected', discounts: 'Discounts given',
+    returned: 'Sales returned', payables: 'Owed to suppliers', daily: 'Sales by day', date: 'Date', none: 'Nothing in this period.',
+    byProduct: 'Sales by product', product: 'Product', qty: 'Quantity', margin: 'Margin', top50: 'The top 50 products are shown; the CSV file has everything.',
+    stockValue: 'Stock value', stockNote: "Value as of today, at average cost (not tied to the chosen period).", unit: 'Unit', avgCost: 'Average cost', value: 'Value', min: 'Minimum', low: 'low', total: 'Total',
+    debtors: 'Customers who owe us', customer: 'Customer', phone: 'Phone', owes: 'Owes', lastActivity: 'Last activity', debtNote: 'Balances at the end of the period, across all shops (customer debts are shared by the business).',
+    expenses: 'Expenses',
   },
   shops: {
     title: 'Shops', hint: 'Add your shops and choose who can work in each one. A new shop is only open to you at first.',
