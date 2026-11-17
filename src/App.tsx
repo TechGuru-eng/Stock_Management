@@ -1,56 +1,73 @@
 import { useState } from 'react'
-import { formatXaf } from './domain/money'
+import { useTranslation } from 'react-i18next'
+import { AuthProvider, useAuth } from './auth/AuthProvider'
+import { LoginScreen } from './auth/LoginScreen'
+import { OnboardingWizard } from './onboarding/OnboardingWizard'
+import { isSupabaseConfigured } from './lib/supabase'
 
 type Tab = 'home' | 'sales' | 'stock' | 'money' | 'more'
+const tabs: Tab[] = ['home', 'sales', 'stock', 'money', 'more']
 
-const tabs: { id: Tab; label: string }[] = [
-  { id: 'home', label: 'Accueil / Home' },
-  { id: 'sales', label: 'Ventes / Sales' },
-  { id: 'stock', label: 'Stock' },
-  { id: 'money', label: 'Argent / Money' },
-  { id: 'more', label: 'Plus / More' },
-]
-
-/**
- * App shell only (Phase 1). Each module screen is built in its own phase;
- * until then a tab says so plainly instead of showing fake data.
- */
-export default function App() {
+/** App shell. Module screens arrive in later phases; a tab says so plainly instead of faking data. */
+function Shell() {
+  const { t } = useTranslation()
+  const { membership, signOut } = useAuth()
   const [tab, setTab] = useState<Tab>('home')
-  const online = typeof navigator !== 'undefined' ? navigator.onLine : true
+  const online = navigator.onLine
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <header className="flex items-center justify-between bg-teal-700 px-4 py-3 text-white">
-        <h1 className="text-lg font-semibold">StockCM</h1>
-        <span className="text-sm" aria-live="polite">
-          {online ? 'En ligne / Online' : 'Hors ligne / Offline'}
-        </span>
+        <h1 className="text-lg font-semibold">{membership?.tenantName ?? 'StockCM'}</h1>
+        <span className="text-sm" aria-live="polite">{online ? t('app.online') : t('app.offline')}</span>
       </header>
-
       <main className="flex-1 p-4">
-        <h2 className="mb-2 text-xl font-semibold">
-          {tabs.find((t) => t.id === tab)?.label}
-        </h2>
-        <p className="text-slate-600 dark:text-slate-300">
-          Module not built yet. Money is shown as {formatXaf(30000)}.
-        </p>
+        <h2 className="mb-2 text-xl font-semibold">{t(`nav.${tab}`)}</h2>
+        <p className="text-slate-600 dark:text-slate-300">{t('app.notBuilt')}</p>
+        {tab === 'more' && (
+          <button onClick={() => void signOut()} className="mt-4 min-h-12 rounded border border-slate-300 px-4">
+            {t('auth.signOut')}
+          </button>
+        )}
       </main>
-
       <nav className="grid grid-cols-5 border-t border-slate-200 dark:border-slate-800">
-        {tabs.map((t) => (
+        {tabs.map((id) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            aria-current={tab === t.id ? 'page' : undefined}
-            className={`min-h-14 px-1 text-xs ${
-              tab === t.id ? 'font-semibold text-teal-700' : 'text-slate-600 dark:text-slate-300'
-            }`}
+            key={id}
+            onClick={() => setTab(id)}
+            aria-current={tab === id ? 'page' : undefined}
+            className={`min-h-14 px-1 text-xs ${tab === id ? 'font-semibold text-teal-700' : 'text-slate-600 dark:text-slate-300'}`}
           >
-            {t.label}
+            {t(`nav.${id}`)}
           </button>
         ))}
       </nav>
     </div>
+  )
+}
+
+function Gate() {
+  const { t } = useTranslation()
+  const { loading, session, membership } = useAuth()
+  if (loading) return <p className="p-6">{t('app.loading')}</p>
+  if (!session) return <LoginScreen />
+  if (!membership) return <OnboardingWizard />
+  return <Shell />
+}
+
+export default function App() {
+  const { t } = useTranslation()
+  if (!isSupabaseConfigured) {
+    return (
+      <main className="mx-auto max-w-md p-6">
+        <h1 className="text-2xl font-semibold">{t('config.title')}</h1>
+        <p className="mt-2">{t('config.body')}</p>
+      </main>
+    )
+  }
+  return (
+    <AuthProvider>
+      <Gate />
+    </AuthProvider>
   )
 }
