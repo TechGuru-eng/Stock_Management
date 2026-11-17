@@ -199,6 +199,8 @@ export function buildSale(input: CheckoutInput): CheckoutResult {
         deviceId: input.deviceId,
         createdAt: input.nowIso,
         referenceId: saleId,
+        unitCost: Math.round(issued.cogs / baseQuantity),
+        totalCost: issued.cogs,
       })
     }
 

@@ -1,0 +1,134 @@
+import type { MovementRec, CustomerRec, ProductRec, UnitRec } from '../data/db'
+import type { CustomerEntryRecord, FinancialTxnRecord, SaleLineRecord, SaleRecord } from '../domain/pos'
+
+/** Tables that travel between devices, in dependency order (parents first). */
+export const SYNC_TABLES = [
+  'products',
+  'product_units',
+  'customers',
+  'stock_movements',
+  'sales',
+  'sale_lines',
+  'financial_transactions',
+  'customer_account_entries',
+] as const
+export type SyncTable = (typeof SYNC_TABLES)[number]
+
+type Row = Record<string, unknown>
+// Local records are loosely typed here on purpose: this file is the single place
+// where device (camelCase) and server (snake_case) shapes meet.
+type Local = Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+
+/** Local record -> the columns the server accepts. Anything else (names, caches) stays on the device. */
+export function toServer(table: string, p: Local): Row {
+  switch (table) {
+    case 'products':
+      return {
+        id: p.id, tenant_id: p.tenantId, name: p.name, barcode: p.barcode ?? null, sku: p.sku ?? null,
+        base_unit: p.baseUnit, min_stock: p.minStock, tax_rate_bp: p.taxRateBp, is_service: p.isService,
+        active: p.active, created_at: p.createdAt,
+      }
+    case 'product_units':
+      return {
+        id: p.id, tenant_id: p.tenantId, product_id: p.productId, name: p.name, factor: p.factor,
+        sell_price: p.sellPrice, is_base: p.isBase,
+      }
+    case 'customers':
+      return {
+        id: p.id, tenant_id: p.tenantId, name: p.name, phone: p.phone ?? null, credit_limit: p.creditLimit,
+        created_at: p.createdAt,
+      }
+    case 'stock_movements':
+      return {
+        id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, product_id: p.productId, quantity: p.quantity,
+        movement_type: p.type, reason: p.reason ?? null,
+        reference_type: p.type === 'sale' ? 'sale' : null, reference_id: p.referenceId ?? null,
+        unit_cost: p.unitCost ?? null, total_cost: p.totalCost ?? null, occurred_at: p.createdAt,
+      }
+    case 'sales':
+      return {
+        id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, sale_number: p.saleNumber, customer_id: p.customerId ?? null,
+        subtotal: p.subtotal, discount: p.discount, tax: p.tax, total: p.total, collected: p.collected,
+        outstanding: p.outstanding, status: p.status, occurred_at: p.occurredAt,
+      }
+    case 'sale_lines':
+      return {
+        id: p.id, tenant_id: p.tenantId, sale_id: p.saleId, product_id: p.productId, unit_id: p.unitId,
+        quantity: p.quantity, base_quantity: p.baseQuantity, unit_price: p.unitPrice, line_discount: p.lineDiscount,
+        line_total: p.lineTotal, cost_of_goods: p.costOfGoods,
+      }
+    case 'financial_transactions':
+      return {
+        id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, reference: p.reference, txn_type: p.txnType,
+        amount: p.amount, method: p.method, verification: p.verification, customer_id: p.customerId ?? null,
+        sale_id: p.saleId ?? null, occurred_at: p.occurredAt,
+      }
+    case 'customer_account_entries':
+      return {
+        id: p.id, tenant_id: p.tenantId, customer_id: p.customerId, amount: p.amount, kind: p.kind,
+        sale_id: p.saleId ?? null, occurred_at: p.occurredAt,
+      }
+    default:
+      throw new Error(`unknown sync table ${table}`)
+  }
+}
+
+const num = (v: unknown) => Number(v)
+const opt = <T>(v: T | null | undefined): T | undefined => (v === null || v === undefined ? undefined : v)
+
+/** Server row -> local record. */
+export function fromServer(table: SyncTable, r: Local): Local {
+  switch (table) {
+    case 'products':
+      return {
+        id: r.id, tenantId: r.tenant_id, name: r.name, barcode: opt(r.barcode), sku: opt(r.sku), baseUnit: r.base_unit,
+        minStock: num(r.min_stock), taxRateBp: num(r.tax_rate_bp), isService: r.is_service, active: r.active,
+        createdAt: r.created_at,
+      } satisfies ProductRec
+    case 'product_units':
+      return {
+        id: r.id, tenantId: r.tenant_id, productId: r.product_id, name: r.name, factor: num(r.factor),
+        sellPrice: num(r.sell_price), isBase: r.is_base,
+      } satisfies UnitRec
+    case 'customers':
+      return {
+        id: r.id, tenantId: r.tenant_id, name: r.name, phone: opt(r.phone), creditLimit: num(r.credit_limit),
+        createdAt: r.created_at,
+      } satisfies CustomerRec
+    case 'stock_movements':
+      return {
+        id: r.id, tenantId: r.tenant_id, shopId: r.shop_id, productId: r.product_id, quantity: num(r.quantity),
+        type: r.movement_type, reason: opt(r.reason), staffId: (r.staff_id as string) ?? '',
+        deviceId: (r.device_id as string) ?? '', createdAt: r.occurred_at, referenceId: opt(r.reference_id),
+        unitCost: r.unit_cost == null ? undefined : num(r.unit_cost),
+        totalCost: r.total_cost == null ? undefined : num(r.total_cost),
+      } satisfies MovementRec
+    case 'sales':
+      return {
+        id: r.id, tenantId: r.tenant_id, shopId: r.shop_id, saleNumber: r.sale_number, customerId: opt(r.customer_id),
+        cashierId: (r.cashier_id as string) ?? '', deviceId: (r.device_id as string) ?? '', subtotal: num(r.subtotal),
+        discount: num(r.discount), tax: num(r.tax), total: num(r.total), collected: num(r.collected),
+        outstanding: num(r.outstanding), status: r.status, occurredAt: r.occurred_at,
+      } satisfies SaleRecord
+    case 'sale_lines':
+      return {
+        id: r.id, tenantId: r.tenant_id, saleId: r.sale_id, productId: r.product_id,
+        // Names are filled in from the local catalogue when the line is stored.
+        productName: '', unitId: r.unit_id, unitName: '', quantity: num(r.quantity),
+        baseQuantity: num(r.base_quantity), unitPrice: num(r.unit_price), lineDiscount: num(r.line_discount),
+        lineTotal: num(r.line_total), costOfGoods: num(r.cost_of_goods),
+      } satisfies SaleLineRecord
+    case 'financial_transactions':
+      return {
+        id: r.id, tenantId: r.tenant_id, shopId: r.shop_id, reference: r.reference, txnType: r.txn_type,
+        amount: num(r.amount), method: r.method, verification: r.verification, staffId: (r.staff_id as string) ?? '',
+        deviceId: (r.device_id as string) ?? '', customerId: opt(r.customer_id), saleId: r.sale_id,
+        occurredAt: r.occurred_at,
+      } satisfies FinancialTxnRecord
+    case 'customer_account_entries':
+      return {
+        id: r.id, tenantId: r.tenant_id, customerId: r.customer_id, amount: num(r.amount), kind: r.kind,
+        saleId: r.sale_id, occurredAt: r.occurred_at,
+      } satisfies CustomerEntryRecord
+  }
+}

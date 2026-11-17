@@ -80,3 +80,37 @@ schema and tenant isolation. Nothing below is claimed complete until its tests p
 - Multiple-shop UI, batches/expiry UI, receipts, printing and reports are not built.
 - Nothing has been benchmarked on real low-end devices.
 - Cameroon data-protection, cybersecurity and tax obligations have not been legally reviewed.
+
+## 8. Synchronisation (Phase 4)
+
+**Upload.** Every local write is queued in the outbox in *groups*: a sale and its lines, stock
+movements, payments and debt form one group; a product with its units and opening stock form
+another. A group is sent to `sync_push` and applied atomically. Operation ids are recorded, so a
+repeat (lost reply, retry, duplicate request) is skipped and never applied twice. The server
+re-checks every sale when it commits (`check_sale_consistency`): lines must add up to the total,
+recorded payments to `collected`, customer debt to `outstanding`, stock movements to the sold
+quantities, and unit conversions to the product's factors. A sale that fails is refused whole.
+
+**Failure handling.** Network or expired-session errors keep the data and retry with back-off
+(5 s doubling to 15 min; a manual "Sync now" ignores the wait). Server refusals mark the group
+`rejected` (never retried automatically); clashes with another device mark it `conflict`
+(currently: duplicate barcode, resolved by removing the barcode). Every attempt is logged.
+
+**Download.** `sync_pull` is a change feed ordered by `changed_at`. Devices ask from the last
+cursor minus a 2-minute overlap (rows committed slightly late are not missed; repeats are
+harmless). A new or replacement device simply pulls from the beginning.
+
+**Stock after sync.** Stock and weighted-average value are a projection rebuilt by replaying the
+movements in one fixed order (time, then stock-in before stock-out, then id), so devices holding
+the same ledger always show the same stock and value, even after selling the same product offline.
+
+**Status shown to the user:** synchronised, N waiting, synchronising, failed, conflict. A warning
+appears after 48 hours unsynchronised and after 30 days without any sync.
+
+### Sync limitations
+- The 30-day offline limit is detected and shown but not yet enforced (read-only mode arrives with licensing).
+- Product/customer *edits* and stock transfers do not exist yet, so their conflict rules are not exercised.
+- Sale-line cost of goods is fixed when the sale is made on a device; after offline sales on
+  several devices the replayed ledger value can differ slightly from the per-line figure.
+- The live end-to-end test (`src/sync/live.e2e.test.ts`) needs a test user and was not run.
+- Existing pre-release dev databases lose their old outbox on upgrade (schema v3).

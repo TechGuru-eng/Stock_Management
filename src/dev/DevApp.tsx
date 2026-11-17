@@ -17,7 +17,7 @@ const dev: AuthState = {
 export function DevApp() {
   return (
     <AuthContext.Provider value={dev}>
-      <Shell />
+      <Shell autoSync={false} />
     </AuthContext.Provider>
   )
 }

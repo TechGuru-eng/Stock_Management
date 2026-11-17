@@ -29,6 +29,10 @@ export interface StockMovement {
   referenceId?: string;
   /** Set on a reversal: the movement it cancels. */
   reversesId?: string;
+  /** Cost per base unit, informational (rounded). */
+  unitCost?: number;
+  /** Whole-XAF cost of this movement: purchase cost in, cost of goods out. Drives costing replay. */
+  totalCost?: number;
 }
 
 /** Stock on hand is DERIVED from the ledger. */

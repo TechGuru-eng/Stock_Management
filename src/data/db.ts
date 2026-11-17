@@ -37,7 +37,7 @@ export interface CostRec {
   lastUnitCost: number
 }
 
-export type MovementRec = StockMovement & { tenantId: string; unitCost?: number }
+export type MovementRec = StockMovement & { tenantId: string }
 
 export interface CustomerRec {
   id: string
@@ -48,15 +48,34 @@ export interface CustomerRec {
   createdAt: string
 }
 
+/**
+ * One row per record to upload. Rows of the same business event (a sale and its
+ * lines, stock movements, payments and debt) share a `groupId` and are uploaded
+ * together, atomically, in `seq` order.
+ *  - pending : waiting to upload (possibly retrying after a network error)
+ *  - rejected: the server refused it; needs attention, never retried automatically
+ *  - conflict: clashes with data from another device; needs a decision
+ */
 export interface OutboxRec {
+  seq?: number
   id: string
+  groupId: string
   table: string
-  op: 'insert'
   payload: unknown
   createdAt: string
-  status: 'pending' | 'sending' | 'failed'
+  status: 'pending' | 'rejected' | 'conflict'
   attempts: number
+  nextAttemptAt?: string
   lastError?: string
+}
+
+/** History of every upload attempt, kept so failures can be investigated. */
+export interface SyncLogRec {
+  id?: number
+  groupId: string
+  at: string
+  outcome: 'ok' | 'network' | 'rejected' | 'conflict'
+  message?: string
 }
 
 export interface MetaRec {
@@ -74,11 +93,12 @@ class StockCmDb extends Dexie {
   transactions!: EntityTable<FinancialTxnRecord, 'id'>
   customers!: EntityTable<CustomerRec, 'id'>
   customerEntries!: EntityTable<CustomerEntryRecord, 'id'>
-  outbox!: EntityTable<OutboxRec, 'id'>
+  outbox!: EntityTable<OutboxRec, 'seq'>
+  syncLog!: EntityTable<SyncLogRec, 'id'>
   meta!: EntityTable<MetaRec, 'key'>
 
-  constructor() {
-    super('stockcm')
+  constructor(name = 'stockcm') {
+    super(name)
     this.version(1).stores({
       products: 'id, tenantId, name, barcode, sku',
       units: 'id, productId',
@@ -91,6 +111,13 @@ class StockCmDb extends Dexie {
       customerEntries: 'id, customerId, saleId',
       outbox: 'id, status, createdAt',
       meta: 'key',
+    })
+    // Dexie cannot change a primary key in place: drop and recreate the outbox.
+    // (Pre-release only: no production data existed in the old outbox.)
+    this.version(2).stores({ outbox: null })
+    this.version(3).stores({
+      outbox: '++seq, &id, groupId, status',
+      syncLog: '++id, groupId, at',
     })
   }
 }

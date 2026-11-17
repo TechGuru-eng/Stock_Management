@@ -17,11 +17,11 @@ export interface Ctx {
 
 const costKey = (shopId: string, productId: string) => `${shopId}:${productId}`
 
-function queue(table: string, payload: unknown) {
+function queue(table: string, payload: unknown, groupId: string) {
   return db.outbox.add({
     id: newId(),
+    groupId,
     table,
-    op: 'insert',
     payload,
     createdAt: new Date().toISOString(),
     status: 'pending',
@@ -84,11 +84,12 @@ export async function addProduct(ctx: Ctx, input: NewProductInput): Promise<stri
     }
     await db.products.add(product)
     await db.units.bulkAdd(units)
-    await queue('products', product)
-    for (const u of units) await queue('product_units', u)
+    // One group: product, its units and opening stock upload together.
+    await queue('products', product, product.id)
+    for (const u of units) await queue('product_units', u, product.id)
 
     if (!input.isService && input.openingQty > 0) {
-      await postReceipt(ctx, product.id, input.openingQty, input.openingTotalCost, 'opening')
+      await postReceipt(ctx, product.id, input.openingQty, input.openingTotalCost, 'opening', undefined, product.id)
     }
   })
   return product.id
@@ -103,6 +104,7 @@ async function postReceipt(
   totalCost: number,
   type: Extract<MovementType, 'opening' | 'purchase_receipt' | 'count_adjustment' | 'return_in'>,
   reason?: string,
+  groupId?: string,
 ) {
   const next = receive(await loadCost(ctx.shopId, productId), baseQty, totalCost)
   await saveCost(ctx.shopId, productId, next)
@@ -110,9 +112,10 @@ async function postReceipt(
     id: newId(), tenantId: ctx.tenantId, shopId: ctx.shopId, productId, quantity: baseQty, type, reason,
     staffId: ctx.userId, deviceId: deviceId(), createdAt: new Date().toISOString(),
     unitCost: Math.round(totalCost / baseQty),
+    totalCost,
   }
   await db.movements.add(m)
-  await queue('stock_movements', m)
+  await queue('stock_movements', m, groupId ?? m.id)
 }
 
 /** Goods received. Quantity is in the chosen unit and is converted to base units. */
@@ -136,9 +139,10 @@ export async function removeStock(ctx: Ctx, productId: string, baseQty: number, 
       id: newId(), tenantId: ctx.tenantId, shopId: ctx.shopId, productId, quantity: -baseQty, type, reason: reason.trim(),
       staffId: ctx.userId, deviceId: deviceId(), createdAt: new Date().toISOString(),
       unitCost: Math.round(out.cogs / baseQty),
+      totalCost: out.cogs,
     }
     await db.movements.add(m)
-    await queue('stock_movements', m)
+    await queue('stock_movements', m, m.id)
   })
 }
 
@@ -152,7 +156,7 @@ export async function addCustomer(ctx: Ctx, name: string, phone: string | undefi
   }
   await db.transaction('rw', [db.customers, db.outbox], async () => {
     await db.customers.add(c)
-    await queue('customers', c)
+    await queue('customers', c, c.id)
   })
   return c
 }
@@ -213,11 +217,13 @@ export async function checkout(ctx: Ctx, args: CheckoutArgs): Promise<CheckoutRe
       if (result.customerEntry) await db.customerEntries.add(result.customerEntry)
       for (const [productId, state] of Object.entries(result.newCostStates)) await saveCost(ctx.shopId, productId, state)
 
-      await queue('sales', result.sale)
-      for (const l of result.lines) await queue('sale_lines', l)
-      for (const m of result.movements) await queue('stock_movements', { ...m, tenantId: ctx.tenantId })
-      for (const t of result.transactions) await queue('financial_transactions', t)
-      if (result.customerEntry) await queue('customer_account_entries', result.customerEntry)
+      // One group: the sale and everything it produced upload together or not at all.
+      const g = result.sale.id
+      await queue('sales', result.sale, g)
+      for (const l of result.lines) await queue('sale_lines', l, g)
+      for (const m of result.movements) await queue('stock_movements', { ...m, tenantId: ctx.tenantId }, g)
+      for (const t of result.transactions) await queue('financial_transactions', t, g)
+      if (result.customerEntry) await queue('customer_account_entries', result.customerEntry, g)
       return result
     },
   )
