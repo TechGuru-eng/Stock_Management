@@ -126,6 +126,10 @@ const fr = {
     hint: "WhatsApp s'ouvre avec le message déjà écrit ; vous appuyez sur Envoyer. Rien n'est envoyé automatiquement.",
     last: 'Rappelé : {{when}}', noPhone: 'Pas de numéro', noPhoneLong: "Ajoutez le numéro de téléphone de ce client (6XXXXXXXX) pour pouvoir lui envoyer un rappel par WhatsApp.",
   },
+  invoices: {
+    tab: 'Factures', pdf: 'Facture PDF', share: 'Partager', search: 'Chercher par numéro ou client', none: 'Aucune vente.', onCredit: 'à crédit',
+    latest: 'Les 50 dernières ventes. Utilisez la recherche pour en trouver d\'autres.', error: 'Facture impossible : {{msg}}', download: 'Télécharger',
+  },
   shops: {
     title: 'Boutiques', hint: "Ajoutez vos boutiques et choisissez qui peut travailler dans chacune. Une nouvelle boutique n'est accessible qu'à vous au début.",
     planAllows: 'Votre formule autorise {{n}} boutique(s) ({{used}} active(s)).', current: 'Boutique actuelle', here: 'ici', off: 'désactivée',
@@ -370,6 +374,10 @@ const en: typeof fr = {
     whatsapp: 'WhatsApp', title: 'WhatsApp reminder', message: 'Message', open: 'Open WhatsApp with this message',
     hint: 'WhatsApp opens with the message already typed; you press Send. Nothing is sent automatically.',
     last: 'Reminded: {{when}}', noPhone: 'No number', noPhoneLong: "Add this customer's phone number (6XXXXXXXX) to send them a WhatsApp reminder.",
+  },
+  invoices: {
+    tab: 'Invoices', pdf: 'PDF invoice', share: 'Share', search: 'Search by number or customer', none: 'No sales.', onCredit: 'on credit',
+    latest: 'The latest 50 sales. Use search to find older ones.', error: 'Could not make the invoice: {{msg}}', download: 'Download',
   },
   shops: {
     title: 'Shops', hint: 'Add your shops and choose who can work in each one. A new shop is only open to you at first.',

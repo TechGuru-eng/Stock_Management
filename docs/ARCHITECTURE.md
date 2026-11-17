@@ -277,7 +277,7 @@ A confirmed payment extends the subscription, issues an invoice (`INV-YYYY-00000
 - No real aggregator integration, no automatic USSD prompt: payment is "send money with this reference, then it is confirmed".
 - Confirming manual payments and editing plans/prices is done in the admin app (section 14).
 - Renewal reminders appear in the app (5 days, 2 days, then daily in grace) and staff can send WhatsApp reminders by hand (section 17). Automatic WhatsApp/SMS is not built.
-- Invoices are records with a number, not PDFs; no tax invoice format has been reviewed for Cameroon.
+- Invoices can be saved or shared as PDF (section 18); no tax invoice format has been reviewed for Cameroon.
 - Per-staff limits are enforced on creation and reactivation; the existing staff list is not trimmed on a downgrade.
 - The full flow with a real owner login (`src/billing/billing.live.e2e.test.ts`) has not been run.
 
@@ -415,4 +415,31 @@ Send. Zero cost, works on any phone with WhatsApp, and nobody receives a message
 - Customer phone numbers must be Cameroon mobiles (6XXXXXXXX); other countries' numbers are not supported.
 - SMS is not built. The same links pattern could be added (`sms:`) if wanted.
 - Real automatic sending later = a provider (Meta Cloud API or an aggregator) behind an Edge Function reading the same templates.
+
+## 18. PDF invoices
+
+Real A4 PDF files made in the browser with `jspdf` (standard Helvetica, so French accents print correctly). The library is loaded
+only when someone asks for a PDF (a separate chunk), and everything the invoice needs is read from the device, so it works offline.
+
+- **Sale invoices:** Sales > Invoices lists this shop's sales (search by number or customer) with "PDF invoice" and "Share"; the same
+  two buttons appear after every sale. "Share" opens the phone's share sheet (WhatsApp, email…) with the PDF attached; where the
+  device cannot share files it downloads instead. The invoice shows the business (name, address, phone, tax number if known), the
+  customer, lines (quantity, unit price, amount), subtotal, discount, tax, total, payments by method, returns, later debt repayments,
+  and the balance still owed (or "Paid in full").
+- **Subscription invoices:** Billing > Invoices has a PDF button per invoice (number, plan, period, amount, payment method), issued by
+  "StockCM" to the business.
+- **Correct by construction:** `buildSaleInvoice` is pure; lines must add to the subtotal and subtotal - discount + tax must equal
+  the total, checked (`invoiceProblems`) before a PDF is produced. The tests use the real cart arithmetic including fractional
+  quantities, line discounts and 19.25% tax, read the PDF bytes back, and check multi-page flow with page numbers. The layout was
+  also rendered to an image and inspected.
+- **Business details** (tax number NIU, address, phone) are fetched when online and cached on the device; missing ones are left off.
+
+### Invoice limitations (honest list)
+- The invoice number is the sale number (e.g. A1B2-0042): unique per device/shop but not a legally sequential national series.
+  Whether this satisfies Cameroon invoicing rules (DGI: sequential numbering, NIU, VAT 19.25% breakdown, mandatory mentions, e-invoicing)
+  has NOT been reviewed. Do not present it as a compliant tax invoice before an accountant has checked it.
+- Tax is shown as one total, not broken down per rate; prices are tax-exclusive when a rate is set (as in the till).
+- StockCM's own legal details (company name, address, NIU) are not configured, so subscription invoices show only "StockCM".
+- Language is the app's language at the time; no logo, no custom template, no thermal-printer (80 mm) layout (the plain-text receipt remains).
+- Standard font only: names in scripts outside Latin-1 (e.g. some symbols) would not print correctly.
 

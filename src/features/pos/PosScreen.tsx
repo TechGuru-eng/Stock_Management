@@ -8,6 +8,7 @@ import { useCtx } from '../../data/useCtx'
 import { formatXaf } from '../../domain/money'
 import { cartTotals, type CartLine, type CheckoutResult } from '../../domain/pos'
 import type { PaymentMethod } from '../../domain/payments'
+import { InvoiceActions } from '../invoices/InvoiceActions'
 import { buildReceiptText, whatsappLink } from '../../domain/receipt'
 
 const input = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
@@ -37,6 +38,7 @@ function Receipt({ result, payments, shopName, phone, onNew }: { result: Checkou
         <a href={whatsappLink(text, phone)} target="_blank" rel="noopener noreferrer" className={`${btn} flex flex-1 items-center justify-center`}>{t('pos.whatsapp')}</a>
         <button onClick={() => window.print()} className="min-h-12 flex-1 rounded border border-slate-300">{t('pos.print')}</button>
       </div>
+      <InvoiceActions saleId={result.sale.id} />
       <button onClick={onNew} className={btn}>{t('pos.newSale')}</button>
     </div>
   )

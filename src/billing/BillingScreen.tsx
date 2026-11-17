@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { buildSubscriptionInvoice } from '../domain/invoice'
+import { downloadPdf, invoiceFileName, renderInvoicePdf } from '../pdf/invoicePdf'
+import { useBuyer } from '../features/invoices/useSeller'
 import { useAuth } from '../auth/AuthProvider'
 import { formatXaf } from '../domain/money'
 import { normalizeCameroonPhone } from '../domain/onboarding'
@@ -14,14 +17,14 @@ const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled
 interface PlanRow { code: string; name: string; price_xaf: number | null; max_shops: number | null; max_staff: number | null; max_products: number | null }
 interface Info { terms: BillingTerm[]; merchant_numbers: Record<string, string>; grace_days: number }
 interface Payment { id: string; kind: 'renewal' | 'upgrade'; reference: string; status: string; expected_amount: number; plan_code: string; method: string; invoice_id: string | null; created_at: string }
-interface Invoice { id: string; number: string; amount: number; plan_code: string; period_end: string; issued_at: string }
+interface Invoice { id: string; number: string; amount: number; plan_code: string; period_start: string | null; period_end: string; issued_at: string }
 interface Sub { plan_code: string; next_plan_code: string | null; status: string; period_end: string }
 
 const toPlan = (p: PlanRow): PlanDef => ({ code: p.code, name: p.name, priceXaf: p.price_xaf, maxShops: p.max_shops, maxStaff: p.max_staff, maxProducts: p.max_products })
 
 /** Owner only: where the subscription stands, how to renew, plan changes, payments and invoices. */
 export function BillingScreen() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { session, membership } = useAuth()
   const tenantId = membership?.tenantId
   const { state, status } = useSubscription()
@@ -45,7 +48,7 @@ export function BillingScreen() {
       supabase.rpc('tenant_usage', { p_tenant: tenantId }),
       supabase.from('subscriptions').select('plan_code, next_plan_code, status, period_end').eq('tenant_id', tenantId).maybeSingle(),
       supabase.from('billing_payments').select('id, kind, reference, status, expected_amount, plan_code, method, invoice_id, created_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(20),
-      supabase.from('invoices').select('id, number, amount, plan_code, period_end, issued_at').eq('tenant_id', tenantId).order('issued_at', { ascending: false }).limit(20),
+      supabase.from('invoices').select('id, number, amount, plan_code, period_start, period_end, issued_at').eq('tenant_id', tenantId).order('issued_at', { ascending: false }).limit(20),
     ])
     setPlans((p.data as PlanRow[]) ?? [])
     setInfo((i.data as Info) ?? null)
@@ -65,6 +68,15 @@ export function BillingScreen() {
     return () => clearInterval(timer)
   }, [waiting, load])
   const confirmedCount = payments.filter((p) => p.invoice_id).length
+  const buyer = useBuyer()
+  async function invoicePdf(i: Invoice) {
+    const pay = payments.find((p) => p.invoice_id === i.id)
+    const inv = buildSubscriptionInvoice({
+      number: i.number, issuedAt: i.issued_at, planName: i.plan_code.charAt(0).toUpperCase() + i.plan_code.slice(1), periodStart: i.period_start, periodEnd: i.period_end,
+      amount: i.amount, method: pay?.method, seller: { name: 'StockCM', lines: ['stockcm.app'] }, buyer, lang: i18n.language.startsWith('fr') ? 'fr' : 'en',
+    })
+    downloadPdf(invoiceFileName(inv.number), await renderInvoicePdf(inv))
+  }
   useEffect(() => {
     if (confirmedCount > 0 && session) void refreshLicence(session.access_token)
   }, [confirmedCount, session])
@@ -198,7 +210,7 @@ export function BillingScreen() {
       <section>
         <h4 className="mb-2 font-semibold">{t('billing.invoices')}</h4>
         <ul className="divide-y divide-slate-200 text-sm dark:divide-slate-800">
-          {invoices.map((i) => <li key={i.id} className="flex justify-between py-2"><span>{i.number}<span className="block text-xs text-slate-500">{new Date(i.issued_at).toLocaleDateString()}</span></span><span>{money(i.amount)}</span></li>)}
+          {invoices.map((i) => <li key={i.id} className="flex items-center justify-between gap-2 py-2"><span>{i.number}<span className="block text-xs text-slate-500">{new Date(i.issued_at).toLocaleDateString()}</span></span><span className="flex items-center gap-3">{money(i.amount)}<button className="min-h-10 rounded border border-slate-300 px-3" onClick={() => void invoicePdf(i)}>{t('invoices.pdf')}</button></span></li>)}
         </ul>
       </section>
       {msg && <p role="status" className="text-sm text-red-700">{msg}</p>}
