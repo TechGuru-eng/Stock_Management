@@ -52,6 +52,7 @@ export class FakeServer implements SyncTransport {
     const draftOps = new Set<string>()
     const salesInBatch: string[] = []
     const paymentsInBatch: string[] = []
+    const receiptsInBatch: string[] = []
     let applied = 0
     let skipped = 0
 
@@ -78,6 +79,7 @@ export class FakeServer implements SyncTransport {
       }
       if (op.table === 'sales') salesInBatch.push(row.id as string)
       if (op.table === 'payments') paymentsInBatch.push(row.id as string)
+      if (op.table === 'goods_receipts') receiptsInBatch.push(row.id as string)
       draft[op.table].set(row.id as string, { row, changed: this.tick() })
       applied++
     }
@@ -113,6 +115,25 @@ export class FakeServer implements SyncTransport {
       if (!txn || Number(txn.amount) !== Number(p.amount) || txn.txn_type !== 'debt_repayment') fail('money entry does not match')
       const entries = [...draft.customer_account_entries.values()].map((v) => v.row).filter((e) => e.transaction_id === p.transaction_id)
       if (sum(entries, 'amount') !== -Number(p.amount)) fail('customer balance entry does not match')
+    }
+
+    // Same rules as check_receipt_consistency(): stock and debt follow what was received, never more than ordered.
+    for (const id of receiptsInBatch) {
+      const sum = (rs: Row[], k: string) => rs.reduce((t, r) => t + Number(r[k]), 0)
+      const fail = (m: string) => {
+        throw new TransportError('permanent', `receipt ${id}: ${m}`, '23514')
+      }
+      const lines = [...draft.goods_receipt_lines.values()].map((v) => v.row).filter((l) => l.receipt_id === id)
+      if (lines.length === 0) fail('has no lines')
+      const entries = [...draft.supplier_account_entries.values()].map((v) => v.row).filter((e) => e.receipt_id === id && e.kind === 'purchase_credit')
+      if (sum(entries, 'amount') !== sum(lines, 'total_cost')) fail('supplier debt does not match the value received')
+      const moved = [...draft.stock_movements.values()].map((v) => v.row).filter((m) => m.reference_id === id && m.movement_type === 'purchase_receipt')
+      if (sum(moved, 'quantity') !== sum(lines, 'base_quantity')) fail('stock does not match the quantities received')
+      for (const l of lines) {
+        const ordered = Number(draft.purchase_lines.get(l.purchase_line_id as string)?.row.base_quantity)
+        const total = [...draft.goods_receipt_lines.values()].map((v) => v.row).filter((x) => x.purchase_line_id === l.purchase_line_id)
+        if (sum(total, 'base_quantity') > ordered) fail('more received than ordered')
+      }
     }
 
     this.tables = draft

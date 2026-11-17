@@ -5,7 +5,7 @@ import { LoginScreen } from './auth/LoginScreen'
 import { OnboardingWizard } from './onboarding/OnboardingWizard'
 import { isSupabaseConfigured } from './lib/supabase'
 import { PosScreen } from './features/pos/PosScreen'
-import { StockScreen } from './features/stock/StockScreen'
+import { StockHub } from './features/stock/StockHub'
 import { HomeScreen } from './features/home/HomeScreen'
 import { MoneyScreen } from './features/money/MoneyScreen'
 import { SyncBadge } from './features/sync/SyncBadge'
@@ -41,7 +41,7 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
       <main className="flex-1 p-4">
         <h2 className="mb-2 text-xl font-semibold">{t(`nav.${tab}`)}</h2>
         {tab === 'sales' && <PosScreen />}
-        {tab === 'stock' && <StockScreen />}
+        {tab === 'stock' && <StockHub />}
         {tab === 'more' && <SyncScreen canSync={autoSync} />}
         {tab === 'home' && (
           <HomeScreen go={(next, sub) => { if (sub) setMoneySub(sub); setTab(next) }} />

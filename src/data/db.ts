@@ -2,6 +2,9 @@ import Dexie, { type EntityTable } from 'dexie'
 import type { StockMovement } from '../domain/inventory'
 import type { CustomerEntryRecord, FinancialTxnRecord, SaleLineRecord, SaleRecord } from '../domain/pos'
 import type { AllocationRecord, CashClosureRecord, CashSessionRecord, ExpenseRecord, PaymentRecord } from '../domain/finance'
+import type {
+  GoodsReceiptRecord, PurchaseLineRecord, PurchaseRecord, ReceiptLineRecord, SupplierEntryRecord, SupplierRecord,
+} from '../domain/purchasing'
 
 export interface ProductRec {
   id: string
@@ -99,6 +102,12 @@ class StockCmDb extends Dexie {
   expenses!: EntityTable<ExpenseRecord, 'id'>
   cashSessions!: EntityTable<CashSessionRecord, 'id'>
   cashClosures!: EntityTable<CashClosureRecord, 'id'>
+  suppliers!: EntityTable<SupplierRecord, 'id'>
+  purchases!: EntityTable<PurchaseRecord, 'id'>
+  purchaseLines!: EntityTable<PurchaseLineRecord, 'id'>
+  receipts!: EntityTable<GoodsReceiptRecord, 'id'>
+  receiptLines!: EntityTable<ReceiptLineRecord, 'id'>
+  supplierEntries!: EntityTable<SupplierEntryRecord, 'id'>
   outbox!: EntityTable<OutboxRec, 'seq'>
   syncLog!: EntityTable<SyncLogRec, 'id'>
   meta!: EntityTable<MetaRec, 'key'>
@@ -131,6 +140,14 @@ class StockCmDb extends Dexie {
       expenses: 'id, shopId, occurredAt',
       cashSessions: 'id, shopId, openedAt',
       cashClosures: 'id, sessionId',
+    })
+    this.version(5).stores({
+      suppliers: 'id, name',
+      purchases: 'id, supplierId, orderedAt',
+      purchaseLines: 'id, purchaseId',
+      receipts: 'id, purchaseId',
+      receiptLines: 'id, receiptId, purchaseLineId',
+      supplierEntries: 'id, supplierId',
     })
   }
 }

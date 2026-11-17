@@ -29,12 +29,12 @@ export function queue(table: string, payload: unknown, groupId: string) {
   })
 }
 
-async function loadCost(shopId: string, productId: string): Promise<CostState> {
+export async function loadCost(shopId: string, productId: string): Promise<CostState> {
   const r = await db.costs.get(costKey(shopId, productId))
   return r ? { quantity: r.quantity, value: r.value, lastUnitCost: r.lastUnitCost } : emptyCostState
 }
 
-async function saveCost(shopId: string, productId: string, s: CostState) {
+export async function saveCost(shopId: string, productId: string, s: CostState) {
   await db.costs.put({ key: costKey(shopId, productId), shopId, productId, ...s })
 }
 

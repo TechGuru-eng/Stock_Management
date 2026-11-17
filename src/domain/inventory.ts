@@ -11,6 +11,7 @@ export type MovementType =
   | 'count_adjustment'
   | 'transfer_out'
   | 'transfer_in'
+  | 'supplier_return'
   | 'reversal';
 
 /** Append-only. `quantity` is signed, in base units: + adds stock, - removes it. */

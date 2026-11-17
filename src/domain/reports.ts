@@ -19,6 +19,8 @@ export interface ReportInput {
   expenses: readonly ExpenseRecord[]
   /** All customer-account entries up to now (balances are cumulative, not per period). */
   entries: readonly CustomerEntryRecord[]
+  /** Supplier-account entries up to now: their sum is what we owe suppliers. */
+  supplierEntries?: readonly { amount: Xaf; occurredAt: string }[]
   /** Inclusive ISO timestamps. */
   from: string
   to: string
@@ -35,6 +37,8 @@ export interface Summary {
   debtRepayments: Xaf
   collectedTotal: Xaf
   receivables: Xaf
+  /** What we owe suppliers at the end of the period. */
+  supplierPayables: Xaf
   cogs: Xaf
   grossProfit: Xaf
   expenses: Xaf
@@ -73,6 +77,7 @@ export function summarize(r: ReportInput): Summary {
     debtRepayments,
     collectedTotal: collectedFromSales.cash + collectedFromSales.mtn_momo + collectedFromSales.orange_money + debtRepayments,
     receivables: sumXaf(r.entries.filter((e) => e.occurredAt <= r.to).map((e) => e.amount)),
+    supplierPayables: sumXaf((r.supplierEntries ?? []).filter((e) => e.occurredAt <= r.to).map((e) => e.amount)),
     cogs,
     grossProfit,
     expenses: expenseTotal,

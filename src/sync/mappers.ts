@@ -16,6 +16,12 @@ export const SYNC_TABLES = [
   'expenses',
   'cash_sessions',
   'cash_session_closures',
+  'suppliers',
+  'purchases',
+  'purchase_lines',
+  'goods_receipts',
+  'goods_receipt_lines',
+  'supplier_account_entries',
 ] as const
 export type SyncTable = (typeof SYNC_TABLES)[number]
 
@@ -47,7 +53,8 @@ export function toServer(table: string, p: Local): Row {
       return {
         id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, product_id: p.productId, quantity: p.quantity,
         movement_type: p.type, reason: p.reason ?? null,
-        reference_type: p.type === 'sale' ? 'sale' : null, reference_id: p.referenceId ?? null,
+        reference_type: p.type === 'sale' ? 'sale' : p.type === 'purchase_receipt' && p.referenceId ? 'receipt' : null,
+        reference_id: p.referenceId ?? null,
         unit_cost: p.unitCost ?? null, total_cost: p.totalCost ?? null, occurred_at: p.createdAt,
       }
     case 'sales':
@@ -93,6 +100,31 @@ export function toServer(table: string, p: Local): Row {
       return {
         id: p.id, tenant_id: p.tenantId, session_id: p.sessionId, expected_closing: p.expectedClosing,
         counted_closing: p.countedClosing, difference: p.difference, closed_at: p.closedAt,
+      }
+    case 'suppliers':
+      return { id: p.id, tenant_id: p.tenantId, name: p.name, phone: p.phone ?? null, notes: p.notes ?? null, created_at: p.createdAt }
+    case 'purchases':
+      return {
+        id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, supplier_id: p.supplierId,
+        invoice_number: p.invoiceNumber ?? null, ordered_at: p.orderedAt,
+      }
+    case 'purchase_lines':
+      return {
+        id: p.id, tenant_id: p.tenantId, purchase_id: p.purchaseId, product_id: p.productId,
+        base_quantity: p.baseQuantity, total_cost: p.totalCost,
+      }
+    case 'goods_receipts':
+      return { id: p.id, tenant_id: p.tenantId, purchase_id: p.purchaseId, received_at: p.receivedAt }
+    case 'goods_receipt_lines':
+      return {
+        id: p.id, tenant_id: p.tenantId, receipt_id: p.receiptId, purchase_line_id: p.purchaseLineId,
+        product_id: p.productId, base_quantity: p.baseQuantity, total_cost: p.totalCost,
+      }
+    case 'supplier_account_entries':
+      return {
+        id: p.id, tenant_id: p.tenantId, supplier_id: p.supplierId, amount: p.amount, kind: p.kind,
+        purchase_id: p.purchaseId ?? null, receipt_id: p.receiptId ?? null, transaction_id: p.transactionId ?? null,
+        occurred_at: p.occurredAt,
       }
     default:
       throw new Error(`unknown sync table ${table}`)
@@ -178,6 +210,31 @@ export function fromServer(table: SyncTable, r: Local): Local {
         id: r.id, tenantId: r.tenant_id, sessionId: r.session_id, closedBy: (r.closed_by as string) ?? '',
         expectedClosing: num(r.expected_closing), countedClosing: num(r.counted_closing),
         difference: num(r.difference), closedAt: r.closed_at,
+      }
+    case 'suppliers':
+      return { id: r.id, tenantId: r.tenant_id, name: r.name, phone: opt(r.phone), notes: opt(r.notes), createdAt: r.created_at }
+    case 'purchases':
+      return {
+        id: r.id, tenantId: r.tenant_id, shopId: r.shop_id, supplierId: r.supplier_id,
+        invoiceNumber: opt(r.invoice_number), orderedAt: r.ordered_at,
+      }
+    case 'purchase_lines':
+      return {
+        id: r.id, tenantId: r.tenant_id, purchaseId: r.purchase_id, productId: r.product_id,
+        baseQuantity: num(r.base_quantity), totalCost: num(r.total_cost),
+      }
+    case 'goods_receipts':
+      return { id: r.id, tenantId: r.tenant_id, purchaseId: r.purchase_id, receivedBy: (r.received_by as string) ?? '', receivedAt: r.received_at }
+    case 'goods_receipt_lines':
+      return {
+        id: r.id, tenantId: r.tenant_id, receiptId: r.receipt_id, purchaseLineId: r.purchase_line_id,
+        productId: r.product_id, baseQuantity: num(r.base_quantity), totalCost: num(r.total_cost),
+      }
+    case 'supplier_account_entries':
+      return {
+        id: r.id, tenantId: r.tenant_id, supplierId: r.supplier_id, amount: num(r.amount), kind: r.kind,
+        purchaseId: opt(r.purchase_id), receiptId: opt(r.receipt_id), transactionId: opt(r.transaction_id),
+        occurredAt: r.occurred_at,
       }
   }
 }

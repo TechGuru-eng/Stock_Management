@@ -59,6 +59,7 @@ function SummaryView({ ctx }: { ctx: Ctx }) {
       <Row label={t('money.revenue')} value={formatXaf(s.revenue)} />
       <Row label={t('money.collected')} value={formatXaf(s.collectedTotal)} strong hint={`${t('money.repayments')}: ${formatXaf(s.debtRepayments)}`} />
       <Row label={t('money.receivables')} value={formatXaf(s.receivables)} />
+      <Row label={t('purch.owedTotal')} value={formatXaf(s.supplierPayables)} />
       {profitVisible && (
         <>
           <Row label={t('money.cogs')} value={formatXaf(s.cogs)} />

@@ -55,6 +55,7 @@ export function HomeScreen({ go }: { go: Go }) {
         <Card label={t('home.todaySales')} value={formatXaf(s.revenue)} />
         <Card label={t('home.collected')} value={formatXaf(s.collectedTotal)} />
         <Card label={t('home.owed')} value={formatXaf(s.receivables)} />
+        {money && <Card label={t('purch.owedTotal')} value={formatXaf(s.supplierPayables)} />}
         {money && <Card label={t('home.expenses')} value={formatXaf(s.expenses)} />}
         {money && <Card label={t('home.profit')} value={formatXaf(s.grossProfit)} />}
         <Card label={t('home.lowStock')} value={String(lowStock)} tone={lowStock > 0 ? 'warn' : undefined} />

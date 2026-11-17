@@ -23,6 +23,8 @@ const { buildSale } = await import('../domain/pos')
 const { receive, emptyCostState } = await import('../domain/costing')
 const fin = await import('../data/financeRepo')
 const { buildRepayment, openSalesOf } = await import('../domain/finance')
+const pur = await import('../data/purchasingRepo')
+const { buildReceipt } = await import('../domain/purchasing')
 
 const ctx: import('../data/repo').Ctx = { tenantId: 't1', shopId: 's1', userId: 'u1', role: 'owner', oversellPolicy: 'allow_and_flag' }
 const sctx = { tenantId: 't1', deviceName: 'Phone' }
@@ -388,5 +390,81 @@ describe('money records sync', () => {
     expect(await db.payments.count()).toBe(2)
     expect(await repo.customerBalance(c.id)).toBe(-10000) // 10,000 owed - 20,000 paid = 10,000 in the customer's favour
     expect((await getSyncSummary()).rejectedGroups).toBe(0)
+  })
+})
+
+describe('purchasing sync', () => {
+  async function orderRice() {
+    const w = await addWater()
+    const sup = await pur.addSupplier(ctx, 'Grossiste Akwa')
+    const o = await pur.createPurchase(ctx, {
+      supplierId: sup.id, invoiceNumber: 'F-1',
+      lines: [{ productId: w.id, unitId: w.bottle.id, quantity: 100, totalCost: 40000 }],
+    })
+    return { w, sup, o }
+  }
+
+  it('uploads orders, deliveries, payments and returns; a new device recovers stock and what we owe', async () => {
+    const { w, sup, o } = await orderRice()
+    await pur.receiveGoods(ctx, o.purchase.id, [{ purchaseLineId: o.lines[0].id, baseQuantity: 60 }], { amount: 10000, method: 'cash' })
+    await pur.receiveGoods(ctx, o.purchase.id, [{ purchaseLineId: o.lines[0].id, baseQuantity: 40 }])
+    await pur.paySupplier(ctx, { supplierId: sup.id, amount: 5000, method: 'mtn_momo' })
+    await pur.returnToSupplier(ctx, { supplierId: sup.id, productId: w.id, baseQuantity: 10, creditValue: 3500, reason: 'damaged' })
+    const stockHere = (await db.costs.get(`s1:${w.id}`))!
+    const owedHere = await pur.supplierPayable(sup.id)
+    expect(owedHere).toBe(40000 - 10000 - 5000 - 3500)
+
+    await engine.runSync(server, sctx)
+    expect(await db.outbox.count()).toBe(0)
+    expect(server.count('suppliers')).toBe(1)
+    expect(server.count('purchases')).toBe(1)
+    expect(server.count('goods_receipts')).toBe(2)
+    expect(server.count('supplier_account_entries')).toBe(5) // 2 credits, 1 payment on delivery, 1 payment, 1 return
+
+    await newDevice()
+    await engine.runSync(server, sctx)
+    expect(await pur.supplierPayable(sup.id)).toBe(owedHere)
+    const stockThere = (await db.costs.get(`s1:${w.id}`))!
+    expect(stockThere.quantity).toBe(stockHere.quantity)
+    expect(stockThere.value).toBe(stockHere.value)
+    expect(await db.purchases.count()).toBe(1)
+    expect(await db.receiptLines.count()).toBe(2)
+  })
+
+  it('a delivery whose debt does not match the goods is refused whole', async () => {
+    const { o } = await orderRice()
+    await engine.runSync(server, sctx)
+    await pur.receiveGoods(ctx, o.purchase.id, [{ purchaseLineId: o.lines[0].id, baseQuantity: 50 }])
+    const bad = await db.outbox.filter((r) => r.table === 'supplier_account_entries').first()
+    await db.outbox.update(bad!.seq!, { payload: { ...(bad!.payload as object), amount: 1 } })
+    await engine.runSync(server, sctx)
+    expect((await getSyncSummary()).rejectedGroups).toBe(1)
+    expect(server.count('goods_receipts')).toBe(0)
+    expect(server.count('stock_movements')).toBe(1) // only the opening stock from the product group
+  })
+
+  it('two storekeepers record the same arrival: the second is refused so stock is not counted twice', async () => {
+    const { o } = await orderRice()
+    await engine.runSync(server, sctx)
+    await pur.receiveGoods(ctx, o.purchase.id, [{ purchaseLineId: o.lines[0].id, baseQuantity: 100 }]) // this phone, offline
+
+    const priorLines: import('../domain/purchasing').ReceiptLineRecord[] = []
+    const other = buildReceipt({
+      newId, tenantId: 't1', shopId: 's1', userId: 'u2', deviceId: 'other', nowIso: new Date(Date.now() + 1000).toISOString(),
+      purchase: o.purchase, lines: o.lines, priorReceiptLines: priorLines, deliveries: [{ purchaseLineId: o.lines[0].id, baseQuantity: 100 }],
+    })
+    const wire = [
+      { t: 'goods_receipts', rows: [other.receipt] }, { t: 'goods_receipt_lines', rows: other.lines },
+      { t: 'stock_movements', rows: other.movements.map((m) => ({ ...m, tenantId: 't1' })) },
+      { t: 'supplier_account_entries', rows: other.entries },
+    ].flatMap((g) => g.rows.map((r) => ({ op_id: newId(), table: g.t, payload: toServer(g.t, r as unknown as Record<string, unknown>) })))
+    await server.push('other', wire) // the other phone got there first
+
+    await engine.runSync(server, sctx, { manual: true })
+    const s = await getSyncSummary()
+    expect(s.rejectedGroups).toBe(1) // ours is refused: it would exceed what was ordered
+    expect(server.count('goods_receipts')).toBe(1)
+    const err = (await db.outbox.filter((r) => r.status === 'rejected').first())!.lastError
+    expect(err).toContain('more received than ordered')
   })
 })

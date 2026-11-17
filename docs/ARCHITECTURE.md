@@ -136,3 +136,31 @@ appears after 48 hours unsynchronised and after 30 days without any sync.
 - Not built: returns/refunds/cancellations, supplier purchases and balances, expense receipts, per-employee and per-product reports, PDF/Excel export, inventory valuation report.
 - Reports read whole tables into memory; fine for a small shop, to be indexed by date for large histories.
 - Cash sessions track one open session per user per shop; a session left open is not auto-closed.
+
+## 10. Purchasing and suppliers
+
+Three events are kept apart because they happen at different times in a real shop:
+
+| Event | Records | Effect |
+| --- | --- | --- |
+| Order | purchase, purchase lines | none: no stock, no debt |
+| Goods receipt (all or part) | receipt, receipt lines, stock movements, supplier entry (`purchase_credit`) | raises stock and weighted-average value, creates the debt for what arrived |
+| Payment | money entry (`supplier_payment`, out) + supplier entry (`payment`) | lowers the debt only |
+
+- A delivery's cost is the share of the line cost for the units that arrived, using cumulative rounding,
+  so partial deliveries add up exactly to the order cost (333 + 334 + 333 = 1,000).
+- Order status (ordered, partly received, received) is derived from receipts, never stored.
+- Never more received than ordered: refused on the device and again by the server (`check_receipt_consistency`).
+  If two storekeepers record the same arrival offline, the second upload is refused and flagged for review,
+  so stock is not counted twice.
+- Paying a supplier is a `purchases.manage` action (manager or owner). Receiving goods needs `stock.receive`
+  (storekeeper, manager, owner). A payment larger than the debt is refused.
+- A supplier return takes stock out at its weighted-average cost and records the credit the supplier agrees to.
+- Migration 0008 also added the manager permissions the app already assumed (`stock.receive`, `stock.count`,
+  `payments.receive`, `products.read`), which the database had been missing.
+
+### Purchasing limitations
+- Not built: cancelling an order, editing an order, receipt photos or documents, purchase price history per supplier,
+  reorder suggestions, supplier price comparison.
+- A receipt is not tied to a specific supplier invoice document; the invoice number is a free-text field on the order.
+- Supplier debts are recognised at receipt, not at invoice date.
