@@ -180,6 +180,10 @@ const fr = {
     upgradeCharge: 'Mise à niveau : {{amount}} pour les {{days}} jours restants', appliedNow: 'Formule changée.', appliedLater: 'Changement prévu au prochain renouvellement.',
     custom: 'Sur devis', offlineNeeded: 'Une connexion internet est nécessaire pour gérer l’abonnement.', error: 'Erreur : {{msg}}',
     kind: { renewal: 'Renouvellement', upgrade: 'Mise à niveau' },
+    supportLog: {
+      title: "Accès du support StockCM", hint: "Chaque fois que le support StockCM consulte votre compte, c'est noté ici avec la raison. Il ne voit jamais vos ventes, clients ou montants.",
+      none: "Aucun accès du support.",
+    },
     banner: {
       trial: "Essai gratuit : {{n}} jour(s) restant(s).", soon: "Votre abonnement se termine dans {{n}} jour(s). Renouvelez pour éviter une interruption.",
       urgent: "Votre abonnement se termine dans {{n}} jour(s). Renouvelez maintenant.", grace: "Abonnement expiré. Vous pouvez continuer {{n}} jour(s). Renouvelez maintenant.",
@@ -388,6 +392,10 @@ const en: typeof fr = {
     upgradeCharge: 'Upgrade: {{amount}} for the {{days}} days left', appliedNow: 'Plan changed.', appliedLater: 'Change scheduled for the next renewal.',
     custom: 'Custom pricing', offlineNeeded: 'An internet connection is needed to manage the subscription.', error: 'Error: {{msg}}',
     kind: { renewal: 'Renewal', upgrade: 'Upgrade' },
+    supportLog: {
+      title: 'StockCM support access', hint: 'Every time StockCM support looks at your account it is listed here with the reason. They never see your sales, customers or amounts.',
+      none: 'Support has not accessed your account.',
+    },
     banner: {
       trial: 'Free trial: {{n}} day(s) left.', soon: 'Your subscription ends in {{n}} day(s). Renew to avoid an interruption.',
       urgent: 'Your subscription ends in {{n}} day(s). Renew now.', grace: 'Subscription expired. You can carry on for {{n}} more day(s). Renew now.',

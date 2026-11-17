@@ -210,6 +210,38 @@ describe('conflicts', () => {
   })
 })
 
+describe('telling support about refused events', () => {
+  it('a refused event is reported once, and marked resolved when it later goes through', async () => {
+    const reports: string[] = []
+    server.reportIssue = async (_t, _d, g, kind, error) => void reports.push(`report:${kind}:${g}:${error.slice(0, 5)}`)
+    server.resolveIssue = async (_t, g) => void reports.push(`resolve:${g}`)
+
+    await addWater('6001234')
+    await engine.runSync(server, sctx)
+    await newDevice()
+    await addWater('6001234')
+    await engine.runSync(server, sctx) // conflict
+    const group = (await db.outbox.filter((o) => o.status === 'conflict').first())!.groupId
+    expect(reports).toHaveLength(1)
+    expect(reports[0]).toContain(`report:conflict:${group}`)
+
+    await engine.resolveBarcodeConflict(group)
+    await engine.runSync(server, sctx)
+    expect(reports).toContain(`resolve:${group}`)
+  })
+
+  it('a failing report never breaks syncing', async () => {
+    server.reportIssue = async () => { throw new Error('support is down') }
+    await addWater('6001234')
+    await engine.runSync(server, sctx)
+    await newDevice()
+    await addWater('6001234')
+    const r = await engine.runSync(server, sctx)
+    expect(r.offline).toBe(false)
+    expect((await getSyncSummary()).conflictGroups).toBe(1)
+  })
+})
+
 describe('pull and recovery', () => {
   it('a replacement device recovers products, stock, sales and customer debt', async () => {
     const w = await addWater()

@@ -270,13 +270,65 @@ A confirmed payment extends the subscription, issues an invoice (`INV-YYYY-00000
   into the signed message above. Nothing in this repository calls a real provider yet.
 - **Merchant numbers** the owners send money to (until an aggregator is live), in `platform_settings`:
   `update platform_settings set value = '{"mtn_momo":"6XXXXXXXX","orange_money":"6XXXXXXXX"}' where key = 'merchant_numbers';`
-- **Your first platform admin:** `insert into platform_admins (user_id) values ('<your auth user id>');`
+- **Your first platform admin:** see section 14 (it needs a role, and the admin must set up two-step verification).
 - **The webhook secret** (to give the provider): as that admin, call `select admin_webhook_secret();`
 
 ### Billing limitations (honest list)
 - No real aggregator integration, no automatic USSD prompt: payment is "send money with this reference, then it is confirmed".
-- No platform admin screen yet: confirming a manual payment and editing plans/prices are SQL for now.
+- Confirming manual payments and editing plans/prices is done in the admin app (section 14).
 - Renewal reminders appear in the app (5 days, 2 days, then daily in grace). WhatsApp/SMS reminders are not built.
 - Invoices are records with a number, not PDFs; no tax invoice format has been reviewed for Cameroon.
 - Per-staff limits are enforced on creation and reactivation; the existing staff list is not trimmed on a downgrade.
 - The full flow with a real owner login (`src/billing/billing.live.e2e.test.ts`) has not been run.
+
+## 14. Platform administration (the operators' dashboard)
+
+A separate app (`admin.html`, built with `npm run build:admin` into `dist-admin/`; `npm run dev:admin` to develop). It is
+hosted apart from the shop app: no service worker, no offline cache, `noindex`, its own session kept in `sessionStorage`
+(gone when the tab closes). Put it on its own address and, ideally, behind an IP allow-list.
+
+**Who may do what** (`platform_admins.role`, enforced in the database by `admin_check(perm)`, mirrored in `src/admin/permissions.ts`
+with a test that fails if the two ever differ):
+
+| Role | Can |
+|---|---|
+| `super` | everything, incl. system settings and revealing the webhook secret |
+| `finance` | overview, payments (confirm / reject), extend subscriptions, plans and prices, revenue |
+| `support` | overview, businesses (search, suspend / reactivate), support sessions, sync problems, audit log |
+
+**Protection**
+- Every admin function demands a signed-in user who is in `platform_admins` AND whose session is `aal2` (a TOTP code was
+  entered). A password alone gets nothing. The first sign-in enrols an authenticator app. 15 minutes idle signs out.
+- Admins are not members of any business, so row-level security already hides every shop's sales, customers and money.
+  The admin functions only return operational metadata (counts, plan, status, devices, sync problems).
+- To see one business's details (owner phone, devices, staff list, sync problems, last actions) the admin must open a
+  **support session**: a written reason (10+ characters), valid 1 hour, ended on request. It is logged, and the business
+  owner sees it in the app (More tab, "StockCM support access") with the reason.
+- Suspending, reactivating, extending, confirming/rejecting payments, plan edits, setting changes, support sessions and
+  secret reveals all go to `admin_audit_logs`, which cannot be updated or deleted (trigger). Suspension remembers the status
+  before it, so reactivating restores it.
+- Settings are validated server-side with a whitelist (ranges, formats, lengths); unknown keys are refused.
+
+**Reaching the shop app:** `public_notices()` (callable without signing in) returns the announcement, maintenance notice and
+feature flags. The app caches them for offline use and shows banners; notices inform only and never block selling.
+Devices report refused sync events (`report_sync_issue`: kind + the server's own error text, no business data) so support can
+see which shops need help; the report is marked resolved when the event finally goes through.
+
+**Creating the first administrator (you must do this, it cannot be self-service):**
+1. Create the user in Supabase Authentication (a real mailbox you control, a long unique password).
+2. `insert into platform_admins (user_id, role) values ('<that user id>', 'super');`
+3. Sign in to the admin app and scan the QR code with an authenticator app. Add `finance` / `support` colleagues the same way.
+4. Enrolling an authenticator is only possible once signed in; if you lose the device, remove the factor in the Supabase dashboard.
+
+**Tested:** 40-odd checks run against the live database inside a rolled-back transaction (non-admin refused; password-only
+refused; each role allowed/refused per function; support detail refused without a session and after it ends; suspension
+restores the prior status; every setting validation; audit log immutable; admin cannot read shop data through RLS; owner sees
+support access). The screens were exercised in a browser with an in-memory fake API (`?dev=1`, compiled out of production).
+
+### Admin limitations (honest list)
+- Not yet exercised with a real admin login and a real authenticator (needs the user created above).
+- "MRR" is an estimate: list price of every paying plan; discounts and free bonus months are not netted out.
+- No per-admin management screen: roles are assigned in SQL. No IP allow-list or rate limiting in the app itself (do it at the host).
+- Sync issues are shown as counts and per-business lists; there is no separate triage queue yet.
+- WhatsApp/SMS sending is not built; the templates are stored for when it is.
+

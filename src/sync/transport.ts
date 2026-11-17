@@ -21,6 +21,12 @@ export interface SyncTransport {
   registerDevice(deviceId: string, tenantId: string, name: string): Promise<void>
   push(deviceId: string, ops: WireOp[]): Promise<{ applied: number; skipped: number }>
   pull(since: string, limit: number): Promise<PullResponse>
+  /**
+   * OPTIONAL, best effort: tell the platform that an event was refused here, so support can help. Only the kind and
+   * the server's own error text are sent, never the business data. Failures are ignored.
+   */
+  reportIssue?(tenantId: string, deviceId: string, groupId: string, kind: 'rejected' | 'conflict', error: string): Promise<void>
+  resolveIssue?(tenantId: string, groupId: string): Promise<void>
 }
 
 /**

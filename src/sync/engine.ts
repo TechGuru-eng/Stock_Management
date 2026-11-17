@@ -70,9 +70,35 @@ async function setGroup(groupId: string, patch: Partial<OutboxRec>) {
   await db.outbox.where('groupId').equals(groupId).modify(patch)
 }
 
+/* ------------------------- telling support (best effort) ------------------------- */
+
+async function reportedGroups(): Promise<string[]> {
+  return ((await db.meta.get('reportedIssues'))?.value as string[] | undefined) ?? []
+}
+
+/** A refused event is reported once so StockCM support can see the shop needs help. Never blocks or fails the sync. */
+async function reportIssue(transport: SyncTransport, tenantId: string, groupId: string, kind: 'rejected' | 'conflict', message: string) {
+  if (!transport.reportIssue) return
+  try {
+    await transport.reportIssue(tenantId, deviceId(), groupId, kind, message)
+    const list = await reportedGroups()
+    if (!list.includes(groupId)) await db.meta.put({ key: 'reportedIssues', value: [...list, groupId].slice(-200) })
+  } catch { /* support reporting is a courtesy; the shop's own data is unaffected */ }
+}
+
+/** The event went through later (retried or fixed): mark the report resolved. */
+async function settleIssue(transport: SyncTransport, tenantId: string, groupId: string) {
+  const list = await reportedGroups()
+  if (!list.includes(groupId)) return
+  try {
+    await transport.resolveIssue?.(tenantId, groupId)
+    await db.meta.put({ key: 'reportedIssues', value: list.filter((g) => g !== groupId) })
+  } catch { /* try again after the next successful push of something else; harmless */ }
+}
+
 /* ---------------------------------- push ---------------------------------- */
 
-async function pushAll(transport: SyncTransport, manual: boolean): Promise<{ groups: number; offline: boolean; error?: string }> {
+async function pushAll(transport: SyncTransport, manual: boolean, tenantId: string): Promise<{ groups: number; offline: boolean; error?: string }> {
   const rows = await db.outbox.orderBy('seq').toArray()
   const groups = new Map<string, OutboxRec[]>()
   for (const r of rows) groups.set(r.groupId, [...(groups.get(r.groupId) ?? []), r])
@@ -91,12 +117,14 @@ async function pushAll(transport: SyncTransport, manual: boolean): Promise<{ gro
       await db.outbox.where('groupId').equals(groupId).delete()
       await log(groupId, 'ok')
       pushed++
+      await settleIssue(transport, tenantId, groupId)
     } catch (e) {
       const err = e instanceof TransportError ? e : new TransportError('network', (e as Error).message)
       if (err.kind === 'permanent') {
         const status = err.code === '23505' ? 'conflict' : 'rejected'
         await setGroup(groupId, { status, lastError: err.message, nextAttemptAt: undefined })
         await log(groupId, status, err.message)
+        await reportIssue(transport, tenantId, groupId, status, err.message)
         continue // independent groups can still go through
       }
       // Network or expired session: nothing is lost. Keep the data, retry later.
@@ -229,7 +257,7 @@ export function runSync(transport: SyncTransport, ctx: SyncContext, opts: { manu
       }
       setSnapshot({ revoked: false })
 
-      const push = await pushAll(transport, Boolean(opts.manual))
+      const push = await pushAll(transport, Boolean(opts.manual), ctx.tenantId)
       result.pushedGroups = push.groups
       result.offline = push.offline
       result.error = push.error

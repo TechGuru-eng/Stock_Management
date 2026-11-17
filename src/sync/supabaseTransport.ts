@@ -24,4 +24,12 @@ export const supabaseTransport: SyncTransport = {
     if (error) fail(error)
     return data as PullResponse
   },
+  async reportIssue(tenantId, deviceId, groupId, kind, error) {
+    if (!supabase) return
+    await supabase.rpc('report_sync_issue', { p_tenant: tenantId, p_device: deviceId, p_group: groupId, p_kind: kind, p_error: error })
+  },
+  async resolveIssue(tenantId, groupId) {
+    if (!supabase) return
+    await supabase.rpc('resolve_sync_issue', { p_tenant: tenantId, p_group: groupId })
+  },
 }

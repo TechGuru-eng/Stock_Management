@@ -18,7 +18,9 @@ import { onSyncComplete } from './sync/engine'
 import { installWriteGuard } from './data/writeGuard'
 import { applyGuard, refreshLicence } from './billing/licenceStore'
 import { BillingScreen } from './billing/BillingScreen'
+import { NoticeBanner } from './billing/NoticeBanner'
 import { SubscriptionBanner } from './billing/SubscriptionBanner'
+import { SupportAccessLog } from './billing/SupportAccessLog'
 import { supabase } from './lib/supabase'
 
 // New records are blocked on a device whose subscription has lapsed (the server enforces the same rule).
@@ -63,12 +65,14 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
         </span>
       </header>
       <SubscriptionBanner onRenew={() => setTab('more')} />
+      <NoticeBanner />
       <main className="flex-1 p-4">
         <h2 className="mb-2 text-xl font-semibold">{t(`nav.${tab}`)}</h2>
         {tab === 'sales' && <SalesHub />}
         {tab === 'stock' && <StockHub />}
         {tab === 'more' && membership?.role === 'owner' && <BillingScreen />}
         {tab === 'more' && membership?.role === 'owner' && <StaffScreen />}
+        {tab === 'more' && membership?.role === 'owner' && <SupportAccessLog />}
         {tab === 'more' && <SyncScreen canSync={autoSync} />}
         {tab === 'home' && (
           <HomeScreen go={(next, sub) => { if (sub) setMoneySub(sub); setTab(next) }} />

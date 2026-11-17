@@ -19,6 +19,9 @@ export class FakeServer implements SyncTransport {
   /** Force small pages to exercise pagination. */
   pageLimit?: number
   revoked = new Set<string>()
+  /** Tests may plug these in to watch support reports. */
+  reportIssue?: SyncTransport['reportIssue']
+  resolveIssue?: SyncTransport['resolveIssue']
   tables: Record<string, Table> = Object.fromEntries(SYNC_TABLES.map((t) => [t, new Map()]))
   processed = new Set<string>()
   pushCalls = 0
