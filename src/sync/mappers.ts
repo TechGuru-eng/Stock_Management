@@ -58,7 +58,7 @@ export function toServer(table: string, p: Local): Row {
         id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, product_id: p.productId, quantity: p.quantity,
         movement_type: p.type, reason: p.reason ?? null,
         reference_type:
-          p.type === 'sale' ? 'sale' : p.type === 'purchase_receipt' && p.referenceId ? 'receipt' : p.type === 'return_in' && p.referenceId ? 'return' : null,
+          p.type === 'sale' ? 'sale' : p.type === 'purchase_receipt' && p.referenceId ? 'receipt' : p.type === 'return_in' && p.referenceId ? 'return' : (p.type === 'transfer_in' || p.type === 'transfer_out') && p.referenceId ? 'transfer' : null,
         reference_id: p.referenceId ?? null,
         unit_cost: p.unitCost ?? null, total_cost: p.totalCost ?? null, occurred_at: p.createdAt,
       }

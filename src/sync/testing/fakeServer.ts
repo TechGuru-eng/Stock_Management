@@ -57,6 +57,7 @@ export class FakeServer implements SyncTransport {
     const paymentsInBatch: string[] = []
     const receiptsInBatch: string[] = []
     const returnsInBatch: string[] = []
+    const transfersInBatch = new Set<string>()
     let applied = 0
     let skipped = 0
 
@@ -85,6 +86,7 @@ export class FakeServer implements SyncTransport {
       if (op.table === 'payments') paymentsInBatch.push(row.id as string)
       if (op.table === 'goods_receipts') receiptsInBatch.push(row.id as string)
       if (op.table === 'sale_returns') returnsInBatch.push(row.id as string)
+      if (op.table === 'stock_movements' && (row.movement_type === 'transfer_in' || row.movement_type === 'transfer_out')) transfersInBatch.add(`${row.reference_id}|${row.product_id}`)
       draft[op.table].set(row.id as string, { row, changed: this.tick() })
       applied++
     }
@@ -168,6 +170,22 @@ export class FakeServer implements SyncTransport {
         + sum([...draft.payment_allocations.values()].map((v) => v.row).filter((a) => a.sale_id === rt.sale_id), 'amount')
       if (sum(mine, 'refunded_amount') > paid) fail('refunds exceed what the customer paid')
       if (sum(mine, 'debt_reduced') > Number(draft.sales.get(rt.sale_id as string)?.row.outstanding)) fail('debt written off exceeds what was owed')
+    }
+
+    // Same rules as check_transfer_consistency(): one out and one in, same product, quantity and value, two shops.
+    for (const key of transfersInBatch) {
+      const [ref, product] = key.split('|')
+      const fail = (m: string) => {
+        throw new TransportError('permanent', `transfer ${ref}: ${m}`, '23514')
+      }
+      if (ref === 'null' || ref === 'undefined') fail('needs a reference shared by both sides')
+      const rows = [...draft.stock_movements.values()].map((v) => v.row).filter((m) => m.reference_id === ref && m.product_id === product && (m.movement_type === 'transfer_in' || m.movement_type === 'transfer_out'))
+      const outs = rows.filter((m) => m.movement_type === 'transfer_out')
+      const ins = rows.filter((m) => m.movement_type === 'transfer_in')
+      if (rows.length !== 2 || outs.length !== 1 || ins.length !== 1) fail('does not balance: one out and one in')
+      if (Number(outs[0].quantity) + Number(ins[0].quantity) !== 0) fail('quantity does not balance')
+      if (Number(outs[0].total_cost) !== Number(ins[0].total_cost)) fail('value does not balance')
+      if (outs[0].shop_id === ins[0].shop_id) fail('needs two different shops')
     }
 
     this.tables = draft

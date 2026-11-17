@@ -332,3 +332,30 @@ support access). The screens were exercised in a browser with an in-memory fake 
 - Sync issues are shown as counts and per-business lists; there is no separate triage queue yet.
 - WhatsApp/SMS sending is not built; the templates are stored for when it is.
 
+## 15. Several shops
+
+- **Who sees which shop:** the owner sees every active shop; staff see only the shops the owner ticked for them
+  (`membership_shops`, changed with `set_member_shops`, owner only). A new shop starts owner-only (least privilege). Someone
+  with no rows is never locked out: they get the first shop.
+- **Working in a shop:** the header shows a shop switcher when a person may use more than one. The choice is remembered per
+  person on the device and the screen is rebuilt on a switch, so a half-filled sale cannot leak into another shop. Stock,
+  cost, sales summaries and cash sessions are all per shop already; products, customers and suppliers are shared by the business.
+- **Managing shops** (More tab, owner, needs a connection because shops are shared set-up, not daily transactions):
+  `create_shop`, `update_shop` (rename, town, switch off / on), staff access. The plan limit is enforced by the database
+  (SB403) on creating AND on switching a shop back on; the last active shop cannot be switched off. All changes are audited.
+- **Transfers** (Stock > Transfers, owner and manager): stock leaves the current shop at its weighted-average cost and enters the
+  other at that same value, so no value is created or lost. Each product is two ledger rows sharing one reference and the whole
+  transfer is one sync group (all or nothing). A transfer cannot take stock that is not there (even in "allow oversell" mode,
+  which applies to sales). The database re-checks every transfer at commit (`check_transfer_consistency`): one out and one in,
+  same product, quantity and value, two different shops. A second device rebuilds identical stock in both shops by replay.
+- **Tested:** SQL (rolled back): plan limit, owner-only, name rules, last shop, staff access rules, balanced and unbalanced
+  transfers. Unit tests for the rules and for transfers including sync to a second device and a tampered transfer.
+
+### Multi-shop limitations (honest list)
+- Reports compare nothing across shops yet: each screen shows the shop you are in. No "all shops" total.
+- A transfer is instant: there is no "in transit" state or receiving confirmation, and no partial receipt.
+- Transfers are in base units (as stock is counted), not cartons.
+- Shop management needs a connection; staff who lose access to the shop they are in are moved to another at the next refresh.
+- Customer debts are business-wide, not per shop. Receipt numbering is per shop on each device.
+- Not run against a real owner login with two shops (needs the test owner account).
+

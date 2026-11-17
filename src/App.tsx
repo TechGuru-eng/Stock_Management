@@ -19,6 +19,8 @@ import { installWriteGuard } from './data/writeGuard'
 import { applyGuard, refreshLicence } from './billing/licenceStore'
 import { BillingScreen } from './billing/BillingScreen'
 import { NoticeBanner } from './billing/NoticeBanner'
+import { ShopSwitcher } from './features/shops/ShopSwitcher'
+import { ShopsScreen } from './features/shops/ShopsScreen'
 import { SubscriptionBanner } from './billing/SubscriptionBanner'
 import { SupportAccessLog } from './billing/SupportAccessLog'
 import { supabase } from './lib/supabase'
@@ -60,17 +62,19 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
       <header className="flex items-center justify-between bg-teal-700 px-4 py-3 text-white">
         <h1 className="text-lg font-semibold">{membership?.tenantName ?? 'StockCM'}</h1>
         <span className="flex items-center gap-3 text-sm">
+          <ShopSwitcher />
           <SyncBadge onClick={() => setTab('more')} />
           <span aria-live="polite">{online ? t('app.online') : t('app.offline')}</span>
         </span>
       </header>
       <SubscriptionBanner onRenew={() => setTab('more')} />
       <NoticeBanner />
-      <main className="flex-1 p-4">
+      <main key={membership?.shopId} className="flex-1 p-4">
         <h2 className="mb-2 text-xl font-semibold">{t(`nav.${tab}`)}</h2>
         {tab === 'sales' && <SalesHub />}
         {tab === 'stock' && <StockHub />}
         {tab === 'more' && membership?.role === 'owner' && <BillingScreen />}
+        {tab === 'more' && membership?.role === 'owner' && <ShopsScreen />}
         {tab === 'more' && membership?.role === 'owner' && <StaffScreen />}
         {tab === 'more' && membership?.role === 'owner' && <SupportAccessLog />}
         {tab === 'more' && <SyncScreen canSync={autoSync} />}

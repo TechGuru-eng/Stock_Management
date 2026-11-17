@@ -110,8 +110,25 @@ const fr = {
     products: 'Produits et stock', expense: 'Dépense', repayment: 'Remboursement de dette', cashRegister: 'Caisse', report: 'Résumé',
     shortage: 'Écarts de caisse récents',
   },
+  shops: {
+    title: 'Boutiques', hint: "Ajoutez vos boutiques et choisissez qui peut travailler dans chacune. Une nouvelle boutique n'est accessible qu'à vous au début.",
+    planAllows: 'Votre formule autorise {{n}} boutique(s) ({{used}} active(s)).', current: 'Boutique actuelle', here: 'ici', off: 'désactivée',
+    add: 'Ajouter une boutique', addAction: 'Ajouter', name: 'Nom de la boutique', town: 'Ville', edit: 'Modifier', save: 'Enregistrer', cancel: 'Annuler',
+    deactivate: 'Désactiver', reactivate: 'Réactiver', done: 'Enregistré.', offline: 'Connectez-vous à internet pour gérer les boutiques.',
+    access: 'Accès du personnel', accessHint: 'Cochez les boutiques où chaque employé peut travailler (au moins une).',
+    errors: {
+      plan_limit: "Votre formule n'autorise pas plus de boutiques. Passez à une formule supérieure.", not_allowed: "Seul le propriétaire peut faire cela.",
+      last_shop: 'Il faut au moins une boutique active.', offline: 'Connectez-vous à internet.', server: 'Échec. Réessayez.', min_one: 'Choisissez au moins une boutique.',
+    },
+    transfer: {
+      title: 'Transferts', needTwo: 'Ajoutez une deuxième boutique (Plus > Boutiques) pour transférer du stock.',
+      hint: 'Le stock quitte « {{from}} » à son coût moyen et arrive dans l\'autre boutique à la même valeur.', to: 'Vers la boutique', qty: 'quantité',
+      have: 'En stock : {{n}} {{unit}}', note: 'Note (facultatif)', notEnough: 'Quantité supérieure au stock disponible.', send: 'Transférer',
+      done: 'Transfert enregistré vers {{to}}.', noStock: 'Aucun produit en stock dans cette boutique.', recent: 'Derniers transferts', in: 'reçu', out: 'envoyé',
+    },
+  },
   purch: {
-    products: 'Produits', purchases: 'Achats', suppliers: 'Fournisseurs', newOrder: 'Nouvelle commande', supplier: 'Fournisseur',
+    products: 'Produits', purchases: 'Achats', suppliers: 'Fournisseurs', transfers: 'Transferts', newOrder: 'Nouvelle commande', supplier: 'Fournisseur',
     newSupplier: 'Nouveau fournisseur', supplierName: 'Nom du fournisseur', phone: 'Téléphone', invoice: 'N° de facture (facultatif)',
     addLine: 'Ajouter un produit', product: 'Produit', unit: 'Unité', quantity: 'Quantité', totalCost: 'Coût total (FCFA)',
     createOrder: 'Enregistrer la commande', noOrders: 'Aucune commande.', noSuppliers: 'Aucun fournisseur.',
@@ -322,8 +339,25 @@ const en: typeof fr = {
     products: 'Products and stock', expense: 'Expense', repayment: 'Debt repayment', cashRegister: 'Cash register', report: 'Summary',
     shortage: 'Recent till differences',
   },
+  shops: {
+    title: 'Shops', hint: 'Add your shops and choose who can work in each one. A new shop is only open to you at first.',
+    planAllows: 'Your plan allows {{n}} shop(s) ({{used}} active).', current: 'Current shop', here: 'here', off: 'switched off',
+    add: 'Add a shop', addAction: 'Add', name: 'Shop name', town: 'Town', edit: 'Edit', save: 'Save', cancel: 'Cancel',
+    deactivate: 'Switch off', reactivate: 'Switch on', done: 'Saved.', offline: 'Connect to the internet to manage shops.',
+    access: 'Staff access', accessHint: 'Tick the shops each staff member can work in (at least one).',
+    errors: {
+      plan_limit: 'Your plan does not allow more shops. Upgrade the plan.', not_allowed: 'Only the owner can do this.',
+      last_shop: 'You need at least one active shop.', offline: 'Connect to the internet.', server: 'Failed. Try again.', min_one: 'Choose at least one shop.',
+    },
+    transfer: {
+      title: 'Transfers', needTwo: 'Add a second shop (More > Shops) to transfer stock.',
+      hint: 'Stock leaves "{{from}}" at its average cost and arrives in the other shop at the same value.', to: 'To shop', qty: 'quantity',
+      have: 'In stock: {{n}} {{unit}}', note: 'Note (optional)', notEnough: 'More than the stock available.', send: 'Transfer',
+      done: 'Transfer recorded to {{to}}.', noStock: 'No product in stock in this shop.', recent: 'Recent transfers', in: 'received', out: 'sent',
+    },
+  },
   purch: {
-    products: 'Products', purchases: 'Purchases', suppliers: 'Suppliers', newOrder: 'New order', supplier: 'Supplier',
+    products: 'Products', purchases: 'Purchases', suppliers: 'Suppliers', transfers: 'Transfers', newOrder: 'New order', supplier: 'Supplier',
     newSupplier: 'New supplier', supplierName: 'Supplier name', phone: 'Phone', invoice: 'Invoice no. (optional)',
     addLine: 'Add a product', product: 'Product', unit: 'Unit', quantity: 'Quantity', totalCost: 'Total cost (FCFA)',
     createOrder: 'Save order', noOrders: 'No orders.', noSuppliers: 'No suppliers.',
