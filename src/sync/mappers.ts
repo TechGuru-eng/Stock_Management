@@ -11,6 +11,11 @@ export const SYNC_TABLES = [
   'sale_lines',
   'financial_transactions',
   'customer_account_entries',
+  'payments',
+  'payment_allocations',
+  'expenses',
+  'cash_sessions',
+  'cash_session_closures',
 ] as const
 export type SyncTable = (typeof SYNC_TABLES)[number]
 
@@ -61,12 +66,33 @@ export function toServer(table: string, p: Local): Row {
       return {
         id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, reference: p.reference, txn_type: p.txnType,
         amount: p.amount, method: p.method, verification: p.verification, customer_id: p.customerId ?? null,
-        sale_id: p.saleId ?? null, occurred_at: p.occurredAt,
+        sale_id: p.saleId ?? null, description: p.description ?? null, occurred_at: p.occurredAt,
       }
     case 'customer_account_entries':
       return {
         id: p.id, tenant_id: p.tenantId, customer_id: p.customerId, amount: p.amount, kind: p.kind,
-        sale_id: p.saleId ?? null, occurred_at: p.occurredAt,
+        sale_id: p.saleId ?? null, transaction_id: p.transactionId ?? null, occurred_at: p.occurredAt,
+      }
+    case 'payments':
+      return {
+        id: p.id, tenant_id: p.tenantId, customer_id: p.customerId, transaction_id: p.transactionId,
+        method: p.method, amount: p.amount, created_at: p.occurredAt,
+      }
+    case 'payment_allocations':
+      return { id: p.id, tenant_id: p.tenantId, payment_id: p.paymentId, sale_id: p.saleId, amount: p.amount }
+    case 'expenses':
+      return {
+        id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, category: p.category, amount: p.amount,
+        method: p.method, description: p.description ?? null, occurred_at: p.occurredAt,
+      }
+    case 'cash_sessions':
+      return {
+        id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, opening_cash: p.openingCash, opened_at: p.openedAt,
+      }
+    case 'cash_session_closures':
+      return {
+        id: p.id, tenant_id: p.tenantId, session_id: p.sessionId, expected_closing: p.expectedClosing,
+        counted_closing: p.countedClosing, difference: p.difference, closed_at: p.closedAt,
       }
     default:
       throw new Error(`unknown sync table ${table}`)
@@ -122,13 +148,36 @@ export function fromServer(table: SyncTable, r: Local): Local {
       return {
         id: r.id, tenantId: r.tenant_id, shopId: r.shop_id, reference: r.reference, txnType: r.txn_type,
         amount: num(r.amount), method: r.method, verification: r.verification, staffId: (r.staff_id as string) ?? '',
-        deviceId: (r.device_id as string) ?? '', customerId: opt(r.customer_id), saleId: r.sale_id,
-        occurredAt: r.occurred_at,
+        deviceId: (r.device_id as string) ?? '', customerId: opt(r.customer_id), saleId: opt(r.sale_id),
+        description: opt(r.description), occurredAt: r.occurred_at,
       } satisfies FinancialTxnRecord
     case 'customer_account_entries':
       return {
         id: r.id, tenantId: r.tenant_id, customerId: r.customer_id, amount: num(r.amount), kind: r.kind,
-        saleId: r.sale_id, occurredAt: r.occurred_at,
+        saleId: opt(r.sale_id), transactionId: opt(r.transaction_id), occurredAt: r.occurred_at,
       } satisfies CustomerEntryRecord
+    case 'payments':
+      return {
+        id: r.id, tenantId: r.tenant_id, customerId: r.customer_id, method: r.method, amount: num(r.amount),
+        transactionId: r.transaction_id, occurredAt: r.created_at,
+      }
+    case 'payment_allocations':
+      return { id: r.id, tenantId: r.tenant_id, paymentId: r.payment_id, saleId: r.sale_id, amount: num(r.amount) }
+    case 'expenses':
+      return {
+        id: r.id, tenantId: r.tenant_id, shopId: r.shop_id, category: r.category, amount: num(r.amount),
+        method: r.method, description: opt(r.description), staffId: (r.staff_id as string) ?? '', occurredAt: r.occurred_at,
+      }
+    case 'cash_sessions':
+      return {
+        id: r.id, tenantId: r.tenant_id, shopId: r.shop_id, openedBy: (r.opened_by as string) ?? '',
+        openingCash: num(r.opening_cash), openedAt: r.opened_at,
+      }
+    case 'cash_session_closures':
+      return {
+        id: r.id, tenantId: r.tenant_id, sessionId: r.session_id, closedBy: (r.closed_by as string) ?? '',
+        expectedClosing: num(r.expected_closing), countedClosing: num(r.counted_closing),
+        difference: num(r.difference), closedAt: r.closed_at,
+      }
   }
 }

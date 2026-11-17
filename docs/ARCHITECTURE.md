@@ -114,3 +114,25 @@ appears after 48 hours unsynchronised and after 30 days without any sync.
   several devices the replayed ledger value can differ slightly from the per-line figure.
 - The live end-to-end test (`src/sync/live.e2e.test.ts`) needs a test user and was not run.
 - Existing pre-release dev databases lose their old outbox on upgrade (schema v3).
+
+## 9. Money module (Phase 3)
+
+- **Debt repayment** = a ledger entry (`debt_repayment`, money in) + a payment + allocations to the
+  sales it settles (oldest first, or chosen) + a negative customer-account entry. Original sales are
+  never changed. The server refuses a repayment whose pieces disagree (`check_payment_consistency`).
+- **Policy: repayments are never refused for being too large.** If two phones both take the same
+  repayment offline, both are kept (the money was received); the customer's balance goes negative and
+  is shown as a credit in their favour.
+- **Expenses** are one record plus one negative ledger entry. Reports sum the expense records only, so an
+  expense is never counted twice. **Till deposits/withdrawals** are owner-only and need a reason.
+- **Cash sessions:** expected cash is computed from the ledger (cash only, this cashier, this shop,
+  since opening). Closing writes an immutable `cash_session_closures` row with the difference;
+  one closing per session (a second one from another device is flagged as a conflict).
+- **Reports** (`src/domain/reports.ts`) keep revenue, money collected, receivables, COGS, gross profit and
+  operating profit separate, and are always computed from the records, never stored. Operating
+  profit is not accounting net profit. Profit figures are hidden from roles without `reports.operational`.
+
+### Money limitations
+- Not built: returns/refunds/cancellations, supplier purchases and balances, expense receipts, per-employee and per-product reports, PDF/Excel export, inventory valuation report.
+- Reports read whole tables into memory; fine for a small shop, to be indexed by date for large histories.
+- Cash sessions track one open session per user per shop; a session left open is not auto-closed.

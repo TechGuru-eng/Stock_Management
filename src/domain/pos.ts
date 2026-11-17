@@ -91,19 +91,34 @@ export interface SaleLineRecord {
   costOfGoods: Xaf
 }
 
+export type TxnType =
+  | 'sale_collection'
+  | 'debt_repayment'
+  | 'supplier_payment'
+  | 'expense'
+  | 'cash_deposit'
+  | 'cash_withdrawal'
+  | 'refund'
+  | 'payment_adjustment'
+  | 'owner_contribution'
+  | 'owner_withdrawal'
+  | 'reversal'
+
+/** Immutable money ledger. `amount` is signed: + money in, - money out. */
 export interface FinancialTxnRecord {
   id: string
   tenantId: string
   shopId: string
   reference: string
-  txnType: 'sale_collection'
+  txnType: TxnType
   amount: Xaf
   method: Exclude<PaymentMethod, 'credit'>
   verification: VerificationStatus
   staffId: string
   deviceId: string
   customerId?: string
-  saleId: string
+  saleId?: string
+  description?: string
   occurredAt: string
 }
 
@@ -111,9 +126,11 @@ export interface CustomerEntryRecord {
   id: string
   tenantId: string
   customerId: string
+  /** + customer owes more, - customer owes less. */
   amount: Xaf
-  kind: 'sale_credit'
-  saleId: string
+  kind: 'sale_credit' | 'repayment' | 'adjustment' | 'reversal'
+  saleId?: string
+  transactionId?: string
   occurredAt: string
 }
 

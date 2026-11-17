@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { StockMovement } from '../domain/inventory'
 import type { CustomerEntryRecord, FinancialTxnRecord, SaleLineRecord, SaleRecord } from '../domain/pos'
+import type { AllocationRecord, CashClosureRecord, CashSessionRecord, ExpenseRecord, PaymentRecord } from '../domain/finance'
 
 export interface ProductRec {
   id: string
@@ -93,6 +94,11 @@ class StockCmDb extends Dexie {
   transactions!: EntityTable<FinancialTxnRecord, 'id'>
   customers!: EntityTable<CustomerRec, 'id'>
   customerEntries!: EntityTable<CustomerEntryRecord, 'id'>
+  payments!: EntityTable<PaymentRecord, 'id'>
+  allocations!: EntityTable<AllocationRecord, 'id'>
+  expenses!: EntityTable<ExpenseRecord, 'id'>
+  cashSessions!: EntityTable<CashSessionRecord, 'id'>
+  cashClosures!: EntityTable<CashClosureRecord, 'id'>
   outbox!: EntityTable<OutboxRec, 'seq'>
   syncLog!: EntityTable<SyncLogRec, 'id'>
   meta!: EntityTable<MetaRec, 'key'>
@@ -118,6 +124,13 @@ class StockCmDb extends Dexie {
     this.version(3).stores({
       outbox: '++seq, &id, groupId, status',
       syncLog: '++id, groupId, at',
+    })
+    this.version(4).stores({
+      payments: 'id, customerId',
+      allocations: 'id, paymentId, saleId',
+      expenses: 'id, shopId, occurredAt',
+      cashSessions: 'id, shopId, openedAt',
+      cashClosures: 'id, sessionId',
     })
   }
 }

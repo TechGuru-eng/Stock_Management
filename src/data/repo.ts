@@ -17,7 +17,7 @@ export interface Ctx {
 
 const costKey = (shopId: string, productId: string) => `${shopId}:${productId}`
 
-function queue(table: string, payload: unknown, groupId: string) {
+export function queue(table: string, payload: unknown, groupId: string) {
   return db.outbox.add({
     id: newId(),
     groupId,
@@ -176,6 +176,15 @@ async function nextSaleNumber(shopId: string): Promise<string> {
   // The device prefix keeps numbers unique across several offline tills.
   const prefix = deviceId().replace(/-/g, '').slice(0, 4).toUpperCase()
   return `${prefix}-${String(next).padStart(4, '0')}`
+}
+
+/** Unique, readable references for money entries: device prefix + kind + counter, e.g. 8DC5-RP-0003. */
+export async function nextRef(shopId: string, kind: string): Promise<string> {
+  const key = `${kind}Counter:${shopId}`
+  const next = (((await db.meta.get(key))?.value as number | undefined) ?? 0) + 1
+  await db.meta.put({ key, value: next })
+  const prefix = deviceId().replace(/-/g, '').slice(0, 4).toUpperCase()
+  return `${prefix}-${kind.toUpperCase()}-${String(next).padStart(4, '0')}`
 }
 
 export interface CheckoutArgs {

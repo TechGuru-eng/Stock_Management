@@ -117,12 +117,16 @@ async function applyPull(res: PullResponse): Promise<number> {
 
   await db.transaction(
     'rw',
-    [db.products, db.units, db.customers, db.movements, db.sales, db.saleLines, db.transactions, db.customerEntries],
+    [
+      db.products, db.units, db.customers, db.movements, db.sales, db.saleLines, db.transactions, db.customerEntries,
+      db.payments, db.allocations, db.expenses, db.cashSessions, db.cashClosures,
+    ],
     async () => {
       const stores = {
         products: db.products, product_units: db.units, customers: db.customers, stock_movements: db.movements,
         sales: db.sales, sale_lines: db.saleLines, financial_transactions: db.transactions,
-        customer_account_entries: db.customerEntries,
+        customer_account_entries: db.customerEntries, payments: db.payments, payment_allocations: db.allocations,
+        expenses: db.expenses, cash_sessions: db.cashSessions, cash_session_closures: db.cashClosures,
       } as const
       const mutable = new Set<SyncTable>(['products', 'product_units', 'customers'])
 

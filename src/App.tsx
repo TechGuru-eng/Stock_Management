@@ -6,6 +6,8 @@ import { OnboardingWizard } from './onboarding/OnboardingWizard'
 import { isSupabaseConfigured } from './lib/supabase'
 import { PosScreen } from './features/pos/PosScreen'
 import { StockScreen } from './features/stock/StockScreen'
+import { HomeScreen } from './features/home/HomeScreen'
+import { MoneyScreen } from './features/money/MoneyScreen'
 import { SyncBadge } from './features/sync/SyncBadge'
 import { SyncScreen } from './features/sync/SyncScreen'
 import { startAutoSync } from './sync/auto'
@@ -19,6 +21,7 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
   const { t } = useTranslation()
   const { membership, signOut } = useAuth()
   const [tab, setTab] = useState<Tab>('home')
+  const [moneySub, setMoneySub] = useState<'summary' | 'debts' | 'expenses' | 'cash'>('summary')
   const online = navigator.onLine
 
   useEffect(() => {
@@ -40,9 +43,10 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
         {tab === 'sales' && <PosScreen />}
         {tab === 'stock' && <StockScreen />}
         {tab === 'more' && <SyncScreen canSync={autoSync} />}
-        {(tab === 'home' || tab === 'money') && (
-          <p className="text-slate-600 dark:text-slate-300">{t('app.notBuilt')}</p>
+        {tab === 'home' && (
+          <HomeScreen go={(next, sub) => { if (sub) setMoneySub(sub); setTab(next) }} />
         )}
+        {tab === 'money' && <MoneyScreen key={moneySub} initial={moneySub} />}
         {tab === 'more' && (
           <button onClick={() => void signOut()} className="mt-4 min-h-12 rounded border border-slate-300 px-4">
             {t('auth.signOut')}

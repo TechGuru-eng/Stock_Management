@@ -51,6 +51,7 @@ export class FakeServer implements SyncTransport {
     )
     const draftOps = new Set<string>()
     const salesInBatch: string[] = []
+    const paymentsInBatch: string[] = []
     let applied = 0
     let skipped = 0
 
@@ -76,6 +77,7 @@ export class FakeServer implements SyncTransport {
         }
       }
       if (op.table === 'sales') salesInBatch.push(row.id as string)
+      if (op.table === 'payments') paymentsInBatch.push(row.id as string)
       draft[op.table].set(row.id as string, { row, changed: this.tick() })
       applied++
     }
@@ -96,6 +98,21 @@ export class FakeServer implements SyncTransport {
       if (sum(entries, 'amount') !== Number(sale.outstanding)) fail('debt does not match outstanding')
       const moved = [...draft.stock_movements.values()].map((v) => v.row).filter((m) => m.reference_id === id && m.movement_type === 'sale')
       if (-sum(moved, 'quantity') !== sum(lines, 'base_quantity')) fail('stock does not match sold quantities')
+    }
+
+    // Same rules as check_payment_consistency().
+    for (const id of paymentsInBatch) {
+      const p = draft.payments.get(id)!.row
+      const sum = (rs: Row[], k: string) => rs.reduce((t, r) => t + Number(r[k]), 0)
+      const fail = (m: string) => {
+        throw new TransportError('permanent', `payment ${id}: ${m}`, '23514')
+      }
+      const allocs = [...draft.payment_allocations.values()].map((v) => v.row).filter((a) => a.payment_id === id)
+      if (sum(allocs, 'amount') !== Number(p.amount)) fail('allocations do not add up to the amount')
+      const txn = draft.financial_transactions.get(p.transaction_id as string)?.row
+      if (!txn || Number(txn.amount) !== Number(p.amount) || txn.txn_type !== 'debt_repayment') fail('money entry does not match')
+      const entries = [...draft.customer_account_entries.values()].map((v) => v.row).filter((e) => e.transaction_id === p.transaction_id)
+      if (sum(entries, 'amount') !== -Number(p.amount)) fail('customer balance entry does not match')
     }
 
     this.tables = draft

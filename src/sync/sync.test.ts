@@ -21,6 +21,8 @@ const { classifyServerError } = await import('./transport')
 const { toServer } = await import('./mappers')
 const { buildSale } = await import('../domain/pos')
 const { receive, emptyCostState } = await import('../domain/costing')
+const fin = await import('../data/financeRepo')
+const { buildRepayment, openSalesOf } = await import('../domain/finance')
 
 const ctx: import('../data/repo').Ctx = { tenantId: 't1', shopId: 's1', userId: 'u1', role: 'owner', oversellPolicy: 'allow_and_flag' }
 const sctx = { tenantId: 't1', deviceName: 'Phone' }
@@ -316,5 +318,75 @@ describe('status rules', () => {
     expect(engine.backoffMs(1)).toBe(5_000)
     expect(engine.backoffMs(3)).toBe(20_000)
     expect(engine.backoffMs(30)).toBe(15 * 60_000)
+  })
+})
+
+describe('money records sync', () => {
+  async function creditSale10k() {
+    const w = await addWater()
+    const c = await repo.addCustomer(ctx, 'Mme Tchoua', '677000111', 100000)
+    const r = await repo.checkout(ctx, {
+      lines: [line(w, w.carton, 1)], // 11,000
+      payments: [{ method: 'cash', amount: 1000 }, { method: 'credit', amount: 10000 }], customerId: c.id,
+    })
+    return { c, sale: r.sale }
+  }
+
+  it('uploads a repayment, an expense and a cash-session closure, then a new device recovers them', async () => {
+    const { c } = await creditSale10k()
+    await fin.repayDebt(ctx, { customerId: c.id, amount: 4000, method: 'cash' })
+    await fin.recordExpense(ctx, { category: 'transport', amount: 1500, method: 'cash' })
+    const session = await fin.openCashSession(ctx, 5000)
+    await fin.closeCashSession(ctx, session.id, 9000)
+    await engine.runSync(server, sctx)
+    expect(await db.outbox.count()).toBe(0)
+    expect(server.count('payments')).toBe(1)
+    expect(server.count('payment_allocations')).toBe(1)
+    expect(server.count('expenses')).toBe(1)
+    expect(server.count('cash_sessions')).toBe(1)
+    expect(server.count('cash_session_closures')).toBe(1)
+
+    await newDevice()
+    await engine.runSync(server, sctx)
+    expect(await repo.customerBalance(c.id)).toBe(6000)
+    expect(await db.expenses.count()).toBe(1)
+    expect(await db.cashClosures.count()).toBe(1)
+    expect(await db.payments.count()).toBe(1)
+  })
+
+  it('a repayment whose records do not match is refused whole', async () => {
+    const { c } = await creditSale10k()
+    await engine.runSync(server, sctx)
+    await fin.repayDebt(ctx, { customerId: c.id, amount: 4000, method: 'cash' })
+    const bad = await db.outbox.filter((o) => o.table === 'customer_account_entries').first()
+    await db.outbox.update(bad!.seq!, { payload: { ...(bad!.payload as object), amount: -1 } })
+    await engine.runSync(server, sctx)
+    expect((await getSyncSummary()).rejectedGroups).toBe(1)
+    expect(server.count('payments')).toBe(0)
+    expect(server.count('financial_transactions')).toBe(1) // the sale's cash only; none of the refused repayment
+  })
+
+  it('two devices each record the SAME full repayment: both are kept (the money was really received), customer ends in credit', async () => {
+    const { c, sale } = await creditSale10k()
+    await engine.runSync(server, sctx)
+    await fin.repayDebt(ctx, { customerId: c.id, amount: 10000, method: 'cash' }) // this phone, offline
+
+    // another phone already uploaded the same repayment
+    const other = buildRepayment({
+      newId, tenantId: 't1', shopId: 's1', userId: 'u2', deviceId: 'other', nowIso: new Date(Date.now() + 1000).toISOString(),
+      customerId: c.id, method: 'cash', amount: 10000, reference: 'ZZZZ-RP-0001',
+      openSales: openSalesOf([{ id: sale.id, occurredAt: sale.occurredAt, outstanding: 10000 }], []),
+    })
+    const wire = [
+      { t: 'financial_transactions', rows: [other.transaction] }, { t: 'payments', rows: [other.payment] },
+      { t: 'payment_allocations', rows: other.allocations }, { t: 'customer_account_entries', rows: [other.entry] },
+    ].flatMap((g) => g.rows.map((r) => ({ op_id: newId(), table: g.t, payload: toServer(g.t, r as unknown as Record<string, unknown>) })))
+    await server.push('other', wire)
+
+    await engine.runSync(server, sctx, { manual: true })
+    expect(server.count('payments')).toBe(2)
+    expect(await db.payments.count()).toBe(2)
+    expect(await repo.customerBalance(c.id)).toBe(-10000) // 10,000 owed - 20,000 paid = 10,000 in the customer's favour
+    expect((await getSyncSummary()).rejectedGroups).toBe(0)
   })
 })
