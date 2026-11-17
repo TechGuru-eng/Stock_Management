@@ -1,5 +1,6 @@
 import { db, deviceId, type OutboxRec } from '../data/db'
 import { rebuildCosts } from '../data/projection'
+import { whilePulling } from '../data/writeGuard'
 import { fromServer, SYNC_TABLES, toServer, type SyncTable } from './mappers'
 import { TransportError, type PullResponse, type SyncTransport } from './transport'
 
@@ -39,6 +40,13 @@ export const getEngineSnapshot = () => snapshot
 export function subscribeEngine(l: () => void) {
   listeners.add(l)
   return () => void listeners.delete(l)
+}
+
+/** Things to do after every successful sync (e.g. fetch a fresh signed licence). Registered by the app at start-up. */
+const afterSync: (() => Promise<unknown>)[] = []
+export function onSyncComplete(fn: () => Promise<unknown>): () => void {
+  afterSync.push(fn)
+  return () => void afterSync.splice(afterSync.indexOf(fn), 1)
 }
 
 /* --------------------------------- helpers -------------------------------- */
@@ -115,7 +123,7 @@ async function applyPull(res: PullResponse): Promise<number> {
   const touched: { shopId: string; productId: string }[] = []
   let count = 0
 
-  await db.transaction(
+  await whilePulling(() => db.transaction(
     'rw',
     [
       db.products, db.units, db.customers, db.movements, db.sales, db.saleLines, db.transactions, db.customerEntries,
@@ -169,7 +177,7 @@ async function applyPull(res: PullResponse): Promise<number> {
         count += toWrite.length
       }
     },
-  )
+  ))
   // The stock projection is rebuilt from the ledger, never patched.
   await rebuildCosts(touched)
   return count
@@ -229,6 +237,7 @@ export function runSync(transport: SyncTransport, ctx: SyncContext, opts: { manu
 
       result.pulledRows = await pullAll(transport)
       await db.meta.put({ key: 'lastSyncAt', value: new Date().toISOString() })
+      for (const fn of afterSync) await fn().catch(() => undefined)
       return result
     } catch (e) {
       result.offline = true

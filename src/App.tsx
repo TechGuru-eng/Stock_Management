@@ -14,6 +14,15 @@ import { StaffScreen } from './features/staff/StaffScreen'
 import { LockScreen } from './auth/LockScreen'
 import { useIdleLock } from './auth/lock'
 import { startAutoSync } from './sync/auto'
+import { onSyncComplete } from './sync/engine'
+import { installWriteGuard } from './data/writeGuard'
+import { applyGuard, refreshLicence } from './billing/licenceStore'
+import { BillingScreen } from './billing/BillingScreen'
+import { SubscriptionBanner } from './billing/SubscriptionBanner'
+import { supabase } from './lib/supabase'
+
+// New records are blocked on a device whose subscription has lapsed (the server enforces the same rule).
+installWriteGuard()
 import { supabaseTransport } from './sync/supabaseTransport'
 
 type Tab = 'home' | 'sales' | 'stock' | 'money' | 'more'
@@ -32,6 +41,18 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
     return startAutoSync(supabaseTransport, { tenantId: membership.tenantId, deviceName: navigator.platform || 'web' })
   }, [autoSync, membership])
 
+  // A fresh signed licence after every successful sync, and once at start (works offline from the stored one).
+  useEffect(() => {
+    if (!autoSync || !membership || !supabase) return
+    const refresh = async () => {
+      const { data } = await supabase!.auth.getSession()
+      if (data.session) await refreshLicence(data.session.access_token)
+    }
+    void applyGuard()
+    if (navigator.onLine) void refresh()
+    return onSyncComplete(refresh)
+  }, [autoSync, membership])
+
   return (
     <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <header className="flex items-center justify-between bg-teal-700 px-4 py-3 text-white">
@@ -41,10 +62,12 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
           <span aria-live="polite">{online ? t('app.online') : t('app.offline')}</span>
         </span>
       </header>
+      <SubscriptionBanner onRenew={() => setTab('more')} />
       <main className="flex-1 p-4">
         <h2 className="mb-2 text-xl font-semibold">{t(`nav.${tab}`)}</h2>
         {tab === 'sales' && <SalesHub />}
         {tab === 'stock' && <StockHub />}
+        {tab === 'more' && membership?.role === 'owner' && <BillingScreen />}
         {tab === 'more' && membership?.role === 'owner' && <StaffScreen />}
         {tab === 'more' && <SyncScreen canSync={autoSync} />}
         {tab === 'home' && (

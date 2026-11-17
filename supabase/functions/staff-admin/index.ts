@@ -75,7 +75,9 @@ Deno.serve(async (req) => {
     .single()
   if (memberError || !member) {
     await undo()
-    return json({ error: 'server_error' }, 500)
+    // The database refuses a new staff member beyond the plan's limit (see migration 0011).
+    const overLimit = memberError?.message?.includes('plan_limit') === true
+    return json({ error: overLimit ? 'plan_limit_staff' : 'server_error' }, overLimit ? 403 : 500)
   }
   const { data: shops } = await admin.from('shops').select('id').eq('tenant_id', tenantId).eq('active', true)
   if (shops?.length) {

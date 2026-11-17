@@ -1,3 +1,4 @@
+import { planLimit } from '../billing/licenceStore'
 import { db, deviceId, newId, type CustomerRec, type MovementRec, type ProductRec, type UnitRec } from './db'
 import { emptyCostState, issue, receive, type CostState } from '../domain/costing'
 import type { MovementType } from '../domain/inventory'
@@ -57,6 +58,10 @@ export interface NewProductInput {
 
 export async function addProduct(ctx: Ctx, input: NewProductInput): Promise<string> {
   if (input.name.trim().length < 1) throw new Error('product name is required')
+  const limit = await planLimit('products')
+  if (limit !== null && (await db.products.filter((p) => p.active).count()) >= limit) {
+    throw new Error('plan limit reached: upgrade the plan to add more products')
+  }
   const base = input.units.filter((u) => u.isBase)
   if (base.length !== 1 || base[0].factor !== 1) throw new Error('exactly one base unit with factor 1 is required')
   if (input.units.length === 0) throw new Error('at least one selling unit is required')

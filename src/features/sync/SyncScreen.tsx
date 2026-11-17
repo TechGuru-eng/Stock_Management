@@ -61,7 +61,7 @@ export function SyncScreen({ canSync }: { canSync: boolean }) {
                 {label(rows)} <span className="text-sm font-normal text-slate-500">({rows[0].status})</span>
               </p>
               {rows[0].status === 'conflict' && <p className="text-sm">{t('sync.conflictHelp')}</p>}
-              <p className="text-sm text-red-700">{rows[0].lastError}</p>
+              <p className="text-sm text-red-700">{/plan_limit/.test(rows[0].lastError ?? '') ? t('billing.planLimit') : rows[0].lastError}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {rows[0].status === 'conflict' && rows.some((r) => r.table === 'products') && (
                   <button onClick={() => void resolveBarcodeConflict(groupId)} className="min-h-12 rounded bg-teal-700 px-3 text-white">

@@ -233,3 +233,50 @@ verifier kept on the device (the PIN itself is never stored), with its own locko
   of third-party scripts.
 - Per-person limits by plan (number of staff) are not enforced yet; that comes with subscriptions.
 - The full end-to-end flow (`src/auth/staff.live.e2e.test.ts`) needs an owner test login and has not been run.
+
+## 13. Subscriptions, billing, licensing and read-only mode
+
+**States.** trial / active: full use. After the paid period ends there is a **7-day grace period** (setting `grace_days`):
+full use with a warning. After that the business is **read-only**: it can still view and export everything but no new
+records can be created. **Nothing is ever deleted** because a subscription lapsed. A suspended account is also read-only.
+
+**Enforced on the server, mirrored on the device.**
+- Database triggers (`SB402 subscription_expired`) refuse new business records once grace has ended. A sync that hits
+  this keeps the data and retries after renewal. Plan limits for shops, staff and products are triggers too (`SB403`).
+- A **signed licence** (ES256) is issued by the `licence` Edge Function and verified on the device with a public key, so the
+  rules also work offline. It carries the plan, limits, period end and grace end, and is valid until the **earlier** of
+  grace end and "issued + 30 days". So a device must sync every 30 days (read-only otherwise: "sync required", which does
+  not mean unpaid), and a lapsed subscription stops new records by itself even with no connection. A device clock set
+  backwards is noticed. Closing the till is always allowed.
+
+**Pricing (all in the database, editable without changing code).** Plans live in `plans` (initial proposals: Starter 2,500,
+Business 5,000, Pro 10,000 FCFA/month; Enterprise by quote). Terms live in `platform_settings.billing_terms`
+(proposal: 1, 3, 6 months and 12 months, with 1 and 2 free months for paying 6 and 12). Renewing early extends from the
+current end; renewing late starts from today. An **upgrade** is effective at once and costs the price difference for the
+days left, rounded up. A **downgrade** is scheduled for the next renewal and is refused while usage exceeds the lower
+plan's limits. During the trial a plan can be changed freely.
+
+**Paying.** The owner creates a payment (amount computed by the database, a reference like `STK-XXXXXXXX`). It stays
+`pending` until confirmed in one of two ways, and **only the server can do this**:
+1. **Provider webhook** (`billing-webhook` Edge Function): the message must carry a valid HMAC-SHA256 signature made with a
+   shared secret; the amount must equal what was asked for; a provider reference can never be used twice; a retried
+   webhook never extends the subscription twice. Recorded as `provider_verified`.
+2. **Platform admin** (`admin_confirm_payment`): for money received by hand, with a written note of the proof. Recorded as
+   `recorded` (never `provider_verified`).
+A confirmed payment extends the subscription, issues an invoice (`INV-YYYY-000001`) and writes an immutable event log.
+
+### What you must set up before taking real payments (I cannot do these for you)
+- **A payment provider / aggregator** account for MTN MoMo and Orange Money, and a small adapter that turns its callback
+  into the signed message above. Nothing in this repository calls a real provider yet.
+- **Merchant numbers** the owners send money to (until an aggregator is live), in `platform_settings`:
+  `update platform_settings set value = '{"mtn_momo":"6XXXXXXXX","orange_money":"6XXXXXXXX"}' where key = 'merchant_numbers';`
+- **Your first platform admin:** `insert into platform_admins (user_id) values ('<your auth user id>');`
+- **The webhook secret** (to give the provider): as that admin, call `select admin_webhook_secret();`
+
+### Billing limitations (honest list)
+- No real aggregator integration, no automatic USSD prompt: payment is "send money with this reference, then it is confirmed".
+- No platform admin screen yet: confirming a manual payment and editing plans/prices are SQL for now.
+- Renewal reminders appear in the app (5 days, 2 days, then daily in grace). WhatsApp/SMS reminders are not built.
+- Invoices are records with a number, not PDFs; no tax invoice format has been reviewed for Cameroon.
+- Per-staff limits are enforced on creation and reactivation; the existing staff list is not trimmed on a downgrade.
+- The full flow with a real owner login (`src/billing/billing.live.e2e.test.ts`) has not been run.

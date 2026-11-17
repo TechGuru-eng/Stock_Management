@@ -46,6 +46,8 @@ export function classifyServerError(error: { code?: string | null; message?: str
   const code = error.code ?? ''
   const msg = error.message ?? ''
   if (!code) return /fetch|network|timeout|offline|abort|failed to/i.test(msg) ? 'network' : 'permanent'
+  // SB402 = subscription ended: keep everything and retry after renewal. (SB403, plan limit, stays a refusal.)
+  if (code === 'SB402' || /subscription_expired/.test(msg)) return 'auth'
   if (code === '28000' || code === 'PGRST301' || code === 'PGRST303' || /jwt/i.test(msg)) return 'auth'
   // 08 connection, 53 resources, 57 operator/timeouts, XX internal, PGRST0xx server-side trouble
   if (/^(08|53|57|XX)/.test(code) || /^PGRST0/.test(code)) return 'network'
