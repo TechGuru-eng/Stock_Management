@@ -92,9 +92,11 @@ create table public.role_permissions (
   tenant_id uuid references public.tenants(id) on delete cascade, -- null = platform default
   role public.staff_role not null,
   permission text not null,
-  allowed boolean not null default true,
-  primary key (tenant_id, role, permission)
+  allowed boolean not null default true
 );
+-- A primary key cannot include the nullable tenant_id, so uniqueness is two partial indexes.
+create unique index role_permissions_tenant_uq on public.role_permissions (tenant_id, role, permission)
+  where tenant_id is not null;
 create unique index role_permissions_default on public.role_permissions (role, permission)
   where tenant_id is null;
 
