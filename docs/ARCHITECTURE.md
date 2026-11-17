@@ -164,3 +164,33 @@ Three events are kept apart because they happen at different times in a real sho
   reorder suggestions, supplier price comparison.
 - A receipt is not tied to a specific supplier invoice document; the invoice number is a free-text field on the order.
 - Supplier debts are recognised at receipt, not at invoice date.
+
+## 11. Returns, refunds and cancellations
+
+A return never edits the sale. It is a new record (`sale_returns` + lines) that points back at it, and
+it does up to three separate things, each as its own ledger record:
+
+1. **Stock:** goods fit to resell go back in (`return_in`, at the cost they left stock at). Damaged goods
+   are refunded but not restocked, so their cost stays a cost.
+2. **Debt first:** whatever the customer still owes on that sale is written off (a negative `reversal` entry).
+3. **Money last:** only the remainder is refunded (`refund`, money out, method chosen), and never more than the
+   customer really paid for that sale (at the till plus later repayments, minus refunds already paid).
+
+- Partial returns use cumulative rounding, so 1 + 1 + 1 returns of a 999 FCFA line give back exactly 999.
+- A **cancellation** is a return of everything left on the sale (it must cover everything).
+- Sale status (complete / partly returned / returned / cancelled) is derived from the returns, never stored.
+- A refund entered by hand is `recorded`, never provider-verified.
+- **Approval:** only a manager or the owner can process a return. A cashier files a request (checked up front so
+  it cannot be impossible); a manager approves (which performs the return) or rejects with a reason. A decision is
+  its own immutable record, one per request.
+- **Exchange** is a return followed by a new sale; there is no combined screen yet.
+- **Reports:** returns reduce revenue and cost of goods in the period the goods came back; refunds are
+  money out and are deducted from "money collected".
+- **Server** (`check_return_consistency`, migration 0009): lines add up, refund + debt = total, money and customer
+  entries match, stock put back matches, never more returned than sold, never more refunded than paid, never
+  more debt written off than was owed. If two managers process the same return offline, the second is refused.
+
+### Returns limitations
+- No combined exchange screen; no store-credit / voucher refunds; no returns without the original sale.
+- Returns after a customer was already refunded through another route are limited to what the ledger shows.
+- Approval requests are checked when filed and again when approved, but a request can wait for a manager indefinitely.

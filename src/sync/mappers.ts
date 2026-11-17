@@ -22,6 +22,10 @@ export const SYNC_TABLES = [
   'goods_receipts',
   'goods_receipt_lines',
   'supplier_account_entries',
+  'sale_returns',
+  'sale_return_lines',
+  'approval_requests',
+  'approval_decisions',
 ] as const
 export type SyncTable = (typeof SYNC_TABLES)[number]
 
@@ -53,7 +57,8 @@ export function toServer(table: string, p: Local): Row {
       return {
         id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, product_id: p.productId, quantity: p.quantity,
         movement_type: p.type, reason: p.reason ?? null,
-        reference_type: p.type === 'sale' ? 'sale' : p.type === 'purchase_receipt' && p.referenceId ? 'receipt' : null,
+        reference_type:
+          p.type === 'sale' ? 'sale' : p.type === 'purchase_receipt' && p.referenceId ? 'receipt' : p.type === 'return_in' && p.referenceId ? 'return' : null,
         reference_id: p.referenceId ?? null,
         unit_cost: p.unitCost ?? null, total_cost: p.totalCost ?? null, occurred_at: p.createdAt,
       }
@@ -73,12 +78,12 @@ export function toServer(table: string, p: Local): Row {
       return {
         id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, reference: p.reference, txn_type: p.txnType,
         amount: p.amount, method: p.method, verification: p.verification, customer_id: p.customerId ?? null,
-        sale_id: p.saleId ?? null, description: p.description ?? null, occurred_at: p.occurredAt,
+        sale_id: p.saleId ?? null, return_id: p.returnId ?? null, description: p.description ?? null, occurred_at: p.occurredAt,
       }
     case 'customer_account_entries':
       return {
         id: p.id, tenant_id: p.tenantId, customer_id: p.customerId, amount: p.amount, kind: p.kind,
-        sale_id: p.saleId ?? null, transaction_id: p.transactionId ?? null, occurred_at: p.occurredAt,
+        sale_id: p.saleId ?? null, transaction_id: p.transactionId ?? null, return_id: p.returnId ?? null, occurred_at: p.occurredAt,
       }
     case 'payments':
       return {
@@ -100,6 +105,25 @@ export function toServer(table: string, p: Local): Row {
       return {
         id: p.id, tenant_id: p.tenantId, session_id: p.sessionId, expected_closing: p.expectedClosing,
         counted_closing: p.countedClosing, difference: p.difference, closed_at: p.closedAt,
+      }
+    case 'sale_returns':
+      return {
+        id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, sale_id: p.saleId, kind: p.kind, reason: p.reason,
+        total_value: p.totalValue, net_value: p.netValue, refunded_amount: p.refundedAmount, debt_reduced: p.debtReduced,
+        refund_method: p.refundMethod ?? null, approved_by: p.approvedBy ?? null, occurred_at: p.occurredAt,
+      }
+    case 'sale_return_lines':
+      return {
+        id: p.id, tenant_id: p.tenantId, return_id: p.returnId, sale_line_id: p.saleLineId, product_id: p.productId,
+        quantity: p.quantity, base_quantity: p.baseQuantity, value: p.value, net_value: p.netValue, restock: p.restock,
+        cost_reversed: p.costReversed,
+      }
+    case 'approval_requests':
+      return { id: p.id, tenant_id: p.tenantId, kind: p.kind, payload: p.payload, requested_at: p.requestedAt }
+    case 'approval_decisions':
+      return {
+        id: p.id, tenant_id: p.tenantId, request_id: p.requestId, decision: p.decision, note: p.note ?? null,
+        return_id: p.returnId ?? null, decided_at: p.decidedAt,
       }
     case 'suppliers':
       return { id: p.id, tenant_id: p.tenantId, name: p.name, phone: p.phone ?? null, notes: p.notes ?? null, created_at: p.createdAt }
@@ -181,12 +205,12 @@ export function fromServer(table: SyncTable, r: Local): Local {
         id: r.id, tenantId: r.tenant_id, shopId: r.shop_id, reference: r.reference, txnType: r.txn_type,
         amount: num(r.amount), method: r.method, verification: r.verification, staffId: (r.staff_id as string) ?? '',
         deviceId: (r.device_id as string) ?? '', customerId: opt(r.customer_id), saleId: opt(r.sale_id),
-        description: opt(r.description), occurredAt: r.occurred_at,
+        returnId: opt(r.return_id), description: opt(r.description), occurredAt: r.occurred_at,
       } satisfies FinancialTxnRecord
     case 'customer_account_entries':
       return {
         id: r.id, tenantId: r.tenant_id, customerId: r.customer_id, amount: num(r.amount), kind: r.kind,
-        saleId: opt(r.sale_id), transactionId: opt(r.transaction_id), occurredAt: r.occurred_at,
+        saleId: opt(r.sale_id), transactionId: opt(r.transaction_id), returnId: opt(r.return_id), occurredAt: r.occurred_at,
       } satisfies CustomerEntryRecord
     case 'payments':
       return {
@@ -210,6 +234,29 @@ export function fromServer(table: SyncTable, r: Local): Local {
         id: r.id, tenantId: r.tenant_id, sessionId: r.session_id, closedBy: (r.closed_by as string) ?? '',
         expectedClosing: num(r.expected_closing), countedClosing: num(r.counted_closing),
         difference: num(r.difference), closedAt: r.closed_at,
+      }
+    case 'sale_returns':
+      return {
+        id: r.id, tenantId: r.tenant_id, shopId: r.shop_id, saleId: r.sale_id, kind: r.kind, reason: r.reason,
+        totalValue: num(r.total_value), netValue: num(r.net_value), refundedAmount: num(r.refunded_amount),
+        debtReduced: num(r.debt_reduced), refundMethod: opt(r.refund_method), createdBy: (r.created_by as string) ?? '',
+        approvedBy: opt(r.approved_by), occurredAt: r.occurred_at,
+      }
+    case 'sale_return_lines':
+      return {
+        id: r.id, tenantId: r.tenant_id, returnId: r.return_id, saleLineId: r.sale_line_id, productId: r.product_id,
+        quantity: num(r.quantity), baseQuantity: num(r.base_quantity), value: num(r.value), netValue: num(r.net_value),
+        restock: r.restock, costReversed: num(r.cost_reversed),
+      }
+    case 'approval_requests':
+      return {
+        id: r.id, tenantId: r.tenant_id, shopId: '', kind: r.kind, payload: r.payload,
+        requestedBy: (r.requested_by as string) ?? '', requestedAt: r.requested_at,
+      }
+    case 'approval_decisions':
+      return {
+        id: r.id, tenantId: r.tenant_id, requestId: r.request_id, decidedBy: (r.decided_by as string) ?? '',
+        decision: r.decision, note: opt(r.note), returnId: opt(r.return_id), decidedAt: r.decided_at,
       }
     case 'suppliers':
       return { id: r.id, tenantId: r.tenant_id, name: r.name, phone: opt(r.phone), notes: opt(r.notes), createdAt: r.created_at }

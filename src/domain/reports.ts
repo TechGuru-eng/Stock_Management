@@ -1,5 +1,6 @@
 import { sumXaf, type Xaf } from './money'
 import type { ExpenseRecord } from './finance'
+import type { ReturnLineRecord, ReturnRecord } from './returns'
 import type { CustomerEntryRecord, FinancialTxnRecord, SaleLineRecord, SaleRecord } from './pos'
 
 /**
@@ -21,6 +22,9 @@ export interface ReportInput {
   entries: readonly CustomerEntryRecord[]
   /** Supplier-account entries up to now: their sum is what we owe suppliers. */
   supplierEntries?: readonly { amount: Xaf; occurredAt: string }[]
+  /** Customer returns. Counted in the period the goods came back, not the period of the original sale. */
+  returns?: readonly ReturnRecord[]
+  returnLines?: readonly ReturnLineRecord[]
   /** Inclusive ISO timestamps. */
   from: string
   to: string
@@ -33,6 +37,10 @@ export interface Summary {
   tax: Xaf
   discounts: Xaf
   creditGranted: Xaf
+  /** Revenue given back by customer returns in the period (excluding tax). Already deducted from `revenue`. */
+  returnedRevenue: Xaf
+  /** Money paid out to customers as refunds. Already deducted from `collectedTotal`. */
+  refundsPaid: Xaf
   collectedFromSales: Record<'cash' | 'mtn_momo' | 'orange_money', Xaf>
   debtRepayments: Xaf
   collectedTotal: Xaf
@@ -55,12 +63,18 @@ export function summarize(r: ReportInput): Summary {
   const txns = r.txns.filter((t) => within(t.occurredAt, r.from, r.to) && (!r.shopId || t.shopId === r.shopId))
   const expenses = r.expenses.filter((e) => within(e.occurredAt, r.from, r.to) && (!r.shopId || e.shopId === r.shopId))
 
-  const revenue = sumXaf(sales.map((s) => s.subtotal - s.discount))
-  const cogs = sumXaf(lines.map((l) => l.costOfGoods))
+  const returns = (r.returns ?? []).filter((x) => within(x.occurredAt, r.from, r.to) && (!r.shopId || x.shopId === r.shopId))
+  const returnIds = new Set(returns.map((x) => x.id))
+  const returnLines = (r.returnLines ?? []).filter((l) => returnIds.has(l.returnId))
+  const returnedRevenue = sumXaf(returns.map((x) => x.netValue))
+  const revenue = sumXaf(sales.map((s) => s.subtotal - s.discount)) - returnedRevenue
+  // Goods that came back into stock are no longer a cost of the sale.
+  const cogs = sumXaf(lines.map((l) => l.costOfGoods)) - sumXaf(returnLines.map((l) => l.costReversed))
 
   const collectedFromSales = { cash: 0, mtn_momo: 0, orange_money: 0 }
   for (const t of txns) if (t.txnType === 'sale_collection') collectedFromSales[t.method] += t.amount
   const debtRepayments = sumXaf(txns.filter((t) => t.txnType === 'debt_repayment').map((t) => t.amount))
+  const refundsPaid = 0 - sumXaf(txns.filter((t) => t.txnType === 'refund').map((t) => t.amount))
 
   const expensesByCategory: Record<string, Xaf> = {}
   for (const e of expenses) expensesByCategory[e.category] = (expensesByCategory[e.category] ?? 0) + e.amount
@@ -73,9 +87,12 @@ export function summarize(r: ReportInput): Summary {
     tax: sumXaf(sales.map((s) => s.tax)),
     discounts: sumXaf(sales.map((s) => s.discount)),
     creditGranted: sumXaf(sales.map((s) => s.outstanding)),
+    returnedRevenue,
+    refundsPaid,
     collectedFromSales,
     debtRepayments,
-    collectedTotal: collectedFromSales.cash + collectedFromSales.mtn_momo + collectedFromSales.orange_money + debtRepayments,
+    collectedTotal:
+      collectedFromSales.cash + collectedFromSales.mtn_momo + collectedFromSales.orange_money + debtRepayments - refundsPaid,
     receivables: sumXaf(r.entries.filter((e) => e.occurredAt <= r.to).map((e) => e.amount)),
     supplierPayables: sumXaf((r.supplierEntries ?? []).filter((e) => e.occurredAt <= r.to).map((e) => e.amount)),
     cogs,

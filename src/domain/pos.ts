@@ -118,6 +118,8 @@ export interface FinancialTxnRecord {
   deviceId: string
   customerId?: string
   saleId?: string
+  /** Set when this money moved because of a customer return or refund. */
+  returnId?: string
   description?: string
   occurredAt: string
 }
@@ -131,6 +133,7 @@ export interface CustomerEntryRecord {
   kind: 'sale_credit' | 'repayment' | 'adjustment' | 'reversal'
   saleId?: string
   transactionId?: string
+  returnId?: string
   occurredAt: string
 }
 

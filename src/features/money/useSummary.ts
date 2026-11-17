@@ -13,6 +13,8 @@ export function useSummary(from: string, to: string, shopId: string): Summary | 
         expenses: await db.expenses.toArray(),
         entries: await db.customerEntries.toArray(),
         supplierEntries: await db.supplierEntries.toArray(),
+        returns: await db.saleReturns.toArray(),
+        returnLines: await db.returnLines.toArray(),
         from, to, shopId,
       }),
     [from, to, shopId],

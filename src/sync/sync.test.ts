@@ -25,6 +25,8 @@ const fin = await import('../data/financeRepo')
 const { buildRepayment, openSalesOf } = await import('../domain/finance')
 const pur = await import('../data/purchasingRepo')
 const { buildReceipt } = await import('../domain/purchasing')
+const rets = await import('../data/returnsRepo')
+const { buildReturn } = await import('../domain/returns')
 
 const ctx: import('../data/repo').Ctx = { tenantId: 't1', shopId: 's1', userId: 'u1', role: 'owner', oversellPolicy: 'allow_and_flag' }
 const sctx = { tenantId: 't1', deviceName: 'Phone' }
@@ -466,5 +468,104 @@ describe('purchasing sync', () => {
     expect(server.count('goods_receipts')).toBe(1)
     const err = (await db.outbox.filter((r) => r.status === 'rejected').first())!.lastError
     expect(err).toContain('more received than ordered')
+  })
+})
+
+describe('returns sync', () => {
+  const manager: import('../data/repo').Ctx = { ...ctx, userId: 'mgr', role: 'manager' }
+  const cashierCtx: import('../data/repo').Ctx = { ...ctx, userId: 'cash', role: 'cashier' }
+
+  async function creditSale() {
+    const w = await addWater()
+    const c = await repo.addCustomer(ctx, 'Mme Tchoua', '677000111', 100000)
+    const r = await repo.checkout(ctx, {
+      lines: [line(w, w.bottle, 10)], // 5,000
+      payments: [{ method: 'cash', amount: 2000 }, { method: 'credit', amount: 3000 }], customerId: c.id,
+    })
+    return { w, c, sale: r.sale, saleLine: r.lines[0] }
+  }
+
+  it('uploads a return and a replacement device recovers stock, balances and the sale status', async () => {
+    const { w, c, sale, saleLine } = await creditSale()
+    await rets.processReturn(manager, sale.id, { kind: 'return', reason: 'x', refundMethod: 'cash', lines: [{ saleLineId: saleLine.id, quantity: 10, restock: true }] })
+    const stockHere = (await db.costs.get(`s1:${w.id}`))!
+    expect(await repo.customerBalance(c.id)).toBe(0)
+
+    await engine.runSync(server, sctx)
+    expect(await db.outbox.count()).toBe(0)
+    expect(server.count('sale_returns')).toBe(1)
+    expect(server.count('sale_return_lines')).toBe(1)
+
+    await newDevice()
+    await engine.runSync(server, sctx)
+    expect(await db.saleReturns.count()).toBe(1)
+    expect(await repo.customerBalance(c.id)).toBe(0)
+    expect(await db.costs.get(`s1:${w.id}`)).toMatchObject({ quantity: stockHere.quantity, value: stockHere.value })
+  })
+
+  it('a return that does not add up is refused whole', async () => {
+    const { sale, saleLine } = await creditSale()
+    await engine.runSync(server, sctx)
+    // all 10 bottles: 3,000 of debt written off and 2,000 refunded in money, so a money entry exists to tamper with
+    await rets.processReturn(manager, sale.id, { kind: 'return', reason: 'x', refundMethod: 'cash', lines: [{ saleLineId: saleLine.id, quantity: 10, restock: true }] })
+    const bad = await db.outbox.filter((o) => o.table === 'financial_transactions').first()
+    await db.outbox.update(bad!.seq!, { payload: { ...(bad!.payload as object), amount: -1 } })
+    await engine.runSync(server, sctx)
+    expect((await getSyncSummary()).rejectedGroups).toBe(1)
+    expect(server.count('sale_returns')).toBe(0)
+  })
+
+  it('two managers return the same goods offline: the second is refused so stock and money are not paid twice', async () => {
+    const { w, sale, saleLine } = await creditSale()
+    await engine.runSync(server, sctx)
+    await rets.processReturn(manager, sale.id, { kind: 'return', reason: 'mine', refundMethod: 'cash', lines: [{ saleLineId: saleLine.id, quantity: 10, restock: true }] })
+
+    // another manager's phone returned the same 10 bottles first
+    const other = buildReturn({
+      newId, tenantId: 't1', shopId: 's1', userId: 'm2', deviceId: 'other', nowIso: new Date(Date.now() + 1000).toISOString(),
+      sale, saleLines: [saleLine], priorLines: [], openOnSale: 3000, refundableMoney: 2000, reference: 'ZZZZ-RF-0001', approvedBy: 'm2',
+      request: { kind: 'return', reason: 'theirs', refundMethod: 'cash', lines: [{ saleLineId: saleLine.id, quantity: 10, restock: true }] },
+    })
+    const wire = [
+      { t: 'sale_returns', rows: [other.ret] }, { t: 'sale_return_lines', rows: other.lines },
+      { t: 'stock_movements', rows: other.movements.map((m) => ({ ...m, tenantId: 't1' })) },
+      { t: 'financial_transactions', rows: other.transaction ? [other.transaction] : [] },
+      { t: 'customer_account_entries', rows: other.entry ? [other.entry] : [] },
+    ].flatMap((g) => g.rows.map((r) => ({ op_id: newId(), table: g.t, payload: toServer(g.t, r as unknown as Record<string, unknown>) })))
+    await server.push('other', wire)
+
+    await engine.runSync(server, sctx, { manual: true })
+    expect((await getSyncSummary()).rejectedGroups).toBe(1)
+    expect(server.count('sale_returns')).toBe(1)
+    const err = (await db.outbox.filter((o) => o.status === 'rejected').first())!.lastError
+    expect(err).toContain('more returned than was sold')
+    expect(w.id).toBeTruthy()
+  })
+
+  it('a cashier requests on one phone, a manager approves on another, and everything lines up', async () => {
+    const { w, c, sale, saleLine } = await creditSale()
+    const request = { kind: 'return' as const, reason: 'faulty', refundMethod: 'cash' as const, lines: [{ saleLineId: saleLine.id, quantity: 4, restock: true }] }
+    await rets.requestReturn(cashierCtx, sale.id, request)
+    await engine.runSync(server, sctx)
+    expect(server.count('approval_requests')).toBe(1)
+
+    await newDevice() // the manager's phone
+    await engine.runSync(server, sctx)
+    const pending = await rets.pendingApprovals()
+    expect(pending).toHaveLength(1)
+    expect(pending[0].payload.request.lines[0].quantity).toBe(4) // the request survived the round trip intact
+
+    await rets.approveRequest(manager, pending[0].id)
+    await engine.runSync(server, sctx)
+    expect(server.count('sale_returns')).toBe(1)
+    expect(server.count('approval_decisions')).toBe(1)
+
+    await newDevice() // back on a fresh phone: nothing pending any more
+    await engine.runSync(server, sctx)
+    expect(await rets.pendingApprovals()).toHaveLength(0)
+    // 4 of 10 bottles = 2,000 of goods; the debt (3,000) is written off first, so 1,000 is still owed and no money moves
+    expect(await repo.customerBalance(c.id)).toBe(1000)
+    expect((await db.transactions.toArray()).filter((t) => t.txnType === 'refund')).toHaveLength(0)
+    expect((await db.costs.get(`s1:${w.id}`))!.quantity).toBeGreaterThan(0)
   })
 })

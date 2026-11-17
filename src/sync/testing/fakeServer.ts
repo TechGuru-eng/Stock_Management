@@ -53,6 +53,7 @@ export class FakeServer implements SyncTransport {
     const salesInBatch: string[] = []
     const paymentsInBatch: string[] = []
     const receiptsInBatch: string[] = []
+    const returnsInBatch: string[] = []
     let applied = 0
     let skipped = 0
 
@@ -80,6 +81,7 @@ export class FakeServer implements SyncTransport {
       if (op.table === 'sales') salesInBatch.push(row.id as string)
       if (op.table === 'payments') paymentsInBatch.push(row.id as string)
       if (op.table === 'goods_receipts') receiptsInBatch.push(row.id as string)
+      if (op.table === 'sale_returns') returnsInBatch.push(row.id as string)
       draft[op.table].set(row.id as string, { row, changed: this.tick() })
       applied++
     }
@@ -134,6 +136,35 @@ export class FakeServer implements SyncTransport {
         const total = [...draft.goods_receipt_lines.values()].map((v) => v.row).filter((x) => x.purchase_line_id === l.purchase_line_id)
         if (sum(total, 'base_quantity') > ordered) fail('more received than ordered')
       }
+    }
+
+    // Same rules as check_return_consistency().
+    for (const id of returnsInBatch) {
+      const rt = draft.sale_returns.get(id)!.row
+      const sum = (rs: Row[], k: string) => rs.reduce((t, r) => t + Number(r[k]), 0)
+      const fail = (m: string) => {
+        throw new TransportError('permanent', `return ${id}: ${m}`, '23514')
+      }
+      const lines = [...draft.sale_return_lines.values()].map((v) => v.row).filter((l) => l.return_id === id)
+      if (lines.length === 0) fail('has no lines')
+      if (sum(lines, 'value') !== Number(rt.total_value)) fail('lines do not add up to the total')
+      if (Number(rt.refunded_amount) + Number(rt.debt_reduced) !== Number(rt.total_value)) fail('refund and debt do not add up to the total')
+      const txns = [...draft.financial_transactions.values()].map((v) => v.row).filter((t) => t.return_id === id)
+      if (sum(txns, 'amount') !== -Number(rt.refunded_amount)) fail('money paid back does not match the refund')
+      const entries = [...draft.customer_account_entries.values()].map((v) => v.row).filter((e) => e.return_id === id)
+      if (sum(entries, 'amount') !== -Number(rt.debt_reduced)) fail('customer balance entry does not match')
+      const moved = [...draft.stock_movements.values()].map((v) => v.row).filter((m) => m.reference_id === id && m.movement_type === 'return_in')
+      if (sum(moved, 'quantity') !== sum(lines.filter((l) => l.restock), 'base_quantity')) fail('stock does not match the goods put back')
+      const allLines = [...draft.sale_return_lines.values()].map((v) => v.row)
+      for (const l of lines) {
+        const sold = Number(draft.sale_lines.get(l.sale_line_id as string)?.row.quantity)
+        if (sum(allLines.filter((x) => x.sale_line_id === l.sale_line_id), 'quantity') > sold + 1e-9) fail('more returned than was sold')
+      }
+      const mine = [...draft.sale_returns.values()].map((v) => v.row).filter((x) => x.sale_id === rt.sale_id)
+      const paid = sum([...draft.financial_transactions.values()].map((v) => v.row).filter((t) => t.sale_id === rt.sale_id && t.txn_type === 'sale_collection'), 'amount')
+        + sum([...draft.payment_allocations.values()].map((v) => v.row).filter((a) => a.sale_id === rt.sale_id), 'amount')
+      if (sum(mine, 'refunded_amount') > paid) fail('refunds exceed what the customer paid')
+      if (sum(mine, 'debt_reduced') > Number(draft.sales.get(rt.sale_id as string)?.row.outstanding)) fail('debt written off exceeds what was owed')
     }
 
     this.tables = draft

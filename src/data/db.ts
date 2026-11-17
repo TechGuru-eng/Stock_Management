@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from 'dexie'
 import type { StockMovement } from '../domain/inventory'
 import type { CustomerEntryRecord, FinancialTxnRecord, SaleLineRecord, SaleRecord } from '../domain/pos'
 import type { AllocationRecord, CashClosureRecord, CashSessionRecord, ExpenseRecord, PaymentRecord } from '../domain/finance'
+import type { ApprovalDecisionRecord, ApprovalRequestRecord, ReturnLineRecord, ReturnRecord } from '../domain/returns'
 import type {
   GoodsReceiptRecord, PurchaseLineRecord, PurchaseRecord, ReceiptLineRecord, SupplierEntryRecord, SupplierRecord,
 } from '../domain/purchasing'
@@ -108,6 +109,10 @@ class StockCmDb extends Dexie {
   receipts!: EntityTable<GoodsReceiptRecord, 'id'>
   receiptLines!: EntityTable<ReceiptLineRecord, 'id'>
   supplierEntries!: EntityTable<SupplierEntryRecord, 'id'>
+  saleReturns!: EntityTable<ReturnRecord, 'id'>
+  returnLines!: EntityTable<ReturnLineRecord, 'id'>
+  approvalRequests!: EntityTable<ApprovalRequestRecord, 'id'>
+  approvalDecisions!: EntityTable<ApprovalDecisionRecord, 'id'>
   outbox!: EntityTable<OutboxRec, 'seq'>
   syncLog!: EntityTable<SyncLogRec, 'id'>
   meta!: EntityTable<MetaRec, 'key'>
@@ -148,6 +153,12 @@ class StockCmDb extends Dexie {
       receipts: 'id, purchaseId',
       receiptLines: 'id, receiptId, purchaseLineId',
       supplierEntries: 'id, supplierId',
+    })
+    this.version(6).stores({
+      saleReturns: 'id, saleId, occurredAt',
+      returnLines: 'id, returnId, saleLineId',
+      approvalRequests: 'id, requestedAt',
+      approvalDecisions: 'id, requestId',
     })
   }
 }

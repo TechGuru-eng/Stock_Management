@@ -8,6 +8,7 @@ import { can } from '../../domain/permissions'
 import { dayRange } from '../../domain/reports'
 import { useSummary } from '../money/useSummary'
 import { useSyncStatus } from '../../sync/status'
+import { pendingApprovals } from '../../data/returnsRepo'
 
 type Go = (tab: 'sales' | 'stock' | 'money', sub?: 'summary' | 'debts' | 'expenses' | 'cash') => void
 
@@ -36,6 +37,7 @@ export function HomeScreen({ go }: { go: Go }) {
     }, [ctx?.shopId]) ?? 0
   const shortages =
     useLiveQuery(async () => (await db.cashClosures.toArray()).filter((c) => c.difference !== 0).length, []) ?? 0
+  const waiting = useLiveQuery(async () => (await pendingApprovals()).length, []) ?? 0
   if (!ctx || !s) return null
 
   const money = can(ctx.role, 'reports.operational')
@@ -60,6 +62,7 @@ export function HomeScreen({ go }: { go: Go }) {
         {money && <Card label={t('home.profit')} value={formatXaf(s.grossProfit)} />}
         <Card label={t('home.lowStock')} value={String(lowStock)} tone={lowStock > 0 ? 'warn' : undefined} />
         {money && shortages > 0 && <Card label={t('home.shortage')} value={String(shortages)} tone="warn" />}
+        {money && waiting > 0 && <Card label={t('rets.pending')} value={String(waiting)} tone="warn" />}
         {issues > 0 && <Card label={t('home.issues')} value={String(issues)} tone="warn" />}
       </div>
       <section>

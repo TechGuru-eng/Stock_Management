@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from './auth/AuthProvider'
 import { LoginScreen } from './auth/LoginScreen'
 import { OnboardingWizard } from './onboarding/OnboardingWizard'
 import { isSupabaseConfigured } from './lib/supabase'
-import { PosScreen } from './features/pos/PosScreen'
+import { SalesHub } from './features/pos/SalesHub'
 import { StockHub } from './features/stock/StockHub'
 import { HomeScreen } from './features/home/HomeScreen'
 import { MoneyScreen } from './features/money/MoneyScreen'
@@ -40,7 +40,7 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
       </header>
       <main className="flex-1 p-4">
         <h2 className="mb-2 text-xl font-semibold">{t(`nav.${tab}`)}</h2>
-        {tab === 'sales' && <PosScreen />}
+        {tab === 'sales' && <SalesHub />}
         {tab === 'stock' && <StockHub />}
         {tab === 'more' && <SyncScreen canSync={autoSync} />}
         {tab === 'home' && (
