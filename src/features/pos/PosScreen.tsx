@@ -6,9 +6,11 @@ import { db, type ProductRec, type UnitRec } from '../../data/db'
 import { addCustomer, checkout, customerBalance, type Ctx } from '../../data/repo'
 import { useCtx } from '../../data/useCtx'
 import { formatXaf } from '../../domain/money'
-import { cartTotals, type CartLine, type CheckoutResult } from '../../domain/pos'
+import { cartTotals, lineTotals, type CartLine, type CheckoutResult } from '../../domain/pos'
 import type { PaymentMethod } from '../../domain/payments'
 import { useExpiry } from '../expiry/useExpiry'
+import { loadRules, pointsOf } from '../../data/loyaltyRepo'
+import { DEFAULT_LOYALTY, checkRedeem, maxRedeemPoints, redeemValue, splitDiscount } from '../../domain/loyalty'
 import { ScanButton } from '../../scanner/ScanButton'
 import { findByBarcode, sameBarcode } from '../../domain/barcode'
 import { InvoiceActions } from '../invoices/InvoiceActions'
@@ -37,6 +39,9 @@ function Receipt({ result, payments, shopName, phone, onNew }: { result: Checkou
       <h3 className="text-xl font-semibold">{t('pos.saleDone')}</h3>
       {result.oversoldProductIds.length > 0 && <p role="alert" className="rounded bg-amber-100 p-3 text-amber-900">{t('pos.oversold')}</p>}
       <pre className="overflow-x-auto rounded border border-slate-200 p-3 text-sm whitespace-pre-wrap">{text}</pre>
+      {result.loyalty && (result.loyalty.earned > 0 || result.loyalty.redeemed > 0) && (
+        <p role="status" className="rounded bg-teal-50 p-2 text-sm text-teal-900">{t('loyalty.receipt', { earned: result.loyalty.earned, redeemed: result.loyalty.redeemed, balance: result.loyalty.balanceAfter })}</p>
+      )}
       <div className="flex gap-3">
         <a href={whatsappLink(text, phone)} target="_blank" rel="noopener noreferrer" className={`${btn} flex flex-1 items-center justify-center`}>{t('pos.whatsapp')}</a>
         <button onClick={() => window.print()} className="min-h-12 flex-1 rounded border border-slate-300">{t('pos.print')}</button>
@@ -85,6 +90,7 @@ export function PosScreen() {
   const [cart, setCart] = useState<CartLine[]>([])
   const [customerId, setCustomerId] = useState('')
   const [pays, setPays] = useState<PayRow[]>([])
+  const [pointsUse, setPointsUse] = useState('')
   const expiry = useExpiry()
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -100,7 +106,17 @@ export function PosScreen() {
     return m
   }, [units])
 
-  const totals = cartTotals(cart)
+  // loyalty points spent on this sale become a discount spread over the lines (never a manual discount, so no approval needed)
+  const rules = useLiveQuery(() => loadRules(), []) ?? DEFAULT_LOYALTY
+  const points = useLiveQuery(() => (customerId ? pointsOf(customerId) : Promise.resolve(0)), [customerId]) ?? 0
+  const nets = cart.map((l) => lineTotals(l).net)
+  const netTotal = nets.reduce((t, n) => t + n, 0)
+  const maxPts = maxRedeemPoints(points, netTotal, rules)
+  const wantPts = Math.floor(Number(pointsUse) || 0)
+  const pointsProblem = wantPts > 0 ? checkRedeem(wantPts, points, netTotal, rules) : null
+  const pts = wantPts > 0 && !pointsProblem ? wantPts : 0
+  const discounts = pts > 0 ? splitDiscount(redeemValue(pts, rules), nets) : nets.map(() => 0)
+  const totals = cartTotals(cart.map((l, i) => ({ ...l, lineDiscount: l.lineDiscount + discounts[i] })))
   const paid = pays.reduce((s, p) => s + num(p.amount), 0)
   const remaining = totals.total - paid
 
@@ -156,7 +172,7 @@ export function PosScreen() {
     setBusy(true)
     try {
       const payments = pays.filter((p) => num(p.amount) > 0).map((p) => ({ method: p.method, amount: Math.round(num(p.amount)) }))
-      const result = await checkout(ctx, { lines: cart, payments, customerId: customerId || undefined })
+      const result = await checkout(ctx, { lines: cart, payments, customerId: customerId || undefined, usePoints: pts > 0 ? pts : undefined })
       setDone({ result, pays, phone: customers.find((c) => c.id === customerId)?.phone })
     } catch (err) {
       setError((err as Error).message)
@@ -226,11 +242,24 @@ export function PosScreen() {
 
           <section className="flex flex-col gap-2">
             <h3 className="font-semibold">{t('pos.customer')}</h3>
-            <select className={input} value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
+            <select className={input} value={customerId} onChange={(e) => { setCustomerId(e.target.value); setPointsUse('') }}>
               <option value="">{t('pos.walkIn')}</option>
               {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             {customerId && <p className="text-sm text-slate-600 dark:text-slate-300">{formatXaf(balance)}</p>}
+            {customerId && rules.enabled && (
+              <div className="flex flex-col gap-1 rounded border border-slate-200 p-2 text-sm dark:border-slate-700">
+                <p>{t('loyalty.balance', { n: points, value: formatXaf(redeemValue(Math.max(points, 0), rules)) })}</p>
+                {maxPts > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <input className={`${input} w-28 text-right`} inputMode="numeric" placeholder={t('loyalty.usePoints')} aria-label={t('loyalty.usePoints')} value={pointsUse} onChange={(e) => setPointsUse(e.target.value.replace(/\D/g, ''))} />
+                    <button type="button" className="min-h-12 rounded border border-slate-300 px-3" onClick={() => setPointsUse(String(maxPts))}>{t('loyalty.max', { n: maxPts })}</button>
+                    {pts > 0 && <span className="text-teal-700">− {formatXaf(redeemValue(pts, rules))}</span>}
+                  </div>
+                ) : <p className="text-xs text-slate-500">{points > 0 ? t('loyalty.cannotYet', { min: rules.minRedeem }) : t('loyalty.noPoints')}</p>}
+                {pointsProblem && <p role="alert" className="text-xs text-red-700">{t(`loyalty.problem.${pointsProblem}`)}</p>}
+              </div>
+            )}
             <NewCustomer ctx={ctx} onCreated={setCustomerId} />
           </section>
 

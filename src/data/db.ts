@@ -2,6 +2,8 @@ import Dexie, { type EntityTable } from 'dexie'
 import type { StockMovement } from '../domain/inventory'
 import type { CustomerEntryRecord, FinancialTxnRecord, SaleLineRecord, SaleRecord } from '../domain/pos'
 import type { AllocationRecord, CashClosureRecord, CashSessionRecord, ExpenseRecord, PaymentRecord } from '../domain/finance'
+import type { LoyaltyEntry } from '../domain/loyalty'
+import type { LoyaltyRulesRecord } from './loyaltyRepo'
 import type { BatchRecord } from '../domain/expiry'
 import type { SupplierPriceRecord } from '../domain/supplierPrices'
 import type { CountDecisionRecord, CountLineRecord, CountRecord } from '../domain/counts'
@@ -125,6 +127,8 @@ class StockCmDb extends Dexie {
   countDecisions!: EntityTable<CountDecisionRecord, 'id'>
   supplierPrices!: EntityTable<SupplierPriceRecord, 'id'>
   stockBatches!: EntityTable<BatchRecord, 'id'>
+  loyaltyRules!: EntityTable<LoyaltyRulesRecord, 'id'>
+  loyaltyEntries!: EntityTable<LoyaltyEntry, 'id'>
   outbox!: EntityTable<OutboxRec, 'seq'>
   syncLog!: EntityTable<SyncLogRec, 'id'>
   meta!: EntityTable<MetaRec, 'key'>
@@ -182,6 +186,10 @@ class StockCmDb extends Dexie {
     })
     this.version(9).stores({
       stockBatches: 'id, shopId, productId, expiry',
+    })
+    this.version(10).stores({
+      loyaltyRules: 'id, setAt',
+      loyaltyEntries: 'id, customerId, saleId',
     })
   }
 }

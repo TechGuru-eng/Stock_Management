@@ -759,3 +759,23 @@ For products marked "with a best-before date" (a checkbox when creating a produc
 - Only the date on goods entered after tracking was switched on is known; stock that was already on the shelf shows as undated until it is sold or counted and re-received.
 - Opening-stock import and supplier orders do not carry dates yet (a delivery can).
 
+
+## 30. Customer loyalty (points)
+
+Off by default. The owner switches it on in More > Customer loyalty and sets the rules: one point per N FCFA paid (1 000 by default), the FCFA value of a point (10), the minimum points to spend (50) and the largest share of a sale that points may pay (50 %). The screen shows what that costs (10 FCFA back per 1 000 spent is 1 %). Rules are saved as new versions (earlier ones are kept); the newest applies, business-wide.
+
+- **Earning:** at the till, when a customer is chosen, points = floor(money actually paid now / N). Credit (debt) earns nothing, and repaying a debt later earns nothing. A sale without a customer earns nothing and is never blocked by the program.
+- **Spending:** with a customer chosen and enough points, "Points to use" (with a Max button) lowers the sale. The discount is spread over the lines proportionally (exact to the franc, never above a line) so the sale lines still add up to the total; it is not a manual discount, so a cashier needs no manager approval for it. The till refuses more than the balance, below the minimum, or above the allowed share of the sale.
+- **Ledger:** `loyalty_entries` is append-only (earn +, redeem −, reversal, adjust). The balance is derived (sum), never stored. Earn and redeem are written in the same upload group as the sale, so they arrive together or not at all.
+- **Returns and cancellations:** a part return takes back its share of the points that sale earned (never more than is left). Cancelling a sale takes back all that is left and gives back the points spent on it, once.
+- **Manual adjustments:** managers and the owner, with a mandatory reason; shown in the customer's statement (Money > Debts > customer).
+- **Server (migration 0024, tested live, rolled back):** tables `loyalty_rules` and `loyalty_entries` (append-only, sync both ways); only the owner may add rules, cashiers may add earn/redeem/reversal entries, only managers add adjustments; the customer and sale must belong to the business; signs per kind and the reason for adjustments are enforced.
+- **Tested:** earning rules, redemption limits, discount spreading, the real sale builder with points, reversal arithmetic, repo-level earn / spend / refuse / return / cancel / adjust, and sync to a second device with the same balance.
+
+### Loyalty limitations (honest list)
+- **The balance can go negative.** Two devices offline can spend the same points; the server deliberately does not reject the second sale (a real sale must not be lost). The customer's page flags a negative balance for the owner to settle.
+- The discount/points consistency (a sale's discount equals the points spent) is enforced by the app, not by the database, which checks only shape and permissions.
+- A part return does not refund points that were spent on the sale; only a full cancellation does.
+- No tiers, no birthdays or bonuses, no points expiry, no per-product or per-shop rules; the rules apply to the whole business.
+- Points are earned only on money paid at the till, not on debt repayments, and points do not appear on the PDF invoice yet (only on the till's confirmation).
+- Customers cannot see their own points: they are told at the till, or you can read them out.

@@ -11,6 +11,7 @@ import { formatXaf } from '../../domain/money'
 import { can } from '../../domain/permissions'
 import { dayRange } from '../../domain/reports'
 import { DebtReminder, QuickReminder } from './DebtReminder'
+import { CustomerPoints } from '../loyalty/CustomerPoints'
 import { ReportsScreen } from '../reports/ReportsScreen'
 import { useBalances, useSummary } from './useSummary'
 
@@ -112,6 +113,7 @@ function DebtDetail({ ctx, customerId, onBack }: { ctx: Ctx; customerId: string;
         ))}
       </ul>
       {customer && <DebtReminder customer={customer} balance={balance} />}
+      <CustomerPoints ctx={ctx} customerId={customerId} />
       {can(ctx.role, 'payments.receive') && owed > 0 && (
         <form onSubmit={submit} className="flex flex-col gap-3 rounded border border-slate-200 p-3">
           <h4 className="font-semibold">{t('money.repay')}</h4>

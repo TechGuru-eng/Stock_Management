@@ -233,6 +233,16 @@ const fr = {
     noSupport: "Ce navigateur ne permet pas les notifications.", denied: 'Les notifications sont bloquées : autorisez-les dans les réglages du navigateur.',
     notifyOut: '{{count}} produit(s) en rupture', notifyLow: '{{count}} produit(s) à surveiller',
   },
+  loyalty: {
+    title: 'Fidélité clients', hint: "Les clients gagnent des points sur ce qu'ils paient et les dépensent en réduction à la caisse. Les points ne sont gagnés que sur l'argent réellement encaissé (pas sur le crédit).",
+    enable: 'Activer le programme de points', earnPer: 'Un point gagné pour chaque … FCFA payés', pointValue: "Valeur d'un point (FCFA de réduction)", minRedeem: 'Minimum de points à utiliser', share: "Part maximale d'une vente payable en points (%)",
+    cost: 'Coût pour vous : environ {{rate}} % de ce que le client dépense.', invalid: 'Valeurs invalides.', save: 'Enregistrer', saved: 'Règles enregistrées.',
+    points: 'Points de fidélité', balance: '{{n}} points (= {{value}})', negative: 'Solde négatif : des points ont été utilisés sur deux appareils hors ligne.',
+    usePoints: 'Points à utiliser', max: 'Max ({{n}})', cannotYet: 'Minimum {{min}} points pour les utiliser, ou la vente est trop petite.', noPoints: 'Pas encore de points.',
+    receipt: 'Points : +{{earned}} gagnés, {{redeemed}} utilisés. Nouveau solde : {{balance}}.',
+    problem: { disabled: 'Programme désactivé.', not_enough_points: 'Pas assez de points.', below_minimum: 'Sous le minimum de points.', too_much_of_sale: 'Trop élevé pour cette vente.', not_whole: 'Nombre entier requis.' },
+    kind: { earn: 'gagnés', redeem: 'utilisés', reversal: 'annulation', adjust: 'ajustement' }, adjust: 'Ajuster les points', adjustPoints: 'Points (+ ou −)', reason: 'Raison', apply: 'Appliquer',
+  },
   expiry: {
     open: 'Péremption', title: 'Dates de péremption', hint: "Les produits suivis ont une date limite par lot. Ce qui est sorti (ventes, casse, retraits) est compté sur le stock le plus ancien d'abord ; le stock sans date est supposé le plus ancien. Un comptage corrige la réalité.",
     warn: 'Prévenir quand la date approche', none: 'Rien de périmé ni proche de la date limite.', expiredTotal: 'Périmé : {{units}} unité(s), {{value}}', soonTotal: 'Bientôt : {{units}} unité(s), {{value}}',
@@ -591,6 +601,16 @@ const en: typeof fr = {
     settings: 'Stock alerts', lead: 'Warn when a product will run out in less than', notify: 'Notifications on this device', notifyHint: 'A notification appears when a product goes out of stock, below its minimum or is about to run out. It only shows while the app is open or running in the background: nothing arrives while it is closed.',
     noSupport: 'This browser cannot show notifications.', denied: 'Notifications are blocked: allow them in the browser settings.',
     notifyOut: '{{count}} product(s) out of stock', notifyLow: '{{count}} product(s) to watch',
+  },
+  loyalty: {
+    title: 'Customer loyalty', hint: 'Customers earn points on what they pay and spend them as a discount at the till. Points are earned only on money actually collected (not on credit).',
+    enable: 'Switch the points program on', earnPer: 'One point earned for every … FCFA paid', pointValue: 'Value of one point (FCFA of discount)', minRedeem: 'Minimum points to spend', share: 'Largest share of a sale payable with points (%)',
+    cost: 'Cost to you: about {{rate}}% of what the customer spends.', invalid: 'Invalid values.', save: 'Save', saved: 'Rules saved.',
+    points: 'Loyalty points', balance: '{{n}} points (= {{value}})', negative: 'Negative balance: points were spent on two devices while offline.',
+    usePoints: 'Points to use', max: 'Max ({{n}})', cannotYet: 'You need at least {{min}} points to spend them, or the sale is too small.', noPoints: 'No points yet.',
+    receipt: 'Points: +{{earned}} earned, {{redeemed}} spent. New balance: {{balance}}.',
+    problem: { disabled: 'Program is off.', not_enough_points: 'Not enough points.', below_minimum: 'Below the minimum.', too_much_of_sale: 'Too much for this sale.', not_whole: 'Whole number needed.' },
+    kind: { earn: 'earned', redeem: 'spent', reversal: 'reversal', adjust: 'adjustment' }, adjust: 'Adjust points', adjustPoints: 'Points (+ or -)', reason: 'Reason', apply: 'Apply',
   },
   expiry: {
     open: 'Expiry', title: 'Expiry dates', hint: 'Tracked products carry a best-before date per batch. What goes out (sales, damage, write-offs) is taken from the oldest stock first; stock without a date is assumed to be the oldest. A count corrects reality.',

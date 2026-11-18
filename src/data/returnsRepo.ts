@@ -1,4 +1,5 @@
 import { db, deviceId, newId, type MovementRec } from './db'
+import { reverseLoyaltyInTx } from './loyaltyRepo'
 import { loadCost, nextRef, queue, saveCost, type Ctx } from './repo'
 import { receive } from '../domain/costing'
 import { PaymentError } from '../domain/payments'
@@ -14,7 +15,7 @@ function actor(ctx: Ctx) {
 
 const TABLES = [
   db.sales, db.saleLines, db.saleReturns, db.returnLines, db.movements, db.costs, db.transactions, db.customerEntries,
-  db.allocations, db.approvalRequests, db.approvalDecisions, db.meta, db.outbox,
+  db.allocations, db.approvalRequests, db.approvalDecisions, db.meta, db.loyaltyEntries, db.outbox,
 ]
 
 /** Everything the rules need to know about one sale, read from the ledger. */
@@ -61,6 +62,7 @@ async function execute(ctx: Ctx, saleId: string, request: ReturnRequest, decisio
   for (const m of r.movements) await queue('stock_movements', { ...m, tenantId: ctx.tenantId }, g)
   if (r.transaction) await queue('financial_transactions', r.transaction, g)
   if (r.entry) await queue('customer_account_entries', r.entry, g)
+  await reverseLoyaltyInTx(ctx, f.sale, r.ret, g)
   if (decisionFor) {
     const d = buildDecision({ ...actor(ctx), requestId: decisionFor, decision: 'approved', returnId: r.ret.id })
     await db.approvalDecisions.add(d)

@@ -31,6 +31,8 @@ export const SYNC_TABLES = [
   'stock_count_decisions',
   'supplier_prices',
   'stock_batches',
+  'loyalty_rules',
+  'loyalty_entries',
 ] as const
 export type SyncTable = (typeof SYNC_TABLES)[number]
 
@@ -138,6 +140,10 @@ export function toServer(table: string, p: Local): Row {
         id: p.id, tenant_id: p.tenantId, request_id: p.requestId, decision: p.decision, note: p.note ?? null,
         return_id: p.returnId ?? null, decided_at: p.decidedAt,
       }
+    case 'loyalty_rules':
+      return { id: p.id, tenant_id: p.tenantId, enabled: p.enabled, earn_per: p.earnPer, point_value: p.pointValue, min_redeem: p.minRedeem, max_share_bp: p.maxShareBp, set_at: p.setAt }
+    case 'loyalty_entries':
+      return { id: p.id, tenant_id: p.tenantId, customer_id: p.customerId, points: p.points, kind: p.kind, sale_id: p.saleId ?? null, return_id: p.returnId ?? null, note: p.note ?? null, occurred_at: p.occurredAt }
     case 'stock_batches':
       return { id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, product_id: p.productId, expiry: p.expiry, quantity: p.quantity, received_at: p.receivedAt }
     case 'supplier_prices':
@@ -286,6 +292,10 @@ export function fromServer(table: SyncTable, r: Local): Local {
         id: r.id, tenantId: r.tenant_id, requestId: r.request_id, decidedBy: (r.decided_by as string) ?? '',
         decision: r.decision, note: opt(r.note), returnId: opt(r.return_id), decidedAt: r.decided_at,
       }
+    case 'loyalty_rules':
+      return { id: r.id, tenantId: r.tenant_id, enabled: Boolean(r.enabled), earnPer: num(r.earn_per), pointValue: num(r.point_value), minRedeem: num(r.min_redeem), maxShareBp: num(r.max_share_bp), setBy: (r.set_by as string) ?? '', setAt: r.set_at }
+    case 'loyalty_entries':
+      return { id: r.id, tenantId: r.tenant_id, customerId: r.customer_id, points: num(r.points), kind: r.kind, saleId: opt(r.sale_id), returnId: opt(r.return_id), note: opt(r.note), createdBy: (r.created_by as string) ?? '', occurredAt: r.occurred_at }
     case 'stock_batches':
       return { id: r.id, tenantId: r.tenant_id, shopId: r.shop_id, productId: r.product_id, expiry: String(r.expiry).slice(0, 10), quantity: num(r.quantity), receivedAt: r.received_at, recordedBy: (r.recorded_by as string) ?? '' }
     case 'supplier_prices':

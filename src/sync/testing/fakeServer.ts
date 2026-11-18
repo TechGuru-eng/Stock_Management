@@ -97,6 +97,12 @@ export class FakeServer implements SyncTransport {
         throw new TransportError('permanent', 'this count has already been decided', '23514')
       }
       if (op.table === 'stock_count_decisions') decisionsInBatch.push(row.id as string)
+      if (op.table === 'loyalty_entries') {
+        const k = row.kind as string
+        const pts = Number(row.points)
+        if (pts === 0 || (k === 'earn' && pts < 0) || (k === 'redeem' && pts > 0)) throw new TransportError('permanent', 'loyalty entry has the wrong sign', '23514')
+        if (k === 'adjust' && !String(row.note ?? '').trim()) throw new TransportError('permanent', 'an adjustment needs a reason', '23514')
+      }
       if (op.table === 'stock_batches') {
         const prod = draft.products.get(row.product_id as string)?.row
         if (!prod || !prod.track_batches) throw new TransportError('permanent', 'the product does not track expiry dates', '23514')

@@ -1,4 +1,6 @@
 import { getOutboxActor } from './actor'
+import { DEFAULT_LOYALTY, checkRedeem, pointsEarned, redeemValue, splitDiscount, type LoyaltyEntry } from '../domain/loyalty'
+import { loadRules, pointsOf } from './loyaltyRepo'
 import { can } from '../domain/permissions'
 import { cleanBarcode, findByBarcode } from '../domain/barcode'
 import { recordBatchInTx } from './batchesRepo'
@@ -6,7 +8,7 @@ import { planLimit } from '../billing/licenceStore'
 import { db, deviceId, newId, type CustomerRec, type MovementRec, type ProductRec, type UnitRec } from './db'
 import { emptyCostState, issue, receive, type CostState } from '../domain/costing'
 import type { MovementType } from '../domain/inventory'
-import { buildSale, type CartLine, type CheckoutResult } from '../domain/pos'
+import { buildSale, lineTotals, type CartLine, type CheckoutResult } from '../domain/pos'
 import type { PaymentInput } from '../domain/payments'
 import { toBaseQuantity } from '../domain/units'
 import type { Role } from '../domain/permissions'
@@ -250,6 +252,8 @@ export interface CheckoutArgs {
   lines: CartLine[]
   payments: PaymentInput[]
   customerId?: string
+  /** Loyalty points the customer spends on this sale (needs a customer; checked against the rules and the balance). */
+  usePoints?: number
 }
 
 /**
@@ -259,7 +263,7 @@ export interface CheckoutArgs {
 export async function checkout(ctx: Ctx, args: CheckoutArgs): Promise<CheckoutResult> {
   return db.transaction(
     'rw',
-    [db.sales, db.saleLines, db.movements, db.transactions, db.customerEntries, db.costs, db.customers, db.meta, db.outbox],
+    [db.sales, db.saleLines, db.movements, db.transactions, db.customerEntries, db.costs, db.customers, db.meta, db.loyaltyRules, db.loyaltyEntries, db.outbox],
     async () => {
       const costStates: Record<string, CostState> = {}
       for (const l of args.lines) {
@@ -272,7 +276,22 @@ export async function checkout(ctx: Ctx, args: CheckoutArgs): Promise<CheckoutRe
         customer = { id: c.id, creditLimit: c.creditLimit, balance: await customerBalance(c.id) }
       }
 
+      // loyalty: points spent become a discount spread over the lines; points earned follow from what is actually paid
+      const rules = args.customerId ? await loadRules() : DEFAULT_LOYALTY
+      let loyaltyDiscounts: number[] | undefined
+      let redeemed = 0
+      if (args.usePoints && args.usePoints > 0) {
+        if (!args.customerId) throw new PaymentError('choose the customer to use points')
+        const balance = await pointsOf(args.customerId)
+        const nets = args.lines.map((l) => lineTotals(l).net)
+        const problem = checkRedeem(args.usePoints, balance, nets.reduce((t, n) => t + n, 0), rules)
+        if (problem) throw new PaymentError(`points cannot be used: ${problem}`)
+        redeemed = args.usePoints
+        loyaltyDiscounts = splitDiscount(redeemValue(redeemed, rules), nets)
+      }
+
       const result = buildSale({
+        loyaltyDiscounts,
         newId, tenantId: ctx.tenantId, shopId: ctx.shopId, userId: ctx.userId, deviceId: deviceId(), role: ctx.role,
         saleNumber: await nextSaleNumber(ctx.shopId), nowIso: new Date().toISOString(),
         lines: args.lines, payments: args.payments, customer, costStates, oversellPolicy: ctx.oversellPolicy,
@@ -292,6 +311,14 @@ export async function checkout(ctx: Ctx, args: CheckoutArgs): Promise<CheckoutRe
       for (const m of result.movements) await queue('stock_movements', { ...m, tenantId: ctx.tenantId }, g)
       for (const t of result.transactions) await queue('financial_transactions', t, g)
       if (result.customerEntry) await queue('customer_account_entries', result.customerEntry, g)
+
+      if (args.customerId && rules.enabled) {
+        const earned = pointsEarned(result.sale.collected, rules)
+        const entry = (points: number, kind: 'earn' | 'redeem'): LoyaltyEntry => ({ id: newId(), tenantId: ctx.tenantId, customerId: args.customerId!, points, kind, saleId: result.sale.id, createdBy: ctx.userId, occurredAt: result.sale.occurredAt })
+        if (redeemed > 0) { const e = entry(-redeemed, 'redeem'); await db.loyaltyEntries.add(e); await queue('loyalty_entries', e, g) }
+        if (earned > 0) { const e = entry(earned, 'earn'); await db.loyaltyEntries.add(e); await queue('loyalty_entries', e, g) }
+        result.loyalty = { earned, redeemed, balanceAfter: await pointsOf(args.customerId) }
+      }
       return result
     },
   )

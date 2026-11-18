@@ -152,6 +152,11 @@ export interface CheckoutInput {
   /** Current weighted-average state per product, keyed by productId. */
   costStates: Readonly<Record<string, CostState>>
   oversellPolicy: OversellPolicy
+  /**
+   * Loyalty-points discount per line (same order as `lines`). It lowers what the customer pays and is stored in the line's discount, but it
+   * is NOT a manual discount: it never needs a manager's approval (the points were earned, and the amount is capped by the loyalty rules).
+   */
+  loyaltyDiscounts?: readonly number[]
 }
 
 export interface CheckoutResult {
@@ -163,6 +168,8 @@ export interface CheckoutResult {
   newCostStates: Record<string, CostState>
   /** Products sold beyond the stock the device shows: a manager must review. */
   oversoldProductIds: string[]
+  /** Loyalty points earned and spent on this sale, and the customer's balance afterwards (only when a customer with the program on). */
+  loyalty?: { earned: number; redeemed: number; balanceAfter: number }
 }
 
 /**
@@ -179,7 +186,9 @@ export function buildSale(input: CheckoutInput): CheckoutResult {
     }
   }
 
-  const totals = cartTotals(input.lines)
+  // the approval check above looked at the manual discounts only; from here the loyalty part is included in every figure
+  const lines = input.lines.map((l, i) => ({ ...l, lineDiscount: l.lineDiscount + (input.loyaltyDiscounts?.[i] ?? 0) }))
+  const totals = cartTotals(lines)
   const settlement = settleSale(totals.total, input.payments, { hasCustomer: Boolean(input.customer) })
 
   if (settlement.outstanding > 0) {
@@ -195,7 +204,7 @@ export function buildSale(input: CheckoutInput): CheckoutResult {
   const oversold = new Set<string>()
   const lineRecords: SaleLineRecord[] = []
 
-  for (const l of input.lines) {
+  for (const l of lines) {
     const { net } = lineTotals(l)
     const baseQuantity = toBaseQuantity(l.quantity, { id: l.unitId, name: l.unitName, factor: l.factor, price: l.unitPrice })
     let cogs = 0
