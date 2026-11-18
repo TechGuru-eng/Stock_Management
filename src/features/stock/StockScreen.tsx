@@ -1,3 +1,4 @@
+import { EditProduct } from './EditProduct'
 import { LabelsView } from './LabelsView'
 import { ScanButton } from '../../scanner/ScanButton'
 import { describeBarcode, findByBarcode, nextInternalEan, sameBarcode } from '../../domain/barcode'
@@ -112,6 +113,7 @@ function ProductDetail({ ctx, product, onBack }: { ctx: Ctx; product: ProductRec
   const units = useLiveQuery(() => db.units.where('productId').equals(product.id).toArray(), [product.id]) ?? []
   const cost = useLiveQuery(() => db.costs.get(`${ctx.shopId}:${product.id}`), [product.id, ctx.shopId])
   const [mode, setMode] = useState<'receive' | 'remove' | null>(null)
+  const [editing, setEditing] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [unitId, setUnitId] = useState('')
   const [qty, setQty] = useState('')
@@ -147,7 +149,7 @@ function ProductDetail({ ctx, product, onBack }: { ctx: Ctx; product: ProductRec
   return (
     <div className="flex flex-col gap-3">
       <button onClick={onBack} className="min-h-12 self-start text-teal-700 underline">{t('stock.back')}</button>
-      <h3 className="text-xl font-semibold">{product.name}</h3>
+      <h3 className="text-xl font-semibold">{product.name}{!product.active && <span className="ml-2 rounded bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700">{t('edit.hidden')}</span>}</h3>
       <p>
         {t('stock.onHand')}: <strong className={onHand <= product.minStock ? 'text-red-700' : ''}>{onHand} {product.baseUnit}</strong>
         {parts.length > 1 && <span className="text-slate-500"> ({parts.map((p) => `${p.count} ${p.unit.name}`).join(' + ')})</span>}
@@ -155,7 +157,11 @@ function ProductDetail({ ctx, product, onBack }: { ctx: Ctx; product: ProductRec
       <ul className="text-sm text-slate-600 dark:text-slate-300">
         {units.map((u) => <li key={u.id}>{u.name}{u.factor > 1 ? ` (${u.factor})` : ''}: {formatXaf(u.sellPrice)}</li>)}
       </ul>
-      {!product.isService && !mode && (
+      {can(ctx.role, 'products.write') && !mode && (
+        <button onClick={() => setEditing((x) => !x)} aria-expanded={editing} className="min-h-12 self-start rounded border border-slate-300 px-4">{editing ? t('edit.close') : t('edit.open')}</button>
+      )}
+      {editing && <EditProduct ctx={ctx} product={product} onDone={() => setEditing(false)} />}
+      {!product.isService && !mode && !editing && (
         <div className="flex gap-3">
           <button disabled={!canReceive} onClick={() => setMode('receive')} className={`${btn} flex-1`}>{t('stock.receive')}</button>
           <button disabled={!canRemove} onClick={() => setMode('remove')} className="min-h-12 flex-1 rounded border border-slate-300 disabled:opacity-50">{t('stock.remove')}</button>
@@ -203,6 +209,7 @@ export function StockScreen() {
   const ctx = useCtx()
   const [search, setSearch] = useState('')
   const [view, setView] = useState<'list' | 'new' | string>('list')
+  const [showHidden, setShowHidden] = useState(false)
 
   const rows = useLiveQuery(async () => {
     if (!ctx) return []
@@ -219,7 +226,8 @@ export function StockScreen() {
   if (detail) return <ProductDetail ctx={ctx} product={detail} onBack={() => setView('list')} />
 
   const q = search.trim().toLowerCase()
-  const shown = (rows ?? []).filter(({ p }) => !q || p.name.toLowerCase().includes(q) || p.barcode?.toLowerCase().includes(q) || (p.barcode ? sameBarcode(p.barcode, search) : false))
+  const hiddenCount = (rows ?? []).filter(({ p }) => !p.active).length
+  const shown = (rows ?? []).filter(({ p }) => (showHidden || p.active) && (!q || p.name.toLowerCase().includes(q) || p.barcode?.toLowerCase().includes(q) || (p.barcode ? sameBarcode(p.barcode, search) : false)))
   const canWrite = can(ctx.role, 'products.write')
 
   return (
@@ -230,6 +238,7 @@ export function StockScreen() {
         <button onClick={() => setView('labels')} className="min-h-12 shrink-0 rounded border border-slate-300 px-3">{t('labels.open')}</button>
         {canWrite && <button onClick={() => setView('new')} className={`${btn} shrink-0`}>+ {t('stock.newProduct')}</button>}
       </div>
+      {hiddenCount > 0 && <label className="flex min-h-10 items-center gap-2 text-sm"><input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} /> {t('edit.showHidden', { n: hiddenCount })}</label>}
       {shown.length === 0 && <p className="text-slate-500">{t('stock.none')}</p>}
       <ul className="flex flex-col divide-y divide-slate-200 dark:divide-slate-800">
         {shown.map(({ p, onHand }) => (

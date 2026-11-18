@@ -300,7 +300,7 @@ export async function retryAllFailed(): Promise<void> {
  * (The shop can set a different barcode afterwards.)
  */
 export async function resolveBarcodeConflict(groupId: string): Promise<void> {
-  await db.transaction('rw', [db.outbox, db.products], async () => {
+  await db.transaction('rw', [db.outbox, db.products, db.units], async () => {
     const rows = await db.outbox.where('groupId').equals(groupId).toArray()
     const productRow = rows.find((r) => r.table === 'products')
     const assignment = rows.find((r) => r.table === 'product_barcode')
@@ -308,6 +308,15 @@ export async function resolveBarcodeConflict(groupId: string): Promise<void> {
       // a barcode given later clashed with another device's: drop the assignment; the product goes back to having none
       await db.outbox.where('groupId').equals(groupId).delete()
       await db.products.update((assignment.payload as { id: string }).id, { barcode: undefined })
+      return
+    }
+    const edit = rows.find((r) => r.table === 'product_edit' || r.table === 'unit_edit')
+    if (!productRow && edit) {
+      // an edit clashed with someone else's (e.g. the same barcode): discard it and put the old values back on this device
+      const pl = edit.payload as { id: string; before?: Record<string, unknown> }
+      await db.outbox.where('groupId').equals(groupId).delete()
+      if (edit.table === 'product_edit') await db.products.update(pl.id, { ...pl.before, ...('barcode' in (pl.before ?? {}) ? { barcode: (pl.before!.barcode as string | null) ?? undefined } : {}) })
+      else await db.units.update(pl.id, pl.before ?? {})
       return
     }
     if (!productRow) throw new Error('this item is not a product')

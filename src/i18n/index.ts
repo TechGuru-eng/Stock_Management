@@ -158,6 +158,14 @@ const fr = {
     noCode: 'pas de code-barres', copies: 'étiquettes', summary: '{{n}} étiquette(s) sur {{pages}} page(s)', truncated: '(limité à 2000 étiquettes)',
     missing: "Sans code-barres : {{names}}.", makeCodes: 'Créer {{n}} code(s) maison', codesMade: '{{n}} code(s) créé(s). Vous pouvez imprimer.', download: 'Télécharger le PDF',
   },
+  edit: {
+    open: 'Modifier le produit', close: 'Fermer', title: 'Modifier le produit', saved: 'Modifications enregistrées.', nothing: 'Rien à changer.', error: 'Impossible : {{msg}}',
+    badTax: 'Taux de taxe invalide (ex. 19,25).', sku: 'Référence', tax: 'Taxe (%)', taxHint: 'Ne change que les ventes à venir.', units: 'Unités et prix',
+    unitsHint: "Le prix change pour les ventes à venir ; les ventes passées gardent leur prix. La taille d'une unité ne peut pas être modifiée.", baseUnit: 'Unité de base', unitName: 'Unité',
+    price: 'Prix (FCFA)', newUnit: 'Nouvelle unité', factor: 'Nb de {{unit}}', hide: 'Masquer ce produit (plus vendu). Le stock et l\'historique sont conservés.',
+    fixed: "Ne peuvent pas être modifiés : l'unité de base ({{unit}}), la taille des unités et le type ({{kind}}). Pour une erreur ici, masquez ce produit et créez-en un nouveau.",
+    goods: 'marchandise', service: 'service', hidden: 'masqué', showHidden: 'Afficher les produits masqués ({{n}})', history: 'Historique des modifications',
+  },
   shops: {
     title: 'Boutiques', hint: "Ajoutez vos boutiques et choisissez qui peut travailler dans chacune. Une nouvelle boutique n'est accessible qu'à vous au début.",
     planAllows: 'Votre formule autorise {{n}} boutique(s) ({{used}} active(s)).', current: 'Boutique actuelle', here: 'ici', off: 'désactivée',
@@ -435,6 +443,14 @@ const en: typeof fr = {
     sheet: 'Sheet or roll', startAt: 'Start at cell no. (1 to {{max}})', price: 'Print the price', guides: 'Cutting lines', allWithCode: 'All with a code', clear: 'Clear',
     noCode: 'no barcode', copies: 'labels', summary: '{{n}} label(s) on {{pages}} page(s)', truncated: '(limited to 2000 labels)',
     missing: 'No barcode: {{names}}.', makeCodes: 'Make {{n}} in-store code(s)', codesMade: '{{n}} code(s) made. You can print now.', download: 'Download PDF',
+  },
+  edit: {
+    open: 'Edit product', close: 'Close', title: 'Edit product', saved: 'Changes saved.', nothing: 'Nothing to change.', error: 'Could not save: {{msg}}',
+    badTax: 'Invalid tax rate (e.g. 19.25).', sku: 'Reference', tax: 'Tax (%)', taxHint: 'Only changes future sales.', units: 'Units and prices',
+    unitsHint: 'A price change applies to future sales; past sales keep their price. The size of a unit cannot be changed.', baseUnit: 'Base unit', unitName: 'Unit',
+    price: 'Price (FCFA)', newUnit: 'New unit', factor: 'No. of {{unit}}', hide: 'Hide this product (no longer sold). Stock and history are kept.',
+    fixed: 'Cannot be changed: the base unit ({{unit}}), the unit sizes and the type ({{kind}}). To fix a mistake there, hide this product and create a new one.',
+    goods: 'goods', service: 'service', hidden: 'hidden', showHidden: 'Show hidden products ({{n}})', history: 'Change history',
   },
   shops: {
     title: 'Shops', hint: 'Add your shops and choose who can work in each one. A new shop is only open to you at first.',

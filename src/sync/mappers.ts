@@ -46,6 +46,12 @@ export function toServer(table: string, p: Local): Row {
         base_unit: p.baseUnit, min_stock: p.minStock, tax_rate_bp: p.taxRateBp, is_service: p.isService,
         active: p.active, created_at: p.createdAt,
       }
+    case 'product_edit':
+    case 'unit_edit': {
+      const snake: Record<string, string> = { minStock: 'min_stock', taxRateBp: 'tax_rate_bp', sellPrice: 'sell_price' }
+      const conv = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).map(([k, v]) => [snake[k] ?? k, v]))
+      return { id: p.id, tenant_id: p.tenantId, ...conv(p.changes as Record<string, unknown>), before: conv((p.before ?? {}) as Record<string, unknown>) }
+    }
     case 'product_barcode':
       return { id: p.id, tenant_id: p.tenantId, barcode: p.barcode }
     case 'product_units':

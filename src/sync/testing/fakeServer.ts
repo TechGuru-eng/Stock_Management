@@ -98,6 +98,27 @@ export class FakeServer implements SyncTransport {
       }
       if (op.table === 'stock_count_decisions') decisionsInBatch.push(row.id as string)
       if (op.table === 'stock_movements' && (row.movement_type === 'transfer_in' || row.movement_type === 'transfer_out')) transfersInBatch.add(`${row.reference_id}|${row.product_id}`)
+      if (op.table === 'product_edit' || op.table === 'unit_edit') {
+        const fail = (m: string, code = '23514') => { throw new TransportError('permanent', m, code) }
+        const { before: _before, id, tenant_id: _t, ...fields } = row as Record<string, unknown>
+        void _before; void _t
+        if (op.table === 'product_edit') {
+          const prod = draft.products.get(id as string)?.row
+          if (!prod) fail('product not found')
+          if ('name' in fields && String(fields.name).trim().length < 1) fail('name: 1 to 120 characters')
+          if ('min_stock' in fields && Number(fields.min_stock) < 0) fail('minimum stock cannot be negative')
+          if ('tax_rate_bp' in fields && (Number(fields.tax_rate_bp) < 0 || Number(fields.tax_rate_bp) > 10000)) fail('tax rate out of range')
+          if (fields.barcode && [...draft.products.values()].some((x) => x.row.id !== id && x.row.barcode === fields.barcode)) fail('duplicate key value violates unique constraint', '23505')
+          draft.products.set(id as string, { row: { ...prod!, ...fields }, changed: this.tick() })
+        } else {
+          const unit = draft.product_units.get(id as string)?.row
+          if (!unit) fail('unit not found')
+          if ('sell_price' in fields && Number(fields.sell_price) < 0) fail('price cannot be negative')
+          draft.product_units.set(id as string, { row: { ...unit!, ...fields }, changed: this.tick() })
+        }
+        applied++
+        continue
+      }
       if (op.table === 'product_barcode') {
         const prod = draft.products.get(row.id as string)?.row
         if (!prod || prod.barcode) throw new TransportError('permanent', 'product not found, or it already has a barcode', '23514')

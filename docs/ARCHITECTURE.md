@@ -568,5 +568,34 @@ PDF (download or share). It works offline.
 - A real scanner was not available here: bar correctness is verified by decoding the drawn pattern, not by scanning a printed label.
   Print a test sheet and scan it before labelling a whole shop.
 - The label shows the price of the base unit only, in FCFA; no logo, no per-unit labels, no QR codes.
-- A barcode can be given to a product once; changing an existing barcode (or editing other product details) is still not possible.
+- Giving a barcode to a product uses the narrow operation of migration 0020; changing or clearing a barcode and every other edit is covered in section 23.
+
+## 23. Editing products and prices
+
+Stock > a product > **Edit product** (owner and manager: the right to edit products).
+
+- **Editable:** name, barcode (set, change or clear; must stay unique, scanner and "make an in-store code" available), reference (sku, unique),
+  minimum-stock alert, tax rate (typed as a percent such as 19.25, stored in basis points), hide / show, each unit's selling price and
+  name, and adding a bigger unit (a carton of 24) to an existing product.
+- **Fixed on purpose:** the base unit, a unit's size (factor) and whether it is a service. Changing them would change what the stock
+  numbers mean or how old movements add up. A mistake there is fixed by hiding the product and creating a new one (the screen says so).
+- **History is safe:** every sale line stores the price it was sold at, so a price change only affects new sales (tested). Tax changes
+  likewise only affect future sales. Hiding a product keeps its stock, cost and history; hidden products leave the till and the default
+  list ("Show hidden" brings them back). Showing a hidden product again respects the plan's product limit.
+- **Only real changes are saved**, together with the old values. The client whitelists the editable fields, so a stray field (such as a
+  factor) can never be changed through this path.
+- **Sync (migration 0021, tested live in a rolled-back transaction):** two new upload operations, `product_edit` and `unit_edit`, run under the
+  person's row-level security; blank names, negative stock minimums or prices, tax outside 0-100%, duplicate barcodes / references /
+  unit names are refused; the factor is ignored even if sent. Each change is written to an append-only server log (`product_changes`: who,
+  when, new and old values), shown in the edit screen when online. An edit not yet uploaded is not overwritten by a download of the same
+  product. If an edit clashes with another device's (the same barcode), it is flagged and "resolve" discards it and puts the old values back.
+- **Tested:** validation, only-real-changes, duplicate rules, hide / show, price history, factor protection, upload and a second device,
+  download-versus-pending-edit, conflict and restore; live SQL for permissions, validations, duplicates and the log.
+
+### Product editing limitations (honest list)
+- Two people editing the same product on different devices: the later upload wins field by field (only the fields each changed are sent,
+  so unrelated edits do not erase each other), and there is no merge screen.
+- The change log is only on the server (not on the device), so history needs a connection.
+- A price can not be scheduled for a date, and there are no bulk edits (change many prices at once) or CSV import.
+- Services cannot be turned into goods or the reverse, and the base unit cannot be renamed into a different unit of measure.
 
