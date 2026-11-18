@@ -127,6 +127,25 @@ async function postReceipt(
   await queue('stock_movements', m, groupId ?? m.id)
 }
 
+/**
+ * Record what is on the shelf when a shop starts (an "opening" movement). Allowed ONLY for a product with no stock history in this shop:
+ * recording it again would double the stock. Stock that already moves is corrected with a count instead.
+ */
+export async function postOpeningStock(ctx: Ctx, productId: string, baseQty: number, totalCost: number): Promise<void> {
+  if (!can(ctx.role, 'stock.receive')) throw new Error('not allowed to record stock')
+  if (!Number.isInteger(baseQty) || baseQty <= 0) throw new Error('quantity must be a positive whole number')
+  if (!Number.isInteger(totalCost) || totalCost < 0) throw new Error('cost must be a whole number of FCFA')
+  await db.transaction('rw', [db.products, db.movements, db.costs, db.outbox], async () => {
+    const p = await db.products.get(productId)
+    if (!p) throw new Error('product not found')
+    if (p.isService) throw new Error('a service has no stock')
+    if (await db.movements.where('productId').equals(productId).filter((m) => m.shopId === ctx.shopId).first()) {
+      throw new Error('this product already has stock history in this shop')
+    }
+    await postReceipt(ctx, productId, baseQty, totalCost, 'opening', 'opening stock (import)')
+  })
+}
+
 /** Goods received. Quantity is in the chosen unit and is converted to base units. */
 /**
  * Give a barcode to a product that has none, so a label can be printed for it. Only an empty barcode can be filled in

@@ -5,6 +5,7 @@ import type { Ctx } from '../../data/repo'
 import { decodeFile, parseCsv } from '../../domain/csvParse'
 import { downloadText, reportFileName } from '../../domain/csv'
 import { formatXaf } from '../../domain/money'
+import { ImportStockPanel } from './ImportStockView'
 import { planImport, type FieldChange, type ImportPlan } from '../../domain/priceImport'
 
 const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
@@ -12,7 +13,7 @@ const btn2 = 'min-h-12 rounded border border-slate-300 px-4'
 const SHOW = 300
 
 /** Stock > Import prices: edit prices in a spreadsheet, load the file, read the plan, confirm. Nothing changes before the confirmation. */
-export function ImportView({ ctx, onBack }: { ctx: Ctx; onBack: () => void }) {
+function PricePanel({ ctx }: { ctx: Ctx }) {
   const { t, i18n } = useTranslation()
   const [createMissing, setCreateMissing] = useState(false)
   const [csvRows, setCsvRows] = useState<string[][] | null>(null)
@@ -67,8 +68,6 @@ export function ImportView({ ctx, onBack }: { ctx: Ctx; onBack: () => void }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <button onClick={onBack} className="min-h-12 self-start text-teal-700 underline">{t('stock.back')}</button>
-      <h3 className="text-xl font-semibold">{t('import.title')}</h3>
       <ol className="list-decimal pl-5 text-sm text-slate-600 dark:text-slate-300">
         <li>{t('import.step1')}</li><li>{t('import.step2')}</li><li>{t('import.step3')}</li>
       </ol>
@@ -131,6 +130,26 @@ export function ImportView({ ctx, onBack }: { ctx: Ctx; onBack: () => void }) {
           <button className={btn2} onClick={() => { setResult(null); setFileName('') }}>{t('import.again')}</button>
         </section>
       )}
+    </div>
+  )
+}
+
+/** Stock > Import: prices, or opening stock. */
+export function ImportView({ ctx, onBack }: { ctx: Ctx; onBack: () => void }) {
+  const { t } = useTranslation()
+  const [mode, setMode] = useState<'prices' | 'stock'>('prices')
+  return (
+    <div className="flex flex-col gap-3">
+      <button onClick={onBack} className="min-h-12 self-start text-teal-700 underline">{t('stock.back')}</button>
+      <h3 className="text-xl font-semibold">{t('import.title')}</h3>
+      <div role="tablist" className="grid grid-cols-2 gap-1">
+        {(['prices', 'stock'] as const).map((k) => (
+          <button key={k} role="tab" aria-selected={mode === k} onClick={() => setMode(k)} className={`min-h-12 rounded px-1 text-sm ${mode === k ? 'bg-teal-700 font-semibold text-white' : 'border border-slate-300'}`}>
+            {t(`import.mode.${k}`)}
+          </button>
+        ))}
+      </div>
+      {mode === 'prices' ? <PricePanel ctx={ctx} /> : <ImportStockPanel ctx={ctx} />}
     </div>
   )
 }

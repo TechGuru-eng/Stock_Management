@@ -18,6 +18,8 @@ export interface KnownProduct {
   active: boolean
   baseUnit: string
   isService: boolean
+  /** Has this product any stock movement in the current shop? (Used by the opening stock import.) */
+  hasStockHistory?: boolean
   units: KnownUnit[]
 }
 

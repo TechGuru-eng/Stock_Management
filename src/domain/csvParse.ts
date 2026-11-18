@@ -58,7 +58,7 @@ export function decodeFile(bytes: ArrayBuffer | Uint8Array): string {
 
 /* ------------------------------ headers ------------------------------ */
 
-export type Field = 'name' | 'barcode' | 'sku' | 'unit' | 'price' | 'minStock' | 'taxPercent'
+export type Field = 'name' | 'barcode' | 'sku' | 'unit' | 'price' | 'minStock' | 'taxPercent' | 'quantity' | 'unitCost' | 'totalCost'
 
 const ALIASES: Record<Field, string[]> = {
   name: ['name', 'nom', 'nom du produit', 'produit', 'product', 'designation', 'désignation', 'article', 'libelle', 'libellé', 'description'],
@@ -67,6 +67,9 @@ const ALIASES: Record<Field, string[]> = {
   unit: ['unit', 'unite', 'unité', 'unite de vente', 'unité de vente', 'conditionnement'],
   price: ['price', 'prix', 'prix de vente', 'prix vente', 'prix (fcfa)', 'prix fcfa', 'selling price', 'pv', 'tarif', 'prix unitaire'],
   minStock: ['min_stock', 'min stock', 'minimum stock', 'stock minimum', 'stock min', 'alerte stock minimum', 'seuil', 'seuil alerte'],
+  quantity: ['quantity', 'quantité', 'quantite', 'qty', 'qte', 'qté', 'stock', 'stock initial', "stock d'ouverture", 'opening stock', 'opening quantity', 'en stock'],
+  unitCost: ['unit_cost', 'unit cost', 'cost', 'cost price', 'purchase price', 'coût unitaire', 'cout unitaire', 'coût', 'cout', "prix d'achat", 'prix achat', 'pa'],
+  totalCost: ['total_cost', 'total cost', 'coût total', 'cout total', 'valeur du stock', 'valeur', 'stock value', 'montant achat'],
   taxPercent: ['tax_percent', 'tax', 'tva', 'taxe', 'taxe (%)', 'tax (%)', 'tax rate', 'taux de taxe', 'tva (%)'],
 }
 

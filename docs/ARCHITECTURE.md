@@ -622,8 +622,32 @@ changes nothing until the person confirms.
   unchanged, flagged needs a yes, partial failure, permissions, upload and a second device), export round trip; the screen in a browser with a French Excel style file.
 
 ### Import limitations (honest list)
-- CSV only: Excel's `.xlsx` must be saved as CSV first (the screen says how). No import of opening stock or costs, only prices, minimum stock, tax and barcodes.
+- CSV only: Excel's `.xlsx` must be saved as CSV first (the screen says how). The price import changes prices, minimum stock, tax and barcodes only; stock is imported separately (section 25).
 - Prices are whole FCFA; units are matched by name, so a spreadsheet that renames units must be fixed first.
 - No undo button: each change is in the server change log with its old value, but reverting means importing the old prices again.
 - A file is processed on this device; with a very large catalogue on a slow phone, applying 2000 rows can take a little while.
+
+## 25. Opening stock import
+
+Stock > Import > **Opening stock**. For setting a shop up: a spreadsheet of what is on the shelf and what it cost, loaded into the CURRENT shop (the screen names it).
+
+- **File:** `name` and / or `barcode` / `sku`, `qty` (in the unit named in `unit`, blank = base unit), and either `unit_cost` or `total_cost`
+  (a total wins; if both are given they must agree). A selling `price` is needed only to add products that do not exist yet ("add products not found"
+  creates them together with their stock). A template can be downloaded. Same file reading as the price import (encodings, separators, FR/EN headers, whole-FCFA amounts).
+- **Plan first:** the preview shows each line (quantity in base units, value at cost), every refused line with its reason, and the TOTAL VALUE of the stock to be recorded. Nothing is
+  recorded until the person confirms. A line whose cost is above the selling price (usually columns swapped) is highlighted and skipped unless included.
+- **Never doubled:** opening stock is only accepted for a product with NO stock movement yet in this shop. A second import of the same file, or an import over a shop that already
+  trades, is refused line by line ("use a count to correct it"). The same check runs again at the moment of recording, so a plan that went stale cannot double anything.
+  Stock is per shop: another shop can have its own opening stock for the same product.
+- **How it is recorded:** an `opening` stock movement per product with its quantity and total cost (the average cost starts from it), or the new product with its opening stock in
+  one upload group. Each line is applied on its own: one bad line never blocks the others. Needs the rights to receive stock and edit products (owner, manager).
+- **Tested:** planner (units and cartons, unit vs total cost and conflicts, matching, refusals, flags, creating), recording (values, no double import, stale plan, per-shop, permissions),
+  upload and a second device rebuilding the same stock and value; the screen in a browser.
+
+### Opening stock limitations (honest list)
+- The "never twice" rule is enforced on the device, not by the server: someone using another route to post an `opening` movement for a product that already trades could still double it.
+  (Every such movement is in the ledger with its author; corrections are made with a count.)
+- New products added by this import are created with a single base unit; extra units (cartons) are added afterwards in the edit screen.
+- Quantities are whole base units; batches and expiry dates are not captured.
+- Cost values are taken as given; there is no check against supplier invoices.
 
