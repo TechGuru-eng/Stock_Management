@@ -159,7 +159,7 @@ async function applyPull(res: PullResponse): Promise<number> {
       db.payments, db.allocations, db.expenses, db.cashSessions, db.cashClosures,
       db.suppliers, db.purchases, db.purchaseLines, db.receipts, db.receiptLines, db.supplierEntries,
       db.saleReturns, db.returnLines, db.approvalRequests, db.approvalDecisions,
-      db.stockCounts, db.countLines, db.countDecisions, db.supplierPrices,
+      db.stockCounts, db.countLines, db.countDecisions, db.supplierPrices, db.stockBatches,
     ],
     async () => {
       const stores = {
@@ -171,7 +171,7 @@ async function applyPull(res: PullResponse): Promise<number> {
         goods_receipts: db.receipts, goods_receipt_lines: db.receiptLines, supplier_account_entries: db.supplierEntries,
         sale_returns: db.saleReturns, sale_return_lines: db.returnLines, approval_requests: db.approvalRequests,
         approval_decisions: db.approvalDecisions,
-        stock_counts: db.stockCounts, stock_count_lines: db.countLines, stock_count_decisions: db.countDecisions, supplier_prices: db.supplierPrices,
+        stock_counts: db.stockCounts, stock_count_lines: db.countLines, stock_count_decisions: db.countDecisions, supplier_prices: db.supplierPrices, stock_batches: db.stockBatches,
       } as const
       const mutable = new Set<SyncTable>(['products', 'product_units', 'customers'])
 

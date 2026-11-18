@@ -30,7 +30,7 @@ export function EditProduct({ ctx, product, onDone }: { ctx: Ctx; product: Produ
   const all = useLiveQuery(() => db.products.toArray(), []) ?? []
   const [f, setF] = useState({
     name: product.name, barcode: product.barcode ?? '', sku: product.sku ?? '', minStock: String(product.minStock),
-    tax: bpToPercent(product.taxRateBp), active: product.active,
+    tax: bpToPercent(product.taxRateBp), active: product.active, trackExpiry: Boolean(product.trackExpiry),
   })
   const [prices, setPrices] = useState<Record<string, { name: string; price: string }>>({})
   const [newUnit, setNewUnit] = useState({ name: '', factor: '', price: '' })
@@ -52,7 +52,7 @@ export function EditProduct({ ctx, product, onDone }: { ctx: Ctx; product: Produ
       if (bp === null) throw new EditError(t('edit.badTax'))
       let changed = await updateProduct(ctx, product.id, {
         name: f.name, barcode: f.barcode.trim() === '' ? null : f.barcode, sku: f.sku.trim() === '' ? null : f.sku,
-        minStock: Number(f.minStock), taxRateBp: bp, active: f.active,
+        minStock: Number(f.minStock), taxRateBp: bp, active: f.active, trackExpiry: product.isService ? false : f.trackExpiry,
       })
       for (const u of units) {
         const p = prices[u.id]
@@ -113,6 +113,7 @@ export function EditProduct({ ctx, product, onDone }: { ctx: Ctx; product: Produ
         </div>
       </fieldset>
 
+      {!product.isService && <label className="flex min-h-10 items-center gap-2"><input type="checkbox" checked={f.trackExpiry} onChange={(e) => setF({ ...f, trackExpiry: e.target.checked })} /> {t('expiry.track')}</label>}
       <label className="flex min-h-10 items-center gap-2"><input type="checkbox" checked={!f.active} onChange={(e) => setF({ ...f, active: !e.target.checked })} /> {t('edit.hide')}</label>
       <p className="text-xs text-slate-500">{t('edit.fixed', { unit: product.baseUnit, kind: product.isService ? t('edit.service') : t('edit.goods') })}</p>
 

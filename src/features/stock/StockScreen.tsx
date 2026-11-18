@@ -1,5 +1,7 @@
 import { ProductSuppliers } from '../purchasing/ProductSuppliers'
 import { EditProduct } from './EditProduct'
+import { ExpiryView } from '../expiry/ExpiryView'
+import { useExpiry } from '../expiry/useExpiry'
 import { ImportView } from './ImportView'
 import { LabelsView } from './LabelsView'
 import { ScanButton } from '../../scanner/ScanButton'
@@ -33,7 +35,7 @@ function ProductForm({ ctx, onDone }: { ctx: Ctx; onDone: () => void }) {
   const { t } = useTranslation()
   const [f, setF] = useState({
     name: '', barcode: '', isService: false, baseUnit: 'piece', basePrice: '', bigName: '', bigFactor: '', bigPrice: '',
-    minStock: '', tax: '', openingQty: '', openingCost: '',
+    minStock: '', tax: '', openingQty: '', openingCost: '', trackExpiry: false, openingExpiry: '',
   })
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -54,6 +56,7 @@ function ProductForm({ ctx, onDone }: { ctx: Ctx; onDone: () => void }) {
         taxRateBp: Math.round(num(f.tax) * 100), isService: f.isService, units,
         openingQty: f.isService ? 0 : Math.round(num(f.openingQty)),
         openingTotalCost: f.isService ? 0 : Math.round(num(f.openingCost)),
+        trackExpiry: f.trackExpiry && !f.isService, openingExpiry: f.openingExpiry || undefined,
       })
       onDone()
     } catch (err) {
@@ -96,6 +99,8 @@ function ProductForm({ ctx, onDone }: { ctx: Ctx; onDone: () => void }) {
           <Field label={t('stock.minStock')}><input className={input} inputMode="numeric" value={f.minStock} onChange={(e) => set('minStock', e.target.value)} /></Field>
           <Field label={t('stock.openingQty')}><input className={input} inputMode="numeric" value={f.openingQty} onChange={(e) => set('openingQty', e.target.value)} /></Field>
           <Field label={t('stock.openingCost')}><input className={input} inputMode="numeric" value={f.openingCost} onChange={(e) => set('openingCost', e.target.value)} /></Field>
+          <label className="flex min-h-10 items-center gap-2"><input type="checkbox" checked={f.trackExpiry} onChange={(e) => set('trackExpiry', e.target.checked)} /> {t('expiry.track')}</label>
+          {f.trackExpiry && num(f.openingQty) > 0 && <Field label={t('expiry.openingDate')}><input type="date" className={input} value={f.openingExpiry} onChange={(e) => set('openingExpiry', e.target.value)} /></Field>}
         </>
       )}
       <Field label={t('stock.taxPercent')}><input className={input} inputMode="decimal" value={f.tax} onChange={(e) => set('tax', e.target.value)} /></Field>
@@ -121,6 +126,7 @@ function ProductDetail({ ctx, product, onBack }: { ctx: Ctx; product: ProductRec
   const [qty, setQty] = useState('')
   const [totalCost, setTotalCost] = useState('')
   const [reason, setReason] = useState('')
+  const [expiry, setExpiry] = useState('')
   const [type, setType] = useState<RemovalType>('damaged')
 
   const onHand = cost?.quantity ?? 0
@@ -132,13 +138,13 @@ function ProductDetail({ ctx, product, onBack }: { ctx: Ctx; product: ProductRec
     try {
       if (mode === 'receive') {
         if (!unit) return
-        await receiveStock(ctx, product.id, unit, num(qty), Math.round(num(totalCost)))
+        await receiveStock(ctx, product.id, unit, num(qty), Math.round(num(totalCost)), product.trackExpiry && expiry ? expiry : undefined)
       } else if (mode === 'remove') {
         await removeStock(ctx, product.id, Math.round(num(qty)), type, reason)
       }
       setMsg(t('stock.done'))
       setMode(null)
-      setQty(''); setTotalCost(''); setReason('')
+      setQty(''); setTotalCost(''); setReason(''); setExpiry('')
     } catch (err) {
       setMsg(t('stock.error', { msg: (err as Error).message }))
     }
@@ -182,6 +188,7 @@ function ProductDetail({ ctx, product, onBack }: { ctx: Ctx; product: ProductRec
               </Field>
               <Field label={t('stock.quantity')}><input className={input} inputMode="decimal" required value={qty} onChange={(e) => setQty(e.target.value)} /></Field>
               <Field label={t('stock.totalCost')}><input className={input} inputMode="numeric" required value={totalCost} onChange={(e) => setTotalCost(e.target.value)} /></Field>
+              {product.trackExpiry && <Field label={t('expiry.dateOfGoods')}><input type="date" className={input} value={expiry} onChange={(e) => setExpiry(e.target.value)} /></Field>}
             </>
           ) : (
             <>
@@ -213,6 +220,7 @@ export function StockScreen() {
   const [search, setSearch] = useState('')
   const [view, setView] = useState<'list' | 'new' | string>('list')
   const [showHidden, setShowHidden] = useState(false)
+  const expiry = useExpiry()
 
   const rows = useLiveQuery(async () => {
     if (!ctx) return []
@@ -224,6 +232,7 @@ export function StockScreen() {
   if (!ctx) return null
   const detail = view !== 'list' && view !== 'new' ? rows?.find((r) => r.p.id === view)?.p : undefined
 
+  if (view === 'expiry') return <ExpiryView ctx={ctx} onBack={() => setView('list')} />
   if (view === 'import') return <ImportView ctx={ctx} onBack={() => setView('list')} />
   if (view === 'labels') return <LabelsView ctx={ctx} onBack={() => setView('list')} />
   if (view === 'new') return <ProductForm ctx={ctx} onDone={() => setView('list')} />
@@ -240,6 +249,7 @@ export function StockScreen() {
         <input className={input} placeholder={t('stock.search')} value={search} onChange={(e) => setSearch(e.target.value)} />
         <ScanButton onCode={(c) => { setSearch(c) }} />
         {canWrite && <button onClick={() => setView('import')} className="min-h-12 shrink-0 rounded border border-slate-300 px-3">{t('import.open')}</button>}
+        {expiry && (expiry.rows.length > 0 || expiry.warnDays > 0) && <button onClick={() => setView('expiry')} className="min-h-12 shrink-0 rounded border border-slate-300 px-3">{t('expiry.open')}{expiry.rows.length > 0 && <span className={`ml-1 rounded-full px-1.5 text-[10px] font-bold text-white ${expiry.summary.expiredUnits > 0 ? 'bg-red-600' : 'bg-amber-600'}`}>{expiry.rows.length}</span>}</button>}
         <button onClick={() => setView('labels')} className="min-h-12 shrink-0 rounded border border-slate-300 px-3">{t('labels.open')}</button>
         {canWrite && <button onClick={() => setView('new')} className={`${btn} shrink-0`}>+ {t('stock.newProduct')}</button>}
       </div>

@@ -97,6 +97,11 @@ export class FakeServer implements SyncTransport {
         throw new TransportError('permanent', 'this count has already been decided', '23514')
       }
       if (op.table === 'stock_count_decisions') decisionsInBatch.push(row.id as string)
+      if (op.table === 'stock_batches') {
+        const prod = draft.products.get(row.product_id as string)?.row
+        if (!prod || !prod.track_batches) throw new TransportError('permanent', 'the product does not track expiry dates', '23514')
+        if (Number(row.quantity) <= 0) throw new TransportError('permanent', 'quantity must be positive', '23514')
+      }
       if (op.table === 'supplier_prices') {
         const unit = draft.product_units.get(row.unit_id as string)?.row
         if (Number(row.price) < 0) throw new TransportError('permanent', 'price cannot be negative', '23514')

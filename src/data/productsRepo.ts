@@ -27,7 +27,7 @@ function allowed(ctx: Ctx) {
 export async function updateProduct(ctx: Ctx, productId: string, patch: ProductPatch): Promise<boolean> {
   allowed(ctx)
   // only these fields can ever be changed here (never the base unit, or whether it is a service)
-  const clean: ProductPatch = { name: patch.name, barcode: patch.barcode, sku: patch.sku, minStock: patch.minStock, taxRateBp: patch.taxRateBp, active: patch.active }
+  const clean: ProductPatch = { name: patch.name, barcode: patch.barcode, sku: patch.sku, minStock: patch.minStock, taxRateBp: patch.taxRateBp, active: patch.active, trackExpiry: patch.trackExpiry }
   if (clean.name !== undefined) clean.name = clean.name.trim()
   if (clean.barcode !== undefined) clean.barcode = clean.barcode === null ? null : cleanBarcode(clean.barcode) || null
   if (clean.sku !== undefined) clean.sku = clean.sku === null ? null : clean.sku.trim() || null
@@ -37,7 +37,7 @@ export async function updateProduct(ctx: Ctx, productId: string, patch: ProductP
   return db.transaction('rw', [db.products, db.outbox], async () => {
     const p = await db.products.get(productId)
     if (!p) throw new EditError('product not found')
-    const current = { name: p.name, barcode: p.barcode ?? null, sku: p.sku ?? null, minStock: p.minStock, taxRateBp: p.taxRateBp, active: p.active }
+    const current = { name: p.name, barcode: p.barcode ?? null, sku: p.sku ?? null, minStock: p.minStock, taxRateBp: p.taxRateBp, active: p.active, trackExpiry: Boolean(p.trackExpiry) }
     const { changes, before } = diffFields(current, clean)
     if (Object.keys(changes).length === 0) return false
 

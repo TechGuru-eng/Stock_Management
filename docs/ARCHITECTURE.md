@@ -731,3 +731,31 @@ For people who look after stock (owner, manager, storekeeper: the right to recei
 - Based on the last 30 days of sales: a sudden rush is noticed only as sales happen, and a new product with no sales history relies on its minimum stock.
 - A sale made on another device is known here only after it syncs.
 
+## 29. Expiry tracking (best-before dates)
+
+For products marked "with a best-before date" (a checkbox when creating a product, or in Edit product; not for services). Stock > **Expiry**, for the current shop.
+
+- **Recording dates:** when goods come in, the date can be entered with the quantity: opening stock of a new product, "receive goods" on a product, and each line of a delivery against an
+  order (a date picker appears only for tracked products; the date is optional). Each dated delivery becomes a **batch** (units + best-before day), uploaded in the same group as the stock
+  movement. A date that is not a real day, or far in the past or future, is refused, as is a date for a product that does not track them.
+- **Remaining stock per batch is derived, never stored.** Everything that goes out (sales, damage, write-offs, transfers) is taken from the oldest stock first (first expiry, first out);
+  stock that came in without a date is assumed to be the oldest and goes first. So the batches always agree with the stock figure and every device derives the same result, with nothing extra to
+  keep in step or to reconcile after offline work.
+- **What you see:** expired units and units expiring within the warning time (7 to 90 days, 30 by default) with their value at the average cost, soonest first; a summary on the Home card;
+  a badge on the Expiry button; a red "n expired" marker beside a product in the till's search.
+- **Writing off:** "Write off" (one product) or "Write off all expired" (with a confirmation that says it cannot be undone) records ordinary *expired* stock removals for exactly the expired
+  units, so stock and its value go down at their cost and the loss shows in the records; because the oldest goes first this consumes exactly the expired batches. Owner and manager only.
+- **Server (migration 0023, tested live, rolled back):** `stock_batches` is append-only; only people who may receive stock can add one (storekeepers included, cashiers not); the shop and
+  product must belong to the business and the product must track dates; quantity must be positive; the date must be sensible. The product flag travels as a product edit.
+- **Tested:** FEFO remaining quantities (sales, order independence, undated stock, negative stock), status and day counting, expired / soon lists with values, write-off quantities; against real
+  records: dated opening stock, dated deliveries (two partial deliveries, two dates), refusing dates for untracked products and invalid dates without half-recording anything, switching tracking on later,
+  sales consuming the oldest batch, write-off at cost, permissions, per-shop, the warning-time setting, and upload plus a second device deriving the same remaining stock.
+
+### Expiry limitations (honest list)
+- **FEFO is an assumption.** If goods are sold in a different order (newest first), the batch figures drift from the shelf; they are a warning, and a stock count corrects the stock (the dates then
+  need re-entering: counts do not create batches).
+- Stock moved between shops by a transfer arrives undated, and stock returned by a customer or added by a count correction is undated too (assumed oldest, so it would be written off first).
+- Dates are per delivery line: there are no batch or lot numbers, no recall by lot, and the till does not block selling expired goods (it only marks the product).
+- Only the date on goods entered after tracking was switched on is known; stock that was already on the shelf shows as undated until it is sold or counted and re-received.
+- Opening-stock import and supplier orders do not carry dates yet (a delivery can).
+

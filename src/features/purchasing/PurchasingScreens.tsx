@@ -152,10 +152,13 @@ function OrderDetail({ ctx, purchaseId, onBack }: { ctx: Ctx; purchaseId: string
     const receipts = await db.receipts.where('purchaseId').equals(purchaseId).toArray()
     const rl = receipts.length ? await db.receiptLines.where('receiptId').anyOf(receipts.map((r) => r.id)).toArray() : []
     const supplier = await db.suppliers.get(purchase.supplierId)
-    const products = new Map((await db.products.toArray()).map((p) => [p.id, p.name]))
-    return { purchase, lines, rl, supplier, products }
+    const all = await db.products.toArray()
+    const products = new Map(all.map((p) => [p.id, p.name]))
+    const tracked = new Set(all.filter((p) => p.trackExpiry).map((p) => p.id))
+    return { purchase, lines, rl, supplier, products, tracked }
   }, [purchaseId])
   const [qty, setQty] = useState<Record<string, string>>({})
+  const [dates, setDates] = useState<Record<string, string>>({})
   const [paid, setPaid] = useState('')
   const [method, setMethod] = useState<Method>('cash')
   const [msg, setMsg] = useState<string | null>(null)
@@ -171,7 +174,7 @@ function OrderDetail({ ctx, purchaseId, onBack }: { ctx: Ctx; purchaseId: string
     setMsg(null)
     try {
       const deliveries = data!.lines
-        .map((l) => ({ purchaseLineId: l.id, baseQuantity: Math.round(num(qty[l.id] ?? '')) }))
+        .map((l) => ({ purchaseLineId: l.id, baseQuantity: Math.round(num(qty[l.id] ?? '')), expiry: data!.tracked.has(l.productId) && dates[l.id] ? dates[l.id] : undefined }))
         .filter((d) => d.baseQuantity > 0)
       await receiveGoods(ctx, purchaseId, deliveries, canPay && num(paid) > 0 ? { amount: Math.round(num(paid)), method } : undefined)
       setQty({}); setPaid('')
@@ -205,6 +208,7 @@ function OrderDetail({ ctx, purchaseId, onBack }: { ctx: Ctx; purchaseId: string
           {data.lines.filter((l) => (got.get(l.id) ?? 0) < l.baseQuantity).map((l) => (
             <Field key={l.id} label={`${data.products.get(l.productId)} (${t('purch.remaining')} ${l.baseQuantity - (got.get(l.id) ?? 0)})`}>
               <input className={input} inputMode="numeric" value={qty[l.id] ?? ''} onChange={(e) => setQty((q) => ({ ...q, [l.id]: e.target.value }))} />
+              {data.tracked.has(l.productId) && <input type="date" aria-label={t('expiry.dateOfGoods')} className={`${input} mt-1`} value={dates[l.id] ?? ''} onChange={(e) => setDates((d) => ({ ...d, [l.id]: e.target.value }))} />}
             </Field>
           ))}
           {canPay && (

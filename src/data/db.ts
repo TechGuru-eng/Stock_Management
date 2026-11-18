@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from 'dexie'
 import type { StockMovement } from '../domain/inventory'
 import type { CustomerEntryRecord, FinancialTxnRecord, SaleLineRecord, SaleRecord } from '../domain/pos'
 import type { AllocationRecord, CashClosureRecord, CashSessionRecord, ExpenseRecord, PaymentRecord } from '../domain/finance'
+import type { BatchRecord } from '../domain/expiry'
 import type { SupplierPriceRecord } from '../domain/supplierPrices'
 import type { CountDecisionRecord, CountLineRecord, CountRecord } from '../domain/counts'
 import type { ApprovalDecisionRecord, ApprovalRequestRecord, ReturnLineRecord, ReturnRecord } from '../domain/returns'
@@ -20,6 +21,8 @@ export interface ProductRec {
   taxRateBp: number
   isService: boolean
   active: boolean
+  /** Goods carry best-before dates (batches are recorded when they come in). */
+  trackExpiry?: boolean
   createdAt: string
 }
 
@@ -121,6 +124,7 @@ class StockCmDb extends Dexie {
   countLines!: EntityTable<CountLineRecord, 'id'>
   countDecisions!: EntityTable<CountDecisionRecord, 'id'>
   supplierPrices!: EntityTable<SupplierPriceRecord, 'id'>
+  stockBatches!: EntityTable<BatchRecord, 'id'>
   outbox!: EntityTable<OutboxRec, 'seq'>
   syncLog!: EntityTable<SyncLogRec, 'id'>
   meta!: EntityTable<MetaRec, 'key'>
@@ -175,6 +179,9 @@ class StockCmDb extends Dexie {
     })
     this.version(8).stores({
       supplierPrices: 'id, supplierId, productId',
+    })
+    this.version(9).stores({
+      stockBatches: 'id, shopId, productId, expiry',
     })
   }
 }

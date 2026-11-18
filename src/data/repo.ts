@@ -1,6 +1,7 @@
 import { getOutboxActor } from './actor'
 import { can } from '../domain/permissions'
 import { cleanBarcode, findByBarcode } from '../domain/barcode'
+import { recordBatchInTx } from './batchesRepo'
 import { planLimit } from '../billing/licenceStore'
 import { db, deviceId, newId, type CustomerRec, type MovementRec, type ProductRec, type UnitRec } from './db'
 import { emptyCostState, issue, receive, type CostState } from '../domain/costing'
@@ -58,6 +59,9 @@ export interface NewProductInput {
   /** Opening stock in base units, and the total cost paid for it. */
   openingQty: number
   openingTotalCost: number
+  /** The product carries best-before dates; `openingExpiry` is the date of the opening stock (yyyy-mm-dd). */
+  trackExpiry?: boolean
+  openingExpiry?: string
 }
 
 export async function addProduct(ctx: Ctx, input: NewProductInput): Promise<string> {
@@ -82,11 +86,12 @@ export async function addProduct(ctx: Ctx, input: NewProductInput): Promise<stri
     taxRateBp: input.taxRateBp,
     isService: input.isService,
     active: true,
+    trackExpiry: input.trackExpiry && !input.isService ? true : undefined,
     createdAt: now,
   }
   const units: UnitRec[] = input.units.map((u) => ({ id: newId(), tenantId: ctx.tenantId, productId: product.id, ...u }))
 
-  await db.transaction('rw', [db.products, db.units, db.movements, db.costs, db.outbox], async () => {
+  await db.transaction('rw', [db.products, db.units, db.movements, db.costs, db.stockBatches, db.outbox], async () => {
     if (product.barcode) {
       const dup = findByBarcode(await db.products.filter((p) => Boolean(p.barcode)).toArray(), product.barcode)
       if (dup) throw new Error('a product with this barcode already exists')
@@ -96,9 +101,12 @@ export async function addProduct(ctx: Ctx, input: NewProductInput): Promise<stri
     // One group: product, its units and opening stock upload together.
     await queue('products', product, product.id)
     for (const u of units) await queue('product_units', u, product.id)
+    // products are created without the date flag on the server: switch it on in the same upload group
+    if (product.trackExpiry) await queue('product_edit', { id: product.id, tenantId: ctx.tenantId, changes: { trackExpiry: true }, before: { trackExpiry: false } }, product.id)
 
     if (!input.isService && input.openingQty > 0) {
       await postReceipt(ctx, product.id, input.openingQty, input.openingTotalCost, 'opening', undefined, product.id)
+      if (input.openingExpiry && product.trackExpiry) await recordBatchInTx(ctx, product.id, input.openingQty, input.openingExpiry, product.id)
     }
   })
   return product.id
@@ -168,11 +176,13 @@ export async function assignBarcode(ctx: Ctx, productId: string, code: string): 
   })
 }
 
-export async function receiveStock(ctx: Ctx, productId: string, unit: UnitRec, quantity: number, totalCost: number) {
+export async function receiveStock(ctx: Ctx, productId: string, unit: UnitRec, quantity: number, totalCost: number, expiry?: string) {
   const baseQty = toBaseQuantity(quantity, { id: unit.id, name: unit.name, factor: unit.factor, price: unit.sellPrice })
-  await db.transaction('rw', [db.movements, db.costs, db.outbox], () =>
-    postReceipt(ctx, productId, baseQty, totalCost, 'purchase_receipt'),
-  )
+  await db.transaction('rw', [db.products, db.movements, db.costs, db.stockBatches, db.outbox], async () => {
+    const group = newId()
+    await postReceipt(ctx, productId, baseQty, totalCost, 'purchase_receipt', undefined, group)
+    if (expiry) await recordBatchInTx(ctx, productId, baseQty, expiry, group)
+  })
 }
 
 export type RemovalType = Extract<MovementType, 'damaged' | 'expired' | 'missing' | 'giveaway' | 'personal_use'>

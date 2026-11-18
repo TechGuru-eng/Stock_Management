@@ -54,7 +54,7 @@ export function HomeScreen({ go }: { go: Go }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <AttentionCard goOrder={() => go('stock')} />
+      <AttentionCard goOrder={() => go('stock')} goExpiry={() => go('stock')} />
       <div className="grid grid-cols-2 gap-3">
         <Card label={t('home.todaySales')} value={formatXaf(s.revenue)} />
         <Card label={t('home.collected')} value={formatXaf(s.collectedTotal)} />

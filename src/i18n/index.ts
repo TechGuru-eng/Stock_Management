@@ -233,6 +233,13 @@ const fr = {
     noSupport: "Ce navigateur ne permet pas les notifications.", denied: 'Les notifications sont bloquées : autorisez-les dans les réglages du navigateur.',
     notifyOut: '{{count}} produit(s) en rupture', notifyLow: '{{count}} produit(s) à surveiller',
   },
+  expiry: {
+    open: 'Péremption', title: 'Dates de péremption', hint: "Les produits suivis ont une date limite par lot. Ce qui est sorti (ventes, casse, retraits) est compté sur le stock le plus ancien d'abord ; le stock sans date est supposé le plus ancien. Un comptage corrige la réalité.",
+    warn: 'Prévenir quand la date approche', none: 'Rien de périmé ni proche de la date limite.', expiredTotal: 'Périmé : {{units}} unité(s), {{value}}', soonTotal: 'Bientôt : {{units}} unité(s), {{value}}',
+    expiredAgo: 'périmé depuis {{n}} j', today: "périme aujourd'hui", inDays: 'dans {{n}} j', writeOff: 'Retirer du stock', writeOffAll: 'Retirer tout le périmé',
+    confirmAll: 'Retirer {{units}} unité(s) périmée(s) du stock ? Leur valeur ({{value}}) est comptée comme perte. Cela ne peut pas être annulé.', writtenOff: '{{units}} unité(s) retirée(s) de {{products}} produit(s).',
+    track: 'Produit avec date limite (lots)', openingDate: 'Date limite du stock initial', dateOfGoods: 'Date limite de ces marchandises (facultatif)', posChip: '{{n}} périmé(s)', posWarn: 'Une partie du stock de ce produit est périmée.',
+  },
   shops: {
     title: 'Boutiques', hint: "Ajoutez vos boutiques et choisissez qui peut travailler dans chacune. Une nouvelle boutique n'est accessible qu'à vous au début.",
     planAllows: 'Votre formule autorise {{n}} boutique(s) ({{used}} active(s)).', current: 'Boutique actuelle', here: 'ici', off: 'désactivée',
@@ -584,6 +591,13 @@ const en: typeof fr = {
     settings: 'Stock alerts', lead: 'Warn when a product will run out in less than', notify: 'Notifications on this device', notifyHint: 'A notification appears when a product goes out of stock, below its minimum or is about to run out. It only shows while the app is open or running in the background: nothing arrives while it is closed.',
     noSupport: 'This browser cannot show notifications.', denied: 'Notifications are blocked: allow them in the browser settings.',
     notifyOut: '{{count}} product(s) out of stock', notifyLow: '{{count}} product(s) to watch',
+  },
+  expiry: {
+    open: 'Expiry', title: 'Expiry dates', hint: 'Tracked products carry a best-before date per batch. What goes out (sales, damage, write-offs) is taken from the oldest stock first; stock without a date is assumed to be the oldest. A count corrects reality.',
+    warn: 'Warn when the date is near', none: 'Nothing expired or close to its date.', expiredTotal: 'Expired: {{units}} unit(s), {{value}}', soonTotal: 'Soon: {{units}} unit(s), {{value}}',
+    expiredAgo: 'expired {{n}} d ago', today: 'expires today', inDays: 'in {{n}} d', writeOff: 'Write off', writeOffAll: 'Write off all expired',
+    confirmAll: 'Remove {{units}} expired unit(s) from stock? Their value ({{value}}) is counted as a loss. This cannot be undone.', writtenOff: '{{units}} unit(s) written off from {{products}} product(s).',
+    track: 'Product with a best-before date (batches)', openingDate: 'Best-before date of the opening stock', dateOfGoods: 'Best-before date of these goods (optional)', posChip: '{{n}} expired', posWarn: 'Part of this stock has expired.',
   },
   shops: {
     title: 'Shops', hint: 'Add your shops and choose who can work in each one. A new shop is only open to you at first.',

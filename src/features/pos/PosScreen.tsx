@@ -8,6 +8,7 @@ import { useCtx } from '../../data/useCtx'
 import { formatXaf } from '../../domain/money'
 import { cartTotals, type CartLine, type CheckoutResult } from '../../domain/pos'
 import type { PaymentMethod } from '../../domain/payments'
+import { useExpiry } from '../expiry/useExpiry'
 import { ScanButton } from '../../scanner/ScanButton'
 import { findByBarcode, sameBarcode } from '../../domain/barcode'
 import { InvoiceActions } from '../invoices/InvoiceActions'
@@ -84,6 +85,7 @@ export function PosScreen() {
   const [cart, setCart] = useState<CartLine[]>([])
   const [customerId, setCustomerId] = useState('')
   const [pays, setPays] = useState<PayRow[]>([])
+  const expiry = useExpiry()
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState<{ result: CheckoutResult; pays: PayRow[]; phone?: string } | null>(null)
@@ -175,7 +177,7 @@ export function PosScreen() {
           {matches.length === 0 && <li className="p-3 text-slate-500">{t('pos.noResults')}</li>}
           {matches.map((p) => (
             <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 p-2">
-              <span>{p.name}</span>
+              <span>{p.name}{(expiry?.expiredByProduct.get(p.id) ?? 0) > 0 && <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-800" title={t('expiry.posWarn')}>⚠ {t('expiry.posChip', { n: expiry!.expiredByProduct.get(p.id) })}</span>}</span>
               <span className="flex gap-2">
                 {(unitsByProduct.get(p.id) ?? []).map((u) => (
                   <button key={u.id} onClick={() => add(p, u)} className="min-h-12 rounded border border-teal-700 px-3 text-sm">

@@ -15,6 +15,8 @@ export interface ProductPatch {
   minStock?: number
   taxRateBp?: number
   active?: boolean
+  /** Goods carry best-before dates. */
+  trackExpiry?: boolean
 }
 
 export interface UnitPatch {

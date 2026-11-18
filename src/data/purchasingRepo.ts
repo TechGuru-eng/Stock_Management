@@ -1,4 +1,5 @@
 import { db, deviceId, newId, type MovementRec } from './db'
+import { recordBatchInTx } from './batchesRepo'
 import { loadCost, nextRef, queue, saveCost, type Ctx } from './repo'
 import { issue, receive } from '../domain/costing'
 import { PaymentError } from '../domain/payments'
@@ -18,7 +19,7 @@ function need(ctx: Ctx, permission: string) {
 
 const TABLES = [
   db.suppliers, db.purchases, db.purchaseLines, db.receipts, db.receiptLines, db.supplierEntries, db.movements, db.costs,
-  db.transactions, db.meta, db.outbox, db.products, db.units,
+  db.transactions, db.meta, db.outbox, db.products, db.units, db.stockBatches,
 ]
 
 export async function addSupplier(ctx: Ctx, name: string, phone?: string, notes?: string): Promise<SupplierRecord> {
@@ -71,7 +72,7 @@ export async function createPurchase(
 export async function receiveGoods(
   ctx: Ctx,
   purchaseId: string,
-  deliveries: { purchaseLineId: string; baseQuantity: number }[],
+  deliveries: { purchaseLineId: string; baseQuantity: number; expiry?: string }[],
   paidNow?: { amount: number; method: 'cash' | 'mtn_momo' | 'orange_money' },
 ) {
   need(ctx, 'stock.receive')
@@ -105,6 +106,12 @@ export async function receiveGoods(
     for (const l of r.lines) await queue('goods_receipt_lines', l, g)
     for (const m of r.movements) await queue('stock_movements', { ...m, tenantId: ctx.tenantId }, g)
     for (const e of r.entries) await queue('supplier_account_entries', e, g)
+    // goods that arrive with a best-before date: one batch per delivered line, in the same upload group
+    for (const d of deliveries) {
+      if (!d.expiry || d.baseQuantity <= 0) continue
+      const line = lines.find((l) => l.id === d.purchaseLineId)
+      if (line) await recordBatchInTx(ctx, line.productId, d.baseQuantity, d.expiry, g)
+    }
     return r
   })
 }

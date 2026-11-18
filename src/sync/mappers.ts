@@ -30,6 +30,7 @@ export const SYNC_TABLES = [
   'stock_count_lines',
   'stock_count_decisions',
   'supplier_prices',
+  'stock_batches',
 ] as const
 export type SyncTable = (typeof SYNC_TABLES)[number]
 
@@ -49,7 +50,7 @@ export function toServer(table: string, p: Local): Row {
       }
     case 'product_edit':
     case 'unit_edit': {
-      const snake: Record<string, string> = { minStock: 'min_stock', taxRateBp: 'tax_rate_bp', sellPrice: 'sell_price' }
+      const snake: Record<string, string> = { minStock: 'min_stock', taxRateBp: 'tax_rate_bp', sellPrice: 'sell_price', trackExpiry: 'track_batches' }
       const conv = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).map(([k, v]) => [snake[k] ?? k, v]))
       return { id: p.id, tenant_id: p.tenantId, ...conv(p.changes as Record<string, unknown>), before: conv((p.before ?? {}) as Record<string, unknown>) }
     }
@@ -137,6 +138,8 @@ export function toServer(table: string, p: Local): Row {
         id: p.id, tenant_id: p.tenantId, request_id: p.requestId, decision: p.decision, note: p.note ?? null,
         return_id: p.returnId ?? null, decided_at: p.decidedAt,
       }
+    case 'stock_batches':
+      return { id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, product_id: p.productId, expiry: p.expiry, quantity: p.quantity, received_at: p.receivedAt }
     case 'supplier_prices':
       return {
         id: p.id, tenant_id: p.tenantId, supplier_id: p.supplierId, product_id: p.productId, unit_id: p.unitId, price: p.price, source: p.source, recorded_at: p.recordedAt,
@@ -189,7 +192,7 @@ export function fromServer(table: SyncTable, r: Local): Local {
     case 'products':
       return {
         id: r.id, tenantId: r.tenant_id, name: r.name, barcode: opt(r.barcode), sku: opt(r.sku), baseUnit: r.base_unit,
-        minStock: num(r.min_stock), taxRateBp: num(r.tax_rate_bp), isService: r.is_service, active: r.active,
+        minStock: num(r.min_stock), taxRateBp: num(r.tax_rate_bp), isService: r.is_service, active: r.active, trackExpiry: Boolean(r.track_batches),
         createdAt: r.created_at,
       } satisfies ProductRec
     case 'product_units':
@@ -283,6 +286,8 @@ export function fromServer(table: SyncTable, r: Local): Local {
         id: r.id, tenantId: r.tenant_id, requestId: r.request_id, decidedBy: (r.decided_by as string) ?? '',
         decision: r.decision, note: opt(r.note), returnId: opt(r.return_id), decidedAt: r.decided_at,
       }
+    case 'stock_batches':
+      return { id: r.id, tenantId: r.tenant_id, shopId: r.shop_id, productId: r.product_id, expiry: String(r.expiry).slice(0, 10), quantity: num(r.quantity), receivedAt: r.received_at, recordedBy: (r.recorded_by as string) ?? '' }
     case 'supplier_prices':
       return {
         id: r.id, tenantId: r.tenant_id, supplierId: r.supplier_id, productId: r.product_id, unitId: r.unit_id, price: num(r.price), source: r.source,
