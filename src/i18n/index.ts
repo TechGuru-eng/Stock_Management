@@ -215,6 +215,14 @@ const fr = {
     quoted: 'Prix du fournisseur : {{price}} / {{unit}}', use: 'Utiliser le prix ({{total}})', suppliers: 'Prix des fournisseurs', cheapest: 'le moins cher', saving: 'Le moins cher est {{pct}} % moins cher que le plus cher.',
     warn: { above_quote: 'Ce coût dépasse de plus de 5 % le prix annoncé par le fournisseur.', above_last_paid: 'Ce coût dépasse de plus de 10 % le dernier prix payé.' },
   },
+  reorder: {
+    open: 'Que commander ?', title: 'Que commander', hint: "Calculé d'après ce qui se vend vraiment dans cette boutique, le stock actuel et les commandes déjà passées. C'est une suggestion : rien n'est commandé avant que vous créiez les commandes.",
+    cover: 'Couvrir', window: 'Ventes sur', lead: 'Délai de livraison', days: '{{n}} jours', packs: 'Arrondir aux cartons', nothing: 'Rien à commander pour le moment.',
+    noSupplier: 'Sans fournisseur connu', pickSupplier: 'Choisir le fournisseur', urgency: { out: 'rupture', urgent: 'urgent', soon: 'bientôt', low: 'sous le minimum' },
+    onHand: 'en stock : {{n}} {{unit}}', onOrder: '{{n}} déjà commandé(s)', daysLeft: 'dure ~{{n}} j', notSelling: 'ne se vend pas', speed: '{{n}}/jour', qty: 'quantité', packsOf: '{{n}} {{pack}}',
+    noPrice: 'aucun prix connu : à saisir dans la commande', source: { quote: 'prix annoncé', last_paid: 'dernier prix payé', average: 'estimé au coût moyen' }, total: 'Total estimé : {{total}}',
+    create: 'Créer la commande', whatsapp: 'Envoyer par WhatsApp', created: 'Commande créée ({{n}} produit(s)). Ces produits comptent maintenant comme « déjà commandés ».', nothingChosen: 'Aucun produit coché.',
+  },
   shops: {
     title: 'Boutiques', hint: "Ajoutez vos boutiques et choisissez qui peut travailler dans chacune. Une nouvelle boutique n'est accessible qu'à vous au début.",
     planAllows: 'Votre formule autorise {{n}} boutique(s) ({{used}} active(s)).', current: 'Boutique actuelle', here: 'ici', off: 'désactivée',
@@ -548,6 +556,14 @@ const en: typeof fr = {
     },
     quoted: "Supplier's price: {{price}} / {{unit}}", use: 'Use the price ({{total}})', suppliers: 'Supplier prices', cheapest: 'cheapest', saving: 'The cheapest is {{pct}}% cheaper than the dearest.',
     warn: { above_quote: "This cost is more than 5% above the supplier's quoted price.", above_last_paid: 'This cost is more than 10% above the last price paid.' },
+  },
+  reorder: {
+    open: 'What to order', title: 'What to order', hint: 'Worked out from what really sells in this shop, the stock now and orders already placed. It is a suggestion: nothing is ordered until you create the orders.',
+    cover: 'Cover', window: 'Sales over', lead: 'Delivery time', days: '{{n}} days', packs: 'Round up to cartons', nothing: 'Nothing to order right now.',
+    noSupplier: 'No known supplier', pickSupplier: 'Choose the supplier', urgency: { out: 'out of stock', urgent: 'urgent', soon: 'soon', low: 'below minimum' },
+    onHand: 'in stock: {{n}} {{unit}}', onOrder: '{{n}} already on order', daysLeft: 'lasts ~{{n}} d', notSelling: 'not selling', speed: '{{n}}/day', qty: 'quantity', packsOf: '{{n}} {{pack}}',
+    noPrice: 'no price known: enter it on the order', source: { quote: 'quoted price', last_paid: 'last price paid', average: 'estimated from average cost' }, total: 'Estimated total: {{total}}',
+    create: 'Create the order', whatsapp: 'Send on WhatsApp', created: 'Order created ({{n}} product(s)). These products now count as "already on order".', nothingChosen: 'No product ticked.',
   },
   shops: {
     title: 'Shops', hint: 'Add your shops and choose who can work in each one. A new shop is only open to you at first.',

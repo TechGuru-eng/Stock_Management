@@ -6,6 +6,7 @@ import type { Ctx } from '../../data/repo'
 import { addSupplier, createPurchase, paySupplier, receiveGoods, returnToSupplier, supplierPayable } from '../../data/purchasingRepo'
 import { useCtx } from '../../data/useCtx'
 import { QuoteHint } from './QuoteHint'
+import { ReorderView } from './ReorderView'
 import { SupplierPriceList } from './SupplierPriceList'
 import { formatXaf } from '../../domain/money'
 import { can } from '../../domain/permissions'
@@ -239,10 +240,16 @@ export function PurchasesView() {
   }, []) ?? []
   if (!ctx) return null
   if (view === 'new') return <NewOrder ctx={ctx} onDone={() => setView('list')} />
+  if (view === 'reorder') return <ReorderView ctx={ctx} onBack={() => setView('list')} />
   if (view !== 'list') return <OrderDetail ctx={ctx} purchaseId={view} onBack={() => setView('list')} />
   return (
     <div className="flex flex-col gap-3">
-      {can(ctx.role, 'purchases.manage') && <button onClick={() => setView('new')} className={btn}>+ {t('purch.newOrder')}</button>}
+      {can(ctx.role, 'purchases.manage') && (
+        <div className="flex gap-2">
+          <button onClick={() => setView('new')} className={`${btn} flex-1`}>+ {t('purch.newOrder')}</button>
+          <button onClick={() => setView('reorder')} className="min-h-12 flex-1 rounded border border-slate-300 px-3">{t('reorder.open')}</button>
+        </div>
+      )}
       {rows.length === 0 && <p className="text-slate-500">{t('purch.noOrders')}</p>}
       <ul className="divide-y divide-slate-200 dark:divide-slate-800">
         {rows.map(({ p, supplier, status, total }) => (

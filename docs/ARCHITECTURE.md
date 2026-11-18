@@ -674,6 +674,33 @@ Stock > Suppliers > a supplier > **Supplier's price list** (the right to manage 
 ### Supplier price list limitations (honest list)
 - Quotes are per supplier / product / unit with no validity dates or quantity breaks; the newest line simply wins. Stale quotes are only marked, not removed.
 - A hint appears only for the exact unit that was quoted; a carton quote is not turned into a bottle price on a bottle order.
-- Purchase orders are still typed (nothing is created automatically); there is no reorder suggestion ("order the cheapest supplier") yet.
+- Orders are never created automatically; the reorder screen (section 27) suggests and a person creates them.
 - "Last paid" ignores returns to the supplier and any discount negotiated outside the system.
+
+## 27. Reorder suggestions
+
+Stock > Purchases > **What to order** (the right to manage purchases: owner, manager). For the CURRENT shop; always recomputed from the records, nothing stored.
+It suggests; nothing is ordered until a person reviews the list and creates the orders.
+
+- **Per product:** selling speed (base units per day over the last 14 / 30 / 60 / 90 days, net of customer returns, this shop only), stock on hand, and what is already on order
+  (ordered minus delivered). Target = speed x the days to cover (7 / 14 / 21 / 30) + the minimum stock the shop keeps; suggestion = target - on hand - on order, rounded
+  up to whole cartons (switchable). Services and hidden products are left out; a product that does not sell appears only if it is at or below its minimum. Negative stock
+  (oversold) counts as an empty shelf.
+- **Urgency:** out of stock (selling, none on the shelf), urgent (lasts less than the delivery time), soon (less than the cover), below minimum. Most urgent first, with
+  how many days the stock lasts and how fast it sells.
+- **Who to order from:** the supplier with the cheapest current quote per base unit (carton and bottle prices are comparable); otherwise the supplier last bought from at
+  the price paid; otherwise none, priced from the shop's average cost and marked "estimated" (never invented: with no price at all the line says so). Rows are grouped by
+  supplier with the estimated total of each order; a row without a supplier lets the person choose one.
+- **Reviewing:** each row's quantity can be edited and rows can be unticked. "Create the order" makes ONE purchase order for that supplier with the ticked lines (cost from the
+  quote or estimate). An order moves no stock and creates no debt until goods are received; the ordered products then count as "on order" in the next suggestion, so they are not
+  suggested twice. "Send on WhatsApp" opens a chat with a ready message listing the items (in cartons when that is whole), to be sent by a person (section 17).
+- **Tested:** selling speed (shop, period, returns), on-order maths, the formula, cartons, minimum stock, exclusions, ranking, negative stock, supplier choice and
+  grouping, the message, and against real records: fast sellers suggested in cartons, slow stock left alone, an order or delivery covering the need, cheapest quote chosen and
+  priced, orders created without moving stock, per-shop isolation, permissions; the screen in a browser.
+
+### Reorder limitations (honest list)
+- It looks backwards only: no seasonality, promotions, holidays or trends, so a product whose sales just changed is under- or over-suggested until the window catches up.
+- The delivery time is one setting for all suppliers, not per supplier; minimum order values, delivery days and supplier stock are unknown.
+- Suggestions are per shop; a second shop's stock is not considered (a transfer might be better than an order), and nothing combines orders across shops.
+- Orders are created in base units (the quantity shows cartons for reading); one purchase order per supplier per press of the button.
 
