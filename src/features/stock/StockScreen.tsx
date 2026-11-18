@@ -1,3 +1,4 @@
+import { LabelsView } from './LabelsView'
 import { ScanButton } from '../../scanner/ScanButton'
 import { describeBarcode, findByBarcode, nextInternalEan, sameBarcode } from '../../domain/barcode'
 import { useState, type FormEvent, type ReactNode } from 'react'
@@ -213,6 +214,7 @@ export function StockScreen() {
   if (!ctx) return null
   const detail = view !== 'list' && view !== 'new' ? rows?.find((r) => r.p.id === view)?.p : undefined
 
+  if (view === 'labels') return <LabelsView ctx={ctx} onBack={() => setView('list')} />
   if (view === 'new') return <ProductForm ctx={ctx} onDone={() => setView('list')} />
   if (detail) return <ProductDetail ctx={ctx} product={detail} onBack={() => setView('list')} />
 
@@ -225,6 +227,7 @@ export function StockScreen() {
       <div className="flex gap-3">
         <input className={input} placeholder={t('stock.search')} value={search} onChange={(e) => setSearch(e.target.value)} />
         <ScanButton onCode={(c) => { setSearch(c) }} />
+        <button onClick={() => setView('labels')} className="min-h-12 shrink-0 rounded border border-slate-300 px-3">{t('labels.open')}</button>
         {canWrite && <button onClick={() => setView('new')} className={`${btn} shrink-0`}>+ {t('stock.newProduct')}</button>}
       </div>
       {shown.length === 0 && <p className="text-slate-500">{t('stock.none')}</p>}

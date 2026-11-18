@@ -538,6 +538,35 @@ a typed code can never submit the sale form.
   here (the test browser has no camera), only the logic, the screens, the typed fallback and the denied-permission message.
 - Low light, glossy labels and damaged codes are harder; the torch button appears only where the phone allows it.
 - One barcode per product (not per unit such as carton); cartons are sold by choosing the unit after scanning the base product.
-- QR codes and mobile-money QR payments are not read. No label printing: the in-store codes must be printed elsewhere.
+- QR codes and mobile-money QR payments are not read. Labels can be printed from the app (section 22).
 - Wedge-scanner bursts are recognised by the search boxes (code then Enter), not by a global listener, so the right field must be focused.
+
+## 22. Barcode labels
+
+Stock > Labels. Choose products and the number of labels for each, the sticker sheet, optionally the price and cutting lines, and get a
+PDF (download or share). It works offline.
+
+- **Sheets:** A4 sheets of 21, 24 or 65 labels and 50x30 / 40x25 mm rolls (one label per page, page = label size). "Start at cell n"
+  lets a partly used sheet be finished without wasting stickers. Each label shows the name (two lines at most), the bars, the number
+  and the base-unit price. Copies are limited to 200 per product and 2000 labels per job.
+- **Bars are drawn as rectangles** (not an image), so they stay sharp at any printer resolution. EAN-13, EAN-8 and UPC-A with a correct
+  check digit use their own pattern; anything else (letters, odd lengths, a retail-looking code with a wrong digit) is printed as
+  Code 128, which every normal scanner reads. A test decodes the drawn EAN-13 bars back into the exact number.
+- **Goods without a barcode:** "Make in-store codes" gives each selected product a code from the range reserved for in-store use
+  (EAN-13 starting with 20) and saves it on the product so the till and counts can scan it. Needs the right to edit products.
+  This needed one new narrow upload operation (migration 0020, `product_barcode`): products are otherwise insert-only, so this only
+  fills an EMPTY barcode, never changes one, runs under the person's row-level security, and a clash with another product is refused
+  by the unique index. If two devices give the same code to different products, the second shows as a sync conflict which "resolve"
+  clears (that product goes back to having no barcode, nothing else is lost).
+- **Tested:** layouts (every preset fits its page, filling order, start cell, page counts), copies and limits, bar decoding, PDF page
+  counts and contents, assigning codes (rules, upload, second device, conflict), live SQL (manager allowed, cashier refused, no
+  overwrite, duplicate refused). A rendered sheet was inspected as an image.
+
+### Label limitations (honest list)
+- The sheet presets are common sizes; your stickers must match one of them (check the size on the box). There is no custom size editor yet.
+- Print at "actual size" (100%, no fit-to-page); a printer that rescales will shift the labels. Margins differ a little between printers.
+- A real scanner was not available here: bar correctness is verified by decoding the drawn pattern, not by scanning a printed label.
+  Print a test sheet and scan it before labelling a whole shop.
+- The label shows the price of the base unit only, in FCFA; no logo, no per-unit labels, no QR codes.
+- A barcode can be given to a product once; changing an existing barcode (or editing other product details) is still not possible.
 

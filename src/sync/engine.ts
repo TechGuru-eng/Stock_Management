@@ -303,6 +303,13 @@ export async function resolveBarcodeConflict(groupId: string): Promise<void> {
   await db.transaction('rw', [db.outbox, db.products], async () => {
     const rows = await db.outbox.where('groupId').equals(groupId).toArray()
     const productRow = rows.find((r) => r.table === 'products')
+    const assignment = rows.find((r) => r.table === 'product_barcode')
+    if (!productRow && assignment) {
+      // a barcode given later clashed with another device's: drop the assignment; the product goes back to having none
+      await db.outbox.where('groupId').equals(groupId).delete()
+      await db.products.update((assignment.payload as { id: string }).id, { barcode: undefined })
+      return
+    }
     if (!productRow) throw new Error('this item is not a product')
     const p = { ...(productRow.payload as { id: string; barcode?: string }), barcode: undefined }
     await db.outbox.update(productRow.seq!, { payload: p })

@@ -1,4 +1,5 @@
 import { getOutboxActor } from './actor'
+import { can } from '../domain/permissions'
 import { cleanBarcode, findByBarcode } from '../domain/barcode'
 import { planLimit } from '../billing/licenceStore'
 import { db, deviceId, newId, type CustomerRec, type MovementRec, type ProductRec, type UnitRec } from './db'
@@ -127,6 +128,27 @@ async function postReceipt(
 }
 
 /** Goods received. Quantity is in the chosen unit and is converted to base units. */
+/**
+ * Give a barcode to a product that has none, so a label can be printed for it. Only an empty barcode can be filled in
+ * (never changed), and a code another product already uses is refused. Needs the right to edit products.
+ */
+export async function assignBarcode(ctx: Ctx, productId: string, code: string): Promise<string> {
+  if (!can(ctx.role, 'products.write')) throw new Error('not allowed to edit products')
+  const barcode = cleanBarcode(code)
+  if (!barcode) throw new Error('barcode is empty')
+  return db.transaction('rw', [db.products, db.outbox], async () => {
+    const p = await db.products.get(productId)
+    if (!p) throw new Error('product not found')
+    if (p.barcode) throw new Error('this product already has a barcode')
+    const dup = findByBarcode(await db.products.filter((x) => Boolean(x.barcode)).toArray(), barcode)
+    if (dup) throw new Error('a product with this barcode already exists')
+    await db.products.update(productId, { barcode })
+    // `id` is the product's id, so a download from the server does not overwrite this change before it has been uploaded
+    await queue('product_barcode', { id: productId, tenantId: ctx.tenantId, barcode }, newId())
+    return barcode
+  })
+}
+
 export async function receiveStock(ctx: Ctx, productId: string, unit: UnitRec, quantity: number, totalCost: number) {
   const baseQty = toBaseQuantity(quantity, { id: unit.id, name: unit.name, factor: unit.factor, price: unit.sellPrice })
   await db.transaction('rw', [db.movements, db.costs, db.outbox], () =>

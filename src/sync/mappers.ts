@@ -46,6 +46,8 @@ export function toServer(table: string, p: Local): Row {
         base_unit: p.baseUnit, min_stock: p.minStock, tax_rate_bp: p.taxRateBp, is_service: p.isService,
         active: p.active, created_at: p.createdAt,
       }
+    case 'product_barcode':
+      return { id: p.id, tenant_id: p.tenantId, barcode: p.barcode }
     case 'product_units':
       return {
         id: p.id, tenant_id: p.tenantId, product_id: p.productId, name: p.name, factor: p.factor,

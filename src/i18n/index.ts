@@ -152,6 +152,12 @@ const fr = {
     makeCode: 'Créer un code pour ce produit (étiquette maison)', alreadyUsed: 'Ce code est déjà utilisé par « {{name}} ».',
     badChecksum: 'Le dernier chiffre de ce code ne correspond pas : mauvaise lecture ? Vérifiez.', valid: 'Code {{kind}} valide.',
   },
+  labels: {
+    open: 'Étiquettes', title: 'Étiquettes code-barres', hint: "Choisissez les produits et le nombre d'étiquettes, puis le type de planche d'autocollants. Le PDF se règle à l'impression sur « taille réelle » (100 %, sans ajustement).",
+    sheet: 'Planche ou rouleau', startAt: 'Commencer à la case n° (1 à {{max}})', price: 'Imprimer le prix', guides: 'Traits de coupe', allWithCode: 'Tous ceux avec un code', clear: 'Effacer',
+    noCode: 'pas de code-barres', copies: 'étiquettes', summary: '{{n}} étiquette(s) sur {{pages}} page(s)', truncated: '(limité à 2000 étiquettes)',
+    missing: "Sans code-barres : {{names}}.", makeCodes: 'Créer {{n}} code(s) maison', codesMade: '{{n}} code(s) créé(s). Vous pouvez imprimer.', download: 'Télécharger le PDF',
+  },
   shops: {
     title: 'Boutiques', hint: "Ajoutez vos boutiques et choisissez qui peut travailler dans chacune. Une nouvelle boutique n'est accessible qu'à vous au début.",
     planAllows: 'Votre formule autorise {{n}} boutique(s) ({{used}} active(s)).', current: 'Boutique actuelle', here: 'ici', off: 'désactivée',
@@ -423,6 +429,12 @@ const en: typeof fr = {
     unknown: 'Code {{code}}: unknown product', noPrice: '{{name}}: no price set', added: '{{name}} added', tally: '{{name}} +1', notInStock: 'Code {{code}}: not in stock here',
     makeCode: 'Make a code for this product (in-store label)', alreadyUsed: 'This code is already used by "{{name}}".',
     badChecksum: 'The last digit does not match this code: misread? Please check.', valid: '{{kind}} code is valid.',
+  },
+  labels: {
+    open: 'Labels', title: 'Barcode labels', hint: 'Choose the products and how many labels, then the type of sticker sheet. Print the PDF at "actual size" (100%, no fit-to-page).',
+    sheet: 'Sheet or roll', startAt: 'Start at cell no. (1 to {{max}})', price: 'Print the price', guides: 'Cutting lines', allWithCode: 'All with a code', clear: 'Clear',
+    noCode: 'no barcode', copies: 'labels', summary: '{{n}} label(s) on {{pages}} page(s)', truncated: '(limited to 2000 labels)',
+    missing: 'No barcode: {{names}}.', makeCodes: 'Make {{n}} in-store code(s)', codesMade: '{{n}} code(s) made. You can print now.', download: 'Download PDF',
   },
   shops: {
     title: 'Shops', hint: 'Add your shops and choose who can work in each one. A new shop is only open to you at first.',

@@ -98,6 +98,14 @@ export class FakeServer implements SyncTransport {
       }
       if (op.table === 'stock_count_decisions') decisionsInBatch.push(row.id as string)
       if (op.table === 'stock_movements' && (row.movement_type === 'transfer_in' || row.movement_type === 'transfer_out')) transfersInBatch.add(`${row.reference_id}|${row.product_id}`)
+      if (op.table === 'product_barcode') {
+        const prod = draft.products.get(row.id as string)?.row
+        if (!prod || prod.barcode) throw new TransportError('permanent', 'product not found, or it already has a barcode', '23514')
+        if ([...draft.products.values()].some((x) => x.row.barcode === row.barcode)) throw new TransportError('permanent', 'duplicate key value violates unique constraint', '23505')
+        draft.products.set(row.id as string, { row: { ...prod, barcode: row.barcode }, changed: this.tick() })
+        applied++
+        continue
+      }
       draft[op.table].set(row.id as string, { row, changed: this.tick() })
       applied++
     }
