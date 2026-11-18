@@ -596,6 +596,34 @@ Stock > a product > **Edit product** (owner and manager: the right to edit produ
 - Two people editing the same product on different devices: the later upload wins field by field (only the fields each changed are sent,
   so unrelated edits do not erase each other), and there is no merge screen.
 - The change log is only on the server (not on the device), so history needs a connection.
-- A price can not be scheduled for a date, and there are no bulk edits (change many prices at once) or CSV import.
+- A price can not be scheduled for a date. Bulk edits and CSV import exist (section 24).
 - Services cannot be turned into goods or the reverse, and the base unit cannot be renamed into a different unit of measure.
+
+## 24. Bulk price import
+
+Stock > Import (owner and manager). The shop edits prices in Excel / Google Sheets and loads the file; the app shows exactly what would change and
+changes nothing until the person confirms.
+
+- **Flow:** download the catalogue as CSV (one line per unit; `name, barcode, sku, unit, price, min_stock, tax_percent`; hidden products left out) or
+  bring any file with a name or barcode column and a price column, load it, read the plan, apply. Re-importing an unedited export changes nothing (tested).
+- **Reading real files:** UTF-8 or Windows-1252 (old French Excel: tried strictly as UTF-8 first, otherwise rescued instead of showing garbage), `;` `,` or tab
+  separators detected from the header, quoted cells with separators / quotes / line breaks, BOM, CRLF, blank lines. Column names are recognised in French and
+  English (désignation, code-barres, prix de vente, TVA, ...). Amounts are whole FCFA written the way people write them (`1 500`, `1.500`, `2 500 F`); anything with
+  real decimals is refused and reported instead of guessed.
+- **Matching never guesses:** a barcode decides first (UPC-A / EAN-13 spellings match), then reference, then exact name. Two products with the same name, or the same
+  name with a different barcode, are reported and left alone. A unit that does not exist for the product is reported (add it in the edit screen). Duplicate lines in the
+  file are reported.
+- **Plan, per line:** to change (old to new price, minimum stock, tax, a barcode given to a product that had none), to add (only if "add products not found" is
+  ticked, and with a name and a price), identical, or an error with the reason. A price that moves by more than half is highlighted as a likely typo (an extra zero)
+  and is only applied if explicitly included.
+- **Applying** uses the normal edit and add operations row by row (same checks, same upload, same change log, stock untouched), so one bad row never blocks the
+  others and failures are listed with their line. New products start with zero stock (receive or count it afterwards). Up to 2000 rows and 5 MB per file.
+- **Tested:** parser (separators, quotes, encodings, headers, amounts), planner (matching, changes, flags, errors, create), apply (per unit prices, new products, stock
+  unchanged, flagged needs a yes, partial failure, permissions, upload and a second device), export round trip; the screen in a browser with a French Excel style file.
+
+### Import limitations (honest list)
+- CSV only: Excel's `.xlsx` must be saved as CSV first (the screen says how). No import of opening stock or costs, only prices, minimum stock, tax and barcodes.
+- Prices are whole FCFA; units are matched by name, so a spreadsheet that renames units must be fixed first.
+- No undo button: each change is in the server change log with its old value, but reverting means importing the old prices again.
+- A file is processed on this device; with a very large catalogue on a slow phone, applying 2000 rows can take a little while.
 

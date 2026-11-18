@@ -1,4 +1,5 @@
 import { EditProduct } from './EditProduct'
+import { ImportView } from './ImportView'
 import { LabelsView } from './LabelsView'
 import { ScanButton } from '../../scanner/ScanButton'
 import { describeBarcode, findByBarcode, nextInternalEan, sameBarcode } from '../../domain/barcode'
@@ -221,6 +222,7 @@ export function StockScreen() {
   if (!ctx) return null
   const detail = view !== 'list' && view !== 'new' ? rows?.find((r) => r.p.id === view)?.p : undefined
 
+  if (view === 'import') return <ImportView ctx={ctx} onBack={() => setView('list')} />
   if (view === 'labels') return <LabelsView ctx={ctx} onBack={() => setView('list')} />
   if (view === 'new') return <ProductForm ctx={ctx} onDone={() => setView('list')} />
   if (detail) return <ProductDetail ctx={ctx} product={detail} onBack={() => setView('list')} />
@@ -235,6 +237,7 @@ export function StockScreen() {
       <div className="flex gap-3">
         <input className={input} placeholder={t('stock.search')} value={search} onChange={(e) => setSearch(e.target.value)} />
         <ScanButton onCode={(c) => { setSearch(c) }} />
+        {canWrite && <button onClick={() => setView('import')} className="min-h-12 shrink-0 rounded border border-slate-300 px-3">{t('import.open')}</button>}
         <button onClick={() => setView('labels')} className="min-h-12 shrink-0 rounded border border-slate-300 px-3">{t('labels.open')}</button>
         {canWrite && <button onClick={() => setView('new')} className={`${btn} shrink-0`}>+ {t('stock.newProduct')}</button>}
       </div>
