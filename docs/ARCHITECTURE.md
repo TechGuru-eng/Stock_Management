@@ -651,3 +651,29 @@ Stock > Import > **Opening stock**. For setting a shop up: a spreadsheet of what
 - Quantities are whole base units; batches and expiry dates are not captured.
 - Cost values are taken as given; there is no check against supplier invoices.
 
+## 26. Supplier price lists
+
+Stock > Suppliers > a supplier > **Supplier's price list** (the right to manage purchases: owner, manager).
+
+- **What it holds:** what each supplier QUOTES for a product, per unit (bottle, carton...). Quotes are an append-only history (`supplier_prices`, migration 0022):
+  a new price is a new line, the newest wins, nothing is edited or deleted, so price changes stay visible. Asking for the price that is already current changes nothing.
+- **What was really paid** is not typed: it is worked out from deliveries (cost of the latest delivery per supplier and product, per base unit, so a part delivery is priced
+  by its share). The list shows quoted price, per-base-unit price for cartons, last paid with its date, the move since the previous quote (up or down, in percent),
+  a "price over 3 months old" marker, and the history of each line.
+- **Typing an order:** after choosing supplier, product and unit, the order line shows the quote and the last price paid, a button "Use the price" (quantity x quote;
+  it never fills anything by itself) and a warning when the cost typed is more than 5% above the quote or more than 10% above the last price paid. Cheaper is never a warning.
+- **Comparing suppliers:** a product's page lists every supplier's current quote per base unit, cheapest first, so a carton and a single bottle are comparable, with
+  the saving of the cheapest against the dearest.
+- **Import a supplier's list** (CSV: name or barcode, optional unit, purchase price): same reading, matching and preview-then-confirm as the other imports. New and changed
+  quotes are shown (old to new, percent); a quote that moves by more than 30% is highlighted and applied only if included; a line that is wrong is reported with its reason.
+- **Server rules (tested live, rolled back):** only people who may manage purchases can add quotes; the supplier, product and unit must belong to the business and the unit to that
+  product; negative prices refused; rows cannot be changed or deleted.
+- **Tested:** history and current quote, tie handling, change percent, per-base comparison, last paid from deliveries, warnings, import planner and apply, repo rules, upload
+  and a second device; the screens in a browser (import, order hint and warning, comparison).
+
+### Supplier price list limitations (honest list)
+- Quotes are per supplier / product / unit with no validity dates or quantity breaks; the newest line simply wins. Stale quotes are only marked, not removed.
+- A hint appears only for the exact unit that was quoted; a carton quote is not turned into a bottle price on a bottle order.
+- Purchase orders are still typed (nothing is created automatically); there is no reorder suggestion ("order the cheapest supplier") yet.
+- "Last paid" ignores returns to the supplier and any discount negotiated outside the system.
+

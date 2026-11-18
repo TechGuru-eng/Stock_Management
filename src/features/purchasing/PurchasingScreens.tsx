@@ -5,6 +5,8 @@ import { db } from '../../data/db'
 import type { Ctx } from '../../data/repo'
 import { addSupplier, createPurchase, paySupplier, receiveGoods, returnToSupplier, supplierPayable } from '../../data/purchasingRepo'
 import { useCtx } from '../../data/useCtx'
+import { QuoteHint } from './QuoteHint'
+import { SupplierPriceList } from './SupplierPriceList'
 import { formatXaf } from '../../domain/money'
 import { can } from '../../domain/permissions'
 import { purchaseStatus, receivedByLine, supplierBalance, supplierStatement } from '../../domain/purchasing'
@@ -118,6 +120,12 @@ function NewOrder({ ctx, onDone }: { ctx: Ctx; onDone: () => void }) {
             <input className={input} inputMode="decimal" placeholder={t('purch.quantity')} value={l.quantity} onChange={(e) => patch(i, { quantity: e.target.value })} />
             <input className={input} inputMode="numeric" placeholder={t('purch.totalCost')} value={l.totalCost} onChange={(e) => patch(i, { totalCost: e.target.value })} />
           </div>
+          {l.productId && (
+            <QuoteHint
+              supplierId={supplierId} productId={l.productId} unitId={l.unitId || unitsOf(l.productId).find((u) => u.isBase)?.id || ''}
+              quantity={num(l.quantity)} totalCost={num(l.totalCost)} onUse={(total) => patch(i, { totalCost: String(total) })}
+            />
+          )}
         </div>
       ))}
       <button type="button" onClick={() => setLines((ls) => [...ls, { productId: '', unitId: '', quantity: '', totalCost: '' }])} className="min-h-12 self-start text-teal-700 underline">
@@ -300,6 +308,8 @@ function SupplierDetail({ ctx, supplierId, onBack }: { ctx: Ctx; supplierId: str
         </form>
       )}
       {msg && <p role="status" className="text-sm">{msg}</p>}
+
+      <SupplierPriceList ctx={ctx} supplierId={supplierId} />
 
       <section>
         <h4 className="mb-2 font-semibold">{t('purch.statement')}</h4>

@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from 'dexie'
 import type { StockMovement } from '../domain/inventory'
 import type { CustomerEntryRecord, FinancialTxnRecord, SaleLineRecord, SaleRecord } from '../domain/pos'
 import type { AllocationRecord, CashClosureRecord, CashSessionRecord, ExpenseRecord, PaymentRecord } from '../domain/finance'
+import type { SupplierPriceRecord } from '../domain/supplierPrices'
 import type { CountDecisionRecord, CountLineRecord, CountRecord } from '../domain/counts'
 import type { ApprovalDecisionRecord, ApprovalRequestRecord, ReturnLineRecord, ReturnRecord } from '../domain/returns'
 import type {
@@ -119,6 +120,7 @@ class StockCmDb extends Dexie {
   stockCounts!: EntityTable<CountRecord, 'id'>
   countLines!: EntityTable<CountLineRecord, 'id'>
   countDecisions!: EntityTable<CountDecisionRecord, 'id'>
+  supplierPrices!: EntityTable<SupplierPriceRecord, 'id'>
   outbox!: EntityTable<OutboxRec, 'seq'>
   syncLog!: EntityTable<SyncLogRec, 'id'>
   meta!: EntityTable<MetaRec, 'key'>
@@ -170,6 +172,9 @@ class StockCmDb extends Dexie {
       stockCounts: 'id, shopId, startedAt',
       countLines: 'id, countId, productId',
       countDecisions: 'id, countId',
+    })
+    this.version(8).stores({
+      supplierPrices: 'id, supplierId, productId',
     })
   }
 }

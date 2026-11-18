@@ -1,3 +1,4 @@
+import { ProductSuppliers } from '../purchasing/ProductSuppliers'
 import { EditProduct } from './EditProduct'
 import { ImportView } from './ImportView'
 import { LabelsView } from './LabelsView'
@@ -162,6 +163,7 @@ function ProductDetail({ ctx, product, onBack }: { ctx: Ctx; product: ProductRec
         <button onClick={() => setEditing((x) => !x)} aria-expanded={editing} className="min-h-12 self-start rounded border border-slate-300 px-4">{editing ? t('edit.close') : t('edit.open')}</button>
       )}
       {editing && <EditProduct ctx={ctx} product={product} onDone={() => setEditing(false)} />}
+      {!product.isService && !editing && !mode && <ProductSuppliers productId={product.id} />}
       {!product.isService && !mode && !editing && (
         <div className="flex gap-3">
           <button disabled={!canReceive} onClick={() => setMode('receive')} className={`${btn} flex-1`}>{t('stock.receive')}</button>

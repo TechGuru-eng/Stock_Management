@@ -97,6 +97,13 @@ export class FakeServer implements SyncTransport {
         throw new TransportError('permanent', 'this count has already been decided', '23514')
       }
       if (op.table === 'stock_count_decisions') decisionsInBatch.push(row.id as string)
+      if (op.table === 'supplier_prices') {
+        const unit = draft.product_units.get(row.unit_id as string)?.row
+        if (Number(row.price) < 0) throw new TransportError('permanent', 'price cannot be negative', '23514')
+        if (!draft.suppliers.has(row.supplier_id as string) || !unit || unit.product_id !== row.product_id) {
+          throw new TransportError('permanent', 'supplier price does not belong to this business', '23514')
+        }
+      }
       if (op.table === 'stock_movements' && (row.movement_type === 'transfer_in' || row.movement_type === 'transfer_out')) transfersInBatch.add(`${row.reference_id}|${row.product_id}`)
       if (op.table === 'product_edit' || op.table === 'unit_edit') {
         const fail = (m: string, code = '23514') => { throw new TransportError('permanent', m, code) }

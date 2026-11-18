@@ -29,6 +29,7 @@ export const SYNC_TABLES = [
   'stock_counts',
   'stock_count_lines',
   'stock_count_decisions',
+  'supplier_prices',
 ] as const
 export type SyncTable = (typeof SYNC_TABLES)[number]
 
@@ -135,6 +136,10 @@ export function toServer(table: string, p: Local): Row {
       return {
         id: p.id, tenant_id: p.tenantId, request_id: p.requestId, decision: p.decision, note: p.note ?? null,
         return_id: p.returnId ?? null, decided_at: p.decidedAt,
+      }
+    case 'supplier_prices':
+      return {
+        id: p.id, tenant_id: p.tenantId, supplier_id: p.supplierId, product_id: p.productId, unit_id: p.unitId, price: p.price, source: p.source, recorded_at: p.recordedAt,
       }
     case 'stock_counts':
       return { id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, name: p.name, blind: p.blind, started_at: p.startedAt }
@@ -277,6 +282,11 @@ export function fromServer(table: SyncTable, r: Local): Local {
       return {
         id: r.id, tenantId: r.tenant_id, requestId: r.request_id, decidedBy: (r.decided_by as string) ?? '',
         decision: r.decision, note: opt(r.note), returnId: opt(r.return_id), decidedAt: r.decided_at,
+      }
+    case 'supplier_prices':
+      return {
+        id: r.id, tenantId: r.tenant_id, supplierId: r.supplier_id, productId: r.product_id, unitId: r.unit_id, price: num(r.price), source: r.source,
+        recordedBy: (r.recorded_by as string) ?? '', recordedAt: r.recorded_at,
       }
     case 'stock_counts':
       return { id: r.id, tenantId: r.tenant_id, shopId: r.shop_id, name: r.name, blind: Boolean(r.blind), startedBy: (r.started_by as string) ?? '', startedAt: r.started_at }

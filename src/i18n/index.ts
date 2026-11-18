@@ -201,6 +201,20 @@ const fr = {
       not_found: 'produit introuvable (cochez « ajouter » pour le créer)', needs_name_and_price: 'un nom et un prix de vente sont nécessaires pour ajouter', is_service: "un service n'a pas de stock",
     },
   },
+  sprice: {
+    title: 'Liste de prix du fournisseur', hint: "Ce que ce fournisseur facture, par unité. Le dernier prix payé vient de vos livraisons. Un nouveau prix s'ajoute à l'historique : l'ancien est conservé.",
+    none: 'Aucun prix enregistré pour ce fournisseur.', base: 'unité de base', lastPaid: 'dernier payé : {{cost}} / unité de base ({{date}})', stale: 'prix ancien (plus de 3 mois)',
+    newPrice: 'Nouveau prix', update: 'Mettre à jour', history: 'historique', imported: 'importé', add: 'Ajouter un prix', priceHere: 'Prix du fournisseur (FCFA)', saved: 'Enregistré.',
+    import: 'Importer une liste de prix', importHint: "Fichier CSV avec nom ou code-barres, unité (facultative) et prix d'achat. Vous voyez les changements avant de confirmer.",
+    summary: '{{newQuotes}} nouveau(x) prix · {{changed}} modifié(s) · {{unchanged}} identiques · {{error}} erreur(s)', flagged: '{{n}} prix changent de plus de 30 % (faute de frappe possible ou vraie hausse). Cochez pour les inclure.',
+    new: 'nouveau', apply: 'Enregistrer {{n}} prix', done: '{{n}} prix enregistré(s).', skipped: '{{n}} gros changement(s) non appliqué(s).',
+    problem: {
+      no_name_or_code: 'ni nom ni code-barres', bad_price: "prix invalide (nombre entier de FCFA)", price_missing: 'prix manquant', unknown_unit: 'unité inconnue pour ce produit', ambiguous_name: 'plusieurs produits portent ce nom : utilisez le code-barres',
+      barcode_mismatch: 'même nom mais un autre code-barres', duplicate_row: 'ligne en double', not_found: 'produit introuvable',
+    },
+    quoted: 'Prix du fournisseur : {{price}} / {{unit}}', use: 'Utiliser le prix ({{total}})', suppliers: 'Prix des fournisseurs', cheapest: 'le moins cher', saving: 'Le moins cher est {{pct}} % moins cher que le plus cher.',
+    warn: { above_quote: 'Ce coût dépasse de plus de 5 % le prix annoncé par le fournisseur.', above_last_paid: 'Ce coût dépasse de plus de 10 % le dernier prix payé.' },
+  },
   shops: {
     title: 'Boutiques', hint: "Ajoutez vos boutiques et choisissez qui peut travailler dans chacune. Une nouvelle boutique n'est accessible qu'à vous au début.",
     planAllows: 'Votre formule autorise {{n}} boutique(s) ({{used}} active(s)).', current: 'Boutique actuelle', here: 'ici', off: 'désactivée',
@@ -520,6 +534,20 @@ const en: typeof fr = {
       barcode_mismatch: 'same name but a different barcode: left alone', duplicate_row: 'product appears twice in the file', already_has_stock: 'already has stock movements here: use a count to correct it',
       not_found: 'product not found (tick "add" to create it)', needs_name_and_price: 'a name and a selling price are needed to add', is_service: 'a service has no stock',
     },
+  },
+  sprice: {
+    title: "Supplier's price list", hint: 'What this supplier charges, per unit. The last price paid comes from your deliveries. A new price is added to the history: the old one is kept.',
+    none: 'No prices recorded for this supplier yet.', base: 'base unit', lastPaid: 'last paid: {{cost}} / base unit ({{date}})', stale: 'old price (over 3 months)',
+    newPrice: 'New price', update: 'Update', history: 'history', imported: 'imported', add: 'Add a price', priceHere: "Supplier's price (FCFA)", saved: 'Saved.',
+    import: 'Import a price list', importHint: 'CSV file with name or barcode, unit (optional) and purchase price. You see the changes before you confirm.',
+    summary: '{{newQuotes}} new price(s) · {{changed}} changed · {{unchanged}} identical · {{error}} error(s)', flagged: '{{n}} price(s) change by more than 30% (a typo or a real increase). Tick to include them.',
+    new: 'new', apply: 'Save {{n}} price(s)', done: '{{n}} price(s) saved.', skipped: '{{n}} big change(s) not applied.',
+    problem: {
+      no_name_or_code: 'no name or barcode', bad_price: 'invalid price (whole FCFA)', price_missing: 'price missing', unknown_unit: 'unknown unit for this product', ambiguous_name: 'several products have this name: use the barcode',
+      barcode_mismatch: 'same name but a different barcode', duplicate_row: 'duplicate line', not_found: 'product not found',
+    },
+    quoted: "Supplier's price: {{price}} / {{unit}}", use: 'Use the price ({{total}})', suppliers: 'Supplier prices', cheapest: 'cheapest', saving: 'The cheapest is {{pct}}% cheaper than the dearest.',
+    warn: { above_quote: "This cost is more than 5% above the supplier's quoted price.", above_last_paid: 'This cost is more than 10% above the last price paid.' },
   },
   shops: {
     title: 'Shops', hint: 'Add your shops and choose who can work in each one. A new shop is only open to you at first.',
