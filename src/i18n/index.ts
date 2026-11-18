@@ -233,6 +233,19 @@ const fr = {
     noSupport: "Ce navigateur ne permet pas les notifications.", denied: 'Les notifications sont bloquées : autorisez-les dans les réglages du navigateur.',
     notifyOut: '{{count}} produit(s) en rupture', notifyLow: '{{count}} produit(s) à surveiller',
   },
+  payNow: {
+    sendPrompt: 'Envoyer la demande de paiement à mon téléphone', openPage: 'Payer avec Orange Money', sending: 'Envoi en cours…',
+    waitingMtn: 'Une demande de paiement est arrivée sur votre téléphone : validez-la avec votre code secret.', waitingOrange: "Ouvrez la page de paiement Orange Money et terminez le paiement.",
+    openPageLink: 'Ouvrir la page de paiement', waitHint: 'Cet écran se met à jour tout seul. Ne payez pas deux fois : si rien ne se passe après quelques minutes, vous pourrez réessayer.',
+    paid: 'Paiement reçu. Votre abonnement est prolongé.',
+    stopped: {
+      declined: "Le paiement a été refusé ou annulé. Aucun argent n'a été pris : vous pouvez réessayer.", expired: "La demande a expiré sans réponse. Si de l'argent a quand même été débité, il sera pris en compte automatiquement ; sinon réessayez.",
+      error: "Le paiement n'a pas pu être vérifié. Si de l'argent a été débité, gardez votre message de confirmation et contactez-nous avec la référence.",
+      in_progress: 'Une demande est déjà en cours : attendez quelques minutes.', too_many: 'Trop d\'essais pour ce paiement. Payez avec la référence ci-dessus ou contactez-nous.',
+      already_paid: 'Ce paiement est déjà confirmé.', not_payable: "Ce paiement ne peut plus être payé ici.", not_configured: "Le paiement automatique n'est pas disponible : payez avec la référence ci-dessus.",
+      provider_error: "L'opérateur n'a pas répondu correctement. Réessayez dans un moment.",
+    },
+  },
   loyalty: {
     title: 'Fidélité clients', hint: "Les clients gagnent des points sur ce qu'ils paient et les dépensent en réduction à la caisse. Les points ne sont gagnés que sur l'argent réellement encaissé (pas sur le crédit).",
     enable: 'Activer le programme de points', earnPer: 'Un point gagné pour chaque … FCFA payés', pointValue: "Valeur d'un point (FCFA de réduction)", minRedeem: 'Minimum de points à utiliser', share: "Part maximale d'une vente payable en points (%)",
@@ -601,6 +614,19 @@ const en: typeof fr = {
     settings: 'Stock alerts', lead: 'Warn when a product will run out in less than', notify: 'Notifications on this device', notifyHint: 'A notification appears when a product goes out of stock, below its minimum or is about to run out. It only shows while the app is open or running in the background: nothing arrives while it is closed.',
     noSupport: 'This browser cannot show notifications.', denied: 'Notifications are blocked: allow them in the browser settings.',
     notifyOut: '{{count}} product(s) out of stock', notifyLow: '{{count}} product(s) to watch',
+  },
+  payNow: {
+    sendPrompt: 'Send the payment request to my phone', openPage: 'Pay with Orange Money', sending: 'Sending…',
+    waitingMtn: 'A payment request has arrived on your phone: approve it with your secret code.', waitingOrange: 'Open the Orange Money payment page and finish the payment.',
+    openPageLink: 'Open the payment page', waitHint: 'This screen updates by itself. Do not pay twice: if nothing happens after a few minutes you can try again.',
+    paid: 'Payment received. Your subscription is extended.',
+    stopped: {
+      declined: 'The payment was declined or cancelled. No money was taken: you can try again.', expired: 'The request expired without an answer. If money was taken anyway it will be picked up automatically; otherwise try again.',
+      error: 'The payment could not be verified. If money was taken, keep your confirmation message and contact us with the reference.',
+      in_progress: 'A request is already in progress: wait a few minutes.', too_many: 'Too many tries for this payment. Pay with the reference above or contact us.',
+      already_paid: 'This payment is already confirmed.', not_payable: 'This payment can no longer be paid here.', not_configured: 'Automatic payment is not available: pay with the reference above.',
+      provider_error: 'The operator did not answer properly. Try again in a moment.',
+    },
   },
   loyalty: {
     title: 'Customer loyalty', hint: 'Customers earn points on what they pay and spend them as a discount at the till. Points are earned only on money actually collected (not on credit).',

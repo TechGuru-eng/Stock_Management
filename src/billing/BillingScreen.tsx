@@ -9,6 +9,7 @@ import { normalizeCameroonPhone } from '../domain/onboarding'
 import { DEFAULT_TERMS, quote, upgradeCharge, type BillingTerm, type PlanDef } from '../domain/subscription'
 import { supabase } from '../lib/supabase'
 import { refreshLicence } from './licenceStore'
+import { PayNow } from './PayNow'
 import { useSubscription } from './useSubscription'
 
 const input = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
@@ -37,7 +38,7 @@ export function BillingScreen() {
   const [months, setMonths] = useState(1)
   const [method, setMethod] = useState<'mtn_momo' | 'orange_money'>('mtn_momo')
   const [phone, setPhone] = useState('')
-  const [created, setCreated] = useState<{ reference: string; expected_amount: number; method: string } | null>(null)
+  const [created, setCreated] = useState<{ id: string; reference: string; expected_amount: number; method: string } | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -102,7 +103,7 @@ export function BillingScreen() {
         p_tenant: tenantId, p_kind: 'renewal', p_plan: effective!.code, p_months: months, p_method: method, p_phone: normalized,
       })
       if (error) throw new Error(error.message)
-      setCreated({ ...(data as { reference: string; expected_amount: number }), method })
+      setCreated({ ...(data as { id: string; reference: string; expected_amount: number }), method })
     })
   }
 
@@ -116,7 +117,7 @@ export function BillingScreen() {
         if (!normalized) throw new Error(t('auth.invalidPhone'))
         const pay = await supabase!.rpc('create_billing_payment', { p_tenant: tenantId, p_kind: 'upgrade', p_plan: p.code, p_months: null, p_method: method, p_phone: normalized })
         if (pay.error) throw new Error(pay.error.message)
-        setCreated({ ...(pay.data as { reference: string; expected_amount: number }), method })
+        setCreated({ ...(pay.data as { id: string; reference: string; expected_amount: number }), method })
       } else {
         setMsg(r.applied === 'at_renewal' ? t('billing.appliedLater') : t('billing.appliedNow'))
       }
@@ -172,6 +173,7 @@ export function BillingScreen() {
             ? <p>{t('billing.sendTo', { method: t(`pos.${created.method}`) })}: <strong>{info.merchant_numbers[created.method]}</strong></p>
             : <p className="text-amber-800">{t('billing.merchantMissing')}</p>}
           <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t('billing.howToPay')}</p>
+          <PayNow paymentId={created.id} method={created.method as 'mtn_momo' | 'orange_money'} onPaid={() => void load()} />
         </section>
       )}
 

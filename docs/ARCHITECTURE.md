@@ -274,7 +274,7 @@ A confirmed payment extends the subscription, issues an invoice (`INV-YYYY-00000
 - **The webhook secret** (to give the provider): as that admin, call `select admin_webhook_secret();`
 
 ### Billing limitations (honest list)
-- No real aggregator integration, no automatic USSD prompt: payment is "send money with this reference, then it is confirmed".
+- Automatic collection through MTN / Orange exists (section 31) but is off until you add provider credentials; until then payment is "send money with this reference, then it is confirmed".
 - Confirming manual payments and editing plans/prices is done in the admin app (section 14).
 - Renewal reminders appear in the app (5 days, 2 days, then daily in grace) and staff can send WhatsApp reminders by hand (section 17). Automatic WhatsApp/SMS is not built.
 - Invoices can be saved or shared as PDF (section 18); no tax invoice format has been reviewed for Cameroon.
@@ -779,3 +779,31 @@ Off by default. The owner switches it on in More > Customer loyalty and sets the
 - No tiers, no birthdays or bonuses, no points expiry, no per-product or per-shop rules; the rules apply to the whole business.
 - Points are earned only on money paid at the till, not on debt repayments, and points do not appear on the PDF invoice yet (only on the till's confirmation).
 - Customers cannot see their own points: they are told at the till, or you can read them out.
+
+## 31. Collecting subscription payments through MTN MoMo and Orange Money
+
+When a provider is set up, the owner's "payment created" panel (More > Billing) gets a **pay now** button. MTN: a payment request appears on the owner's phone and is approved with their secret code. Orange: a payment page opens. The screen then waits, asking the server every 5 to 30 seconds, and says "Payment received" when the server has confirmed it. The manual route (send money with the reference) is unchanged and remains the fallback.
+
+**The one rule: a callback is never believed.** Anyone can POST to a public URL, and MTN's callbacks carry no signature. So the `payments` Edge Function treats a callback (`?cb=<attempt id>`) only as a nudge: it asks the provider, with our own credentials, what happened to that attempt, and believes only that answer. The same check runs when the app polls and in a scheduled sweep (`POST /functions/v1/payments?reconcile=1`, signed like the billing webhook, to be called every few minutes by any scheduler).
+
+- **Attempts (migration 0025, tested live, rolled back):** `payment_attempts`, one try per row. The attempt id is the reference MTN/Orange know the payment by, so repeating a request cannot charge twice. One live attempt at a time (3 minutes), at most 5 per payment; a paid payment accepts none. A declined or expired attempt does not fail the payment, so a wrong PIN can be retried.
+- **Settling** goes through the existing idempotent `confirm_billing_payment`: the amount the provider reports must equal what was asked, and a provider reference can be used once. If money moved but the payment cannot be confirmed (amount differs, reference reused), the attempt becomes `error` with a `attempt_needs_review` event: never silent.
+- **Currency and amount** are checked: MTN success in another currency than asked, or a fractional amount, is refused.
+- **Secrets:** provider credentials are JSON in `platform_secrets` (`provider_mtn_momo`, `provider_orange_money`), readable only by the server. A platform admin (super, two-step verified) sets them with `select admin_set_provider('mtn_momo', '{...}')` and can only see whether they are set (`admin_provider_status()`), never the values. The owner's app only learns "available or not". Attempt rows hide the Orange pay token from clients.
+- **Config shapes**
+  - MTN: `{"baseUrl":"https://sandbox.momodeveloper.mtn.com","subscriptionKey":"...","apiUser":"...","apiKey":"...","targetEnvironment":"sandbox","currency":"EUR"}` (for real money: the production base URL, the country environment MTN gives you, and `"currency":"XAF"`; the sandbox only accepts EUR).
+  - Orange: `{"baseUrl":"https://api.orange.com","authorization":"Basic ...","merchantKey":"...","currency":"XAF","returnUrl":"https://...","cancelUrl":"https://..."}`.
+- **Tested:** request building and status mapping for both providers against scripted fakes (success, pending, failed, wrong currency, odd amount, unknown status, garbage answers, outages versus refused credentials, token caching, 409 repeats, non-https payment pages refused), the attempt rules, the server copy being identical to the tested one, and live database checks of every rule above (permissions, hidden token, retry after failure, wrong amount, double settle, reused reference, attempt cap).
+
+### What you must do before this takes real money
+- Open the provider accounts (MTN MoMo Collection and Orange Money WebPay for Cameroon) and set the two credentials above. Start with the MTN sandbox.
+- Call the reconcile address on a schedule.
+- Run one real test payment per provider and compare with the provider's records.
+
+### Payment-adapter limitations (honest list)
+- **Never run against the real MTN or Orange servers.** It is built from their public documentation and tested against fakes. Field names, status values and the Orange flow in particular must be confirmed against your real accounts; expect small corrections.
+- Orange cannot push a prompt to the phone: the owner is sent to a page. Orange's answer carries no amount, so for Orange the amount asked is taken as the amount paid (Orange checks it against the order).
+- A prompt nobody answers is not marked failed: a late approval is still picked up by the callback or the sweep, as long as it comes within two days.
+- Only subscription payments are covered. Taking mobile money from a shop's own customers at the till (each business with its own provider credentials) is not built; payments entered at the till remain "recorded", not provider-verified.
+- No refunds or reversals through the provider; no webhook signature exists on the provider side, which is why the server always asks.
+- Credentials are stored as plain text in a table only the server can read, not in a separate secrets vault; there is no admin screen for them yet, only the SQL function.
