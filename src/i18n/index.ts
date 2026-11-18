@@ -223,6 +223,16 @@ const fr = {
     noPrice: 'aucun prix connu : à saisir dans la commande', source: { quote: 'prix annoncé', last_paid: 'dernier prix payé', average: 'estimé au coût moyen' }, total: 'Total estimé : {{total}}',
     create: 'Créer la commande', whatsapp: 'Envoyer par WhatsApp', created: 'Commande créée ({{n}} produit(s)). Ces produits comptent maintenant comme « déjà commandés ».', nothingChosen: 'Aucun produit coché.',
   },
+  alerts: {
+    title: 'Stock à surveiller', hint: "Produits en rupture, sous leur minimum, ou qui seront finis avant la livraison (d'après les ventes récentes). Une commande déjà passée suffisante les met de côté ; vous pouvez aussi les reporter.",
+    seeAll: 'Voir tout', hide: 'Masquer', dismiss: 'Fermer', order: 'Que commander ?', digest: 'M\'envoyer la liste (WhatsApp)', none: 'Rien à signaler : le stock va bien.',
+    level: { out: 'rupture', low: 'stock bas', running_out: 'bientôt fini' }, nOut: '{{count}} en rupture', nLow: '{{count}} sous le minimum', nRunning: '{{count}} bientôt fini(s)',
+    onHand: 'en stock : {{n}} {{unit}}', min: 'minimum {{n}}', daysLeft: 'dure ~{{n}} j', onOrder: '{{n}} déjà commandé(s)', covered: 'commande en route', snooze: 'Reporter {{n}} j', unsnooze: 'Réactiver',
+    snoozedUntil: 'reporté jusqu\'au {{date}}', showHidden: 'Afficher les {{n}} alerte(s) reportée(s) ou couverte(s)', badge: '{{count}} alerte(s) de stock', bannerOut: '{{count}} produit(s) en rupture : {{names}}',
+    settings: 'Alertes de stock', lead: 'Prévenir quand un produit sera fini dans moins de', notify: 'Notifications sur cet appareil', notifyHint: "Une notification apparaît quand un produit passe en rupture, sous son minimum ou bientôt fini. Elle ne s'affiche que si l'application est ouverte ou active en arrière-plan : rien n'arrive quand elle est fermée.",
+    noSupport: "Ce navigateur ne permet pas les notifications.", denied: 'Les notifications sont bloquées : autorisez-les dans les réglages du navigateur.',
+    notifyOut: '{{count}} produit(s) en rupture', notifyLow: '{{count}} produit(s) à surveiller',
+  },
   shops: {
     title: 'Boutiques', hint: "Ajoutez vos boutiques et choisissez qui peut travailler dans chacune. Une nouvelle boutique n'est accessible qu'à vous au début.",
     planAllows: 'Votre formule autorise {{n}} boutique(s) ({{used}} active(s)).', current: 'Boutique actuelle', here: 'ici', off: 'désactivée',
@@ -564,6 +574,16 @@ const en: typeof fr = {
     onHand: 'in stock: {{n}} {{unit}}', onOrder: '{{n}} already on order', daysLeft: 'lasts ~{{n}} d', notSelling: 'not selling', speed: '{{n}}/day', qty: 'quantity', packsOf: '{{n}} {{pack}}',
     noPrice: 'no price known: enter it on the order', source: { quote: 'quoted price', last_paid: 'last price paid', average: 'estimated from average cost' }, total: 'Estimated total: {{total}}',
     create: 'Create the order', whatsapp: 'Send on WhatsApp', created: 'Order created ({{n}} product(s)). These products now count as "already on order".', nothingChosen: 'No product ticked.',
+  },
+  alerts: {
+    title: 'Stock to watch', hint: 'Products out of stock, below their minimum, or that will run out before a delivery could arrive (from recent sales). A big enough order already placed sets them aside; you can also snooze them.',
+    seeAll: 'See all', hide: 'Hide', dismiss: 'Dismiss', order: 'What to order', digest: 'Send me the list (WhatsApp)', none: 'Nothing to report: stock is fine.',
+    level: { out: 'out of stock', low: 'low stock', running_out: 'running out' }, nOut: '{{count}} out of stock', nLow: '{{count}} below minimum', nRunning: '{{count}} running out',
+    onHand: 'in stock: {{n}} {{unit}}', min: 'minimum {{n}}', daysLeft: 'lasts ~{{n}} d', onOrder: '{{n}} already on order', covered: 'order on its way', snooze: 'Snooze {{n}} d', unsnooze: 'Wake up',
+    snoozedUntil: 'snoozed until {{date}}', showHidden: 'Show the {{n}} snoozed or covered alert(s)', badge: '{{count}} stock alert(s)', bannerOut: '{{count}} product(s) out of stock: {{names}}',
+    settings: 'Stock alerts', lead: 'Warn when a product will run out in less than', notify: 'Notifications on this device', notifyHint: 'A notification appears when a product goes out of stock, below its minimum or is about to run out. It only shows while the app is open or running in the background: nothing arrives while it is closed.',
+    noSupport: 'This browser cannot show notifications.', denied: 'Notifications are blocked: allow them in the browser settings.',
+    notifyOut: '{{count}} product(s) out of stock', notifyLow: '{{count}} product(s) to watch',
   },
   shops: {
     title: 'Shops', hint: 'Add your shops and choose who can work in each one. A new shop is only open to you at first.',

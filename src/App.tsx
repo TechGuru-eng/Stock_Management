@@ -18,6 +18,9 @@ import { onSyncComplete } from './sync/engine'
 import { installWriteGuard } from './data/writeGuard'
 import { applyGuard, refreshLicence } from './billing/licenceStore'
 import { BillingScreen } from './billing/BillingScreen'
+import { AlertSettings } from './features/alerts/AlertSettings'
+import { StockAlertBanner } from './features/alerts/StockAlertBanner'
+import { useAlertNotifications, useAlerts } from './features/alerts/useAlerts'
 import { NoticeBanner } from './billing/NoticeBanner'
 import { refreshRoster } from './auth/roster'
 import { SwitchPerson } from './auth/SwitchPerson'
@@ -38,6 +41,8 @@ const tabs: Tab[] = ['home', 'sales', 'stock', 'money', 'more']
 export function Shell({ autoSync = true }: { autoSync?: boolean }) {
   const { t } = useTranslation()
   const { membership, signOut, session } = useAuth()
+  const alerts = useAlerts()
+  useAlertNotifications()
   const [tab, setTab] = useState<Tab>('home')
   const [moneySub, setMoneySub] = useState<'summary' | 'debts' | 'expenses' | 'cash'>('summary')
   const online = navigator.onLine
@@ -75,12 +80,14 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
       <div className="print:hidden">
         <SubscriptionBanner onRenew={() => setTab('more')} />
         <NoticeBanner />
+        <StockAlertBanner onSee={() => setTab('home')} />
       </div>
       <main key={membership?.shopId} className="flex-1 p-4">
         <h2 className="mb-2 text-xl font-semibold print:hidden">{t(`nav.${tab}`)}</h2>
         {tab === 'sales' && <SalesHub />}
         {tab === 'stock' && <StockHub />}
         {tab === 'more' && membership?.role === 'owner' && <BillingScreen />}
+        {tab === 'more' && <AlertSettings />}
         {tab === 'more' && membership?.role === 'owner' && <ShopsScreen />}
         {tab === 'more' && membership?.role === 'owner' && <StaffScreen />}
         {tab === 'more' && membership?.role === 'owner' && <SupportAccessLog />}
@@ -104,6 +111,9 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
             className={`min-h-14 px-1 text-xs ${tab === id ? 'font-semibold text-teal-700' : 'text-slate-600 dark:text-slate-300'}`}
           >
             {t(`nav.${id}`)}
+            {id === 'stock' && alerts && alerts.active.length > 0 && (
+              <span className={`ml-1 rounded-full px-1.5 text-[10px] font-bold text-white ${alerts.counts.out > 0 ? 'bg-red-600' : 'bg-amber-600'}`} aria-label={t('alerts.badge', { count: alerts.active.length })}>{alerts.active.length}</span>
+            )}
           </button>
         ))}
       </nav>

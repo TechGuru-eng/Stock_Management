@@ -704,3 +704,30 @@ It suggests; nothing is ordered until a person reviews the list and creates the 
 - Suggestions are per shop; a second shop's stock is not considered (a transfer might be better than an order), and nothing combines orders across shops.
 - Orders are created in base units (the quantity shows cartons for reading); one purchase order per supplier per press of the button.
 
+## 28. Low-stock alerts
+
+For people who look after stock (owner, manager, storekeeper: the right to receive stock), for the CURRENT shop. Worked out from the shop's own records, on the device, so it works offline.
+
+- **When something is an alert:** *out of stock* (nothing on the shelf, and the product sells or has a minimum), *low* (at or below its minimum stock), *running out* (at its
+  recent selling speed over 30 days it lasts fewer days than the warning time, 7 by default, 3 to 21 selectable). A product nobody buys and that has no minimum is never an alert,
+  however empty. Services and hidden products are not alerts. Negative stock (oversold) counts as empty.
+- **An order already on its way** that is big enough to cover the need sets the alert aside ("order on its way"); a person can also **snooze** a product for 1, 7 or 30 days.
+  Both only hide the alert from the counts; they stay visible under "show snoozed or covered".
+- **Where it shows:** a red strip while something is OUT of stock (can be put away for the session; comes back when a different product runs out); a count on the Stock tab;
+  a "Stock to watch" card on Home with the worst items and an expandable full list (snooze buttons, a shortcut to "What to order", and a WhatsApp message with the list to the
+  owner's own number, sent by a person).
+- **Device notifications (More tab, off by default):** a system notification the first time something gets worse (new, or out of stock after being low), never the same alert twice. The
+  device remembers what it already told the person, per shop; switching it on starts from the current situation (only NEW problems notify), a product that recovers is forgotten so
+  its return is new again, and getting better is not announced.
+- **Tested:** levels and edge cases (exactly at the minimum, no sales and no minimum, negative stock, services, hidden), covered orders, ordering of severity, snoozing, "new or
+  worse" detection including recovery and re-appearance, digest text in both languages, settings limits; and against real records: alerts appear as sales lower stock and clear
+  when stock arrives, an order covers one, snooze and its expiry, per-shop isolation, notify-once; the screens in a browser (banner, tab count, Home card, list, snooze).
+
+### Low-stock alert limitations (honest list)
+- **Notifications are not pushed from a server.** They appear only while the app is open or running in the background of the phone; nothing arrives while it is completely closed
+  (that would need a push service, an account with a push provider and server-side stock figures, which this offline-first app does not have). The in-app strip, count and Home card are
+  the reliable signals; the WhatsApp message to oneself is a manual digest.
+- Alerts are per device and per shop: two devices of the same shop each notify (and each remember separately), and an owner is not told about other shops' stock unless that shop is selected.
+- Based on the last 30 days of sales: a sudden rush is noticed only as sales happen, and a new product with no sales history relies on its minimum stock.
+- A sale made on another device is known here only after it syncs.
+

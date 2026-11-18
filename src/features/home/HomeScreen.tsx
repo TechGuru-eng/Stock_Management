@@ -7,6 +7,7 @@ import { formatXaf } from '../../domain/money'
 import { can } from '../../domain/permissions'
 import { dayRange } from '../../domain/reports'
 import { useSummary } from '../money/useSummary'
+import { AttentionCard } from '../alerts/AttentionCard'
 import { useSyncStatus } from '../../sync/status'
 import { pendingApprovals } from '../../data/returnsRepo'
 
@@ -53,6 +54,7 @@ export function HomeScreen({ go }: { go: Go }) {
 
   return (
     <div className="flex flex-col gap-4">
+      <AttentionCard goOrder={() => go('stock')} />
       <div className="grid grid-cols-2 gap-3">
         <Card label={t('home.todaySales')} value={formatXaf(s.revenue)} />
         <Card label={t('home.collected')} value={formatXaf(s.collectedTotal)} />
