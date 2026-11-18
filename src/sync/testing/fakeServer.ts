@@ -64,6 +64,7 @@ export class FakeServer implements SyncTransport {
     const receiptsInBatch: string[] = []
     const returnsInBatch: string[] = []
     const transfersInBatch = new Set<string>()
+    const decisionsInBatch: string[] = []
     let applied = 0
     let skipped = 0
 
@@ -92,6 +93,10 @@ export class FakeServer implements SyncTransport {
       if (op.table === 'payments') paymentsInBatch.push(row.id as string)
       if (op.table === 'goods_receipts') receiptsInBatch.push(row.id as string)
       if (op.table === 'sale_returns') returnsInBatch.push(row.id as string)
+      if (op.table === 'stock_count_lines' && [...draft.stock_count_decisions.values()].some((d) => d.row.count_id === row.count_id)) {
+        throw new TransportError('permanent', 'this count has already been decided', '23514')
+      }
+      if (op.table === 'stock_count_decisions') decisionsInBatch.push(row.id as string)
       if (op.table === 'stock_movements' && (row.movement_type === 'transfer_in' || row.movement_type === 'transfer_out')) transfersInBatch.add(`${row.reference_id}|${row.product_id}`)
       draft[op.table].set(row.id as string, { row, changed: this.tick() })
       applied++
@@ -176,6 +181,37 @@ export class FakeServer implements SyncTransport {
         + sum([...draft.payment_allocations.values()].map((v) => v.row).filter((a) => a.sale_id === rt.sale_id), 'amount')
       if (sum(mine, 'refunded_amount') > paid) fail('refunds exceed what the customer paid')
       if (sum(mine, 'debt_reduced') > Number(draft.sales.get(rt.sale_id as string)?.row.outstanding)) fail('debt written off exceeds what was owed')
+    }
+
+    // Same rules as check_count_decision() and check_count_adjustment().
+    for (const id of decisionsInBatch) {
+      const d = draft.stock_count_decisions.get(id)!.row
+      const c = draft.stock_counts.get(d.count_id as string)?.row
+      const fail = (m: string) => {
+        throw new TransportError('permanent', `count ${d.count_id}: ${m}`, '23514')
+      }
+      if (!c) fail('unknown count')
+      const moved = [...draft.stock_movements.values()].map((v) => v.row).filter((m) => m.reference_id === d.count_id && m.movement_type === 'count_adjustment')
+      if (d.decision === 'rejected') {
+        if (moved.length) fail('a rejected count cannot adjust stock')
+        continue
+      }
+      const newest = new Map<string, Row>()
+      for (const l of [...draft.stock_count_lines.values()].map((v) => v.row).filter((l) => l.count_id === d.count_id)) {
+        const cur = newest.get(l.product_id as string)
+        if (!cur || String(l.counted_at) > String(cur.counted_at) || (l.counted_at === cur.counted_at && String(l.id) > String(cur.id))) newest.set(l.product_id as string, l)
+      }
+      for (const [product, l] of newest) {
+        const diff = Number(l.counted) - Number(l.expected)
+        const mine = moved.filter((m) => m.product_id === product)
+        if (diff === 0 ? mine.length > 0 : mine.length !== 1 || Number(mine[0].quantity) !== diff) fail('adjustment does not match the count')
+      }
+      if (moved.some((m) => !newest.has(m.product_id as string) || m.shop_id !== c!.shop_id)) fail('adjustment for something that was not counted')
+    }
+    for (const row of [...draft.stock_movements.values()].map((v) => v.row)) {
+      if (row.movement_type !== 'count_adjustment' || !draftOps.size) continue
+      const ok = [...draft.stock_count_decisions.values()].some((d) => d.row.count_id === row.reference_id && d.row.decision === 'approved')
+      if (!ok) throw new TransportError('permanent', 'a stock adjustment must come from an approved count', '23514')
     }
 
     // Same rules as check_transfer_consistency(): one out and one in, same product, quantity and value, two shops.

@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../auth/AuthProvider'
 import { can } from '../../domain/permissions'
+import { CountsView } from '../counts/CountsView'
 import { TransferView } from '../shops/TransferView'
 import { PurchasesView, SuppliersView } from '../purchasing/PurchasingScreens'
 import { StockScreen } from './StockScreen'
 
-type Sub = 'products' | 'purchases' | 'suppliers' | 'transfers'
+type Sub = 'products' | 'purchases' | 'suppliers' | 'transfers' | 'counts'
 
 /** Stock tab: products and levels, purchase orders and deliveries, and suppliers. */
 export function StockHub() {
@@ -15,10 +16,11 @@ export function StockHub() {
   const { membership } = useAuth()
   // Transfers only make sense with a second shop, and need the right to adjust stock.
   const canTransfer = Boolean(membership && membership.shops.length > 1 && can(membership.role, 'stock.adjust_approve'))
-  const tabs: Sub[] = canTransfer ? ['products', 'purchases', 'suppliers', 'transfers'] : ['products', 'purchases', 'suppliers']
+  const canCount = Boolean(membership && can(membership.role, 'stock.count'))
+  const tabs: Sub[] = ['products', 'purchases', 'suppliers', ...(canTransfer ? (['transfers'] as const) : []), ...(canCount ? (['counts'] as const) : [])]
   return (
     <div className="flex flex-col gap-4">
-      <div role="tablist" className={`grid gap-1 ${tabs.length === 4 ? 'grid-cols-4' : 'grid-cols-3'}`}>
+      <div role="tablist" className={`grid gap-1 ${tabs.length >= 5 ? 'grid-cols-5' : tabs.length === 4 ? 'grid-cols-4' : 'grid-cols-3'}`}>
         {tabs.map((k) => (
           <button
             key={k} role="tab" aria-selected={sub === k} onClick={() => setSub(k)}
@@ -32,6 +34,7 @@ export function StockHub() {
       {sub === 'purchases' && <PurchasesView />}
       {sub === 'suppliers' && <SuppliersView />}
       {sub === 'transfers' && canTransfer && <TransferView />}
+      {sub === 'counts' && canCount && <CountsView />}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from 'dexie'
 import type { StockMovement } from '../domain/inventory'
 import type { CustomerEntryRecord, FinancialTxnRecord, SaleLineRecord, SaleRecord } from '../domain/pos'
 import type { AllocationRecord, CashClosureRecord, CashSessionRecord, ExpenseRecord, PaymentRecord } from '../domain/finance'
+import type { CountDecisionRecord, CountLineRecord, CountRecord } from '../domain/counts'
 import type { ApprovalDecisionRecord, ApprovalRequestRecord, ReturnLineRecord, ReturnRecord } from '../domain/returns'
 import type {
   GoodsReceiptRecord, PurchaseLineRecord, PurchaseRecord, ReceiptLineRecord, SupplierEntryRecord, SupplierRecord,
@@ -115,6 +116,9 @@ class StockCmDb extends Dexie {
   returnLines!: EntityTable<ReturnLineRecord, 'id'>
   approvalRequests!: EntityTable<ApprovalRequestRecord, 'id'>
   approvalDecisions!: EntityTable<ApprovalDecisionRecord, 'id'>
+  stockCounts!: EntityTable<CountRecord, 'id'>
+  countLines!: EntityTable<CountLineRecord, 'id'>
+  countDecisions!: EntityTable<CountDecisionRecord, 'id'>
   outbox!: EntityTable<OutboxRec, 'seq'>
   syncLog!: EntityTable<SyncLogRec, 'id'>
   meta!: EntityTable<MetaRec, 'key'>
@@ -161,6 +165,11 @@ class StockCmDb extends Dexie {
       returnLines: 'id, returnId, saleLineId',
       approvalRequests: 'id, requestedAt',
       approvalDecisions: 'id, requestId',
+    })
+    this.version(7).stores({
+      stockCounts: 'id, shopId, startedAt',
+      countLines: 'id, countId, productId',
+      countDecisions: 'id, countId',
     })
   }
 }

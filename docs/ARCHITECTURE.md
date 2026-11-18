@@ -482,3 +482,33 @@ lockouts, roster pruning. The lock screen was exercised in a browser (picker, wr
 - Non-sales server calls (licence refresh, staff and billing screens) use the signed-in session, not the acting person; those screens are owner-only.
 - The offline idle lock is still 5 minutes and the 12-hour session expiry still needs a connection to renew.
 
+## 20. Stock counts (stock-takes)
+
+Stock > Counts (people with the right to count: owner, manager, storekeeper; deciding needs the right to approve adjustments: owner, manager).
+
+**Flow.** Start a count of the current shop (name, blind or not). Counters enter the real quantity per product. For each figure the app
+also records what the system *expected* and the average cost at that moment, so sales made while counting continues do not distort
+the difference. A *blind* count hides the expected number from counters (they count more honestly); reviewers always see it.
+Counting a product again adds a newer line; the newest wins; nothing is edited or deleted.
+A manager then reviews: differences sorted by value, missing vs surplus value, accuracy, and a "recount?" flag when a difference is 10% of the
+expected quantity or worth 10 000 FCFA or more. Products not counted are left alone (the screen says how many). The review exports to CSV.
+
+**Approving** posts one `count_adjustment` movement per product that differs, for the DIFFERENCE only (so sales made after the count are
+not undone), gains at the current average cost and losses leaving at it, together with the decision in ONE sync group (all or nothing).
+**Rejecting** needs a reason and changes no stock. A decided count cannot be changed and takes no more lines.
+
+**Server rules (migration 0019, tested live in a rolled-back transaction).** Three append-only synced tables (`stock_counts`,
+`stock_count_lines`, `stock_count_decisions`, one decision per count). At commit the database checks that an approved count's adjustments
+equal exactly what its newest lines call for (right product, right quantity, one per product, same shop, nothing for products that matched
+or were not counted) and that a rejected count has none. `count_adjustment` can no longer be posted any other way: it needs the right to
+approve and must belong to an approved count (before, any counter could post one directly). Lines after a decision are refused.
+Uploads made as another person on a shared till are checked against that person's rights (section 19).
+
+### Count limitations (honest list)
+- Counting is by whole base units (as stock is kept), not cartons or kilograms with decimals.
+- No partial scopes (by category or aisle) and no scheduled / recurring counts; a count covers whatever products people choose to enter.
+- Two people counting the same product on different devices: the newest line wins, with no warning that they differ.
+- A line that reaches the server after the count was decided is refused (shown as a refused sync event); counting devices should sync before approval.
+- Adjustment cost uses the average cost at approval time, not at counting time, so the value shown in the review can differ slightly from what is posted if costs moved in between.
+- Barcode scanning with a camera is not built; the search box accepts a typed or scanner-entered barcode.
+

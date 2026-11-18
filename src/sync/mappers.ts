@@ -26,6 +26,9 @@ export const SYNC_TABLES = [
   'sale_return_lines',
   'approval_requests',
   'approval_decisions',
+  'stock_counts',
+  'stock_count_lines',
+  'stock_count_decisions',
 ] as const
 export type SyncTable = (typeof SYNC_TABLES)[number]
 
@@ -58,7 +61,7 @@ export function toServer(table: string, p: Local): Row {
         id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, product_id: p.productId, quantity: p.quantity,
         movement_type: p.type, reason: p.reason ?? null,
         reference_type:
-          p.type === 'sale' ? 'sale' : p.type === 'purchase_receipt' && p.referenceId ? 'receipt' : p.type === 'return_in' && p.referenceId ? 'return' : (p.type === 'transfer_in' || p.type === 'transfer_out') && p.referenceId ? 'transfer' : null,
+          p.type === 'sale' ? 'sale' : p.type === 'purchase_receipt' && p.referenceId ? 'receipt' : p.type === 'return_in' && p.referenceId ? 'return' : (p.type === 'transfer_in' || p.type === 'transfer_out') && p.referenceId ? 'transfer' : p.type === 'count_adjustment' && p.referenceId ? 'count' : null,
         reference_id: p.referenceId ?? null,
         unit_cost: p.unitCost ?? null, total_cost: p.totalCost ?? null, occurred_at: p.createdAt,
       }
@@ -125,6 +128,15 @@ export function toServer(table: string, p: Local): Row {
         id: p.id, tenant_id: p.tenantId, request_id: p.requestId, decision: p.decision, note: p.note ?? null,
         return_id: p.returnId ?? null, decided_at: p.decidedAt,
       }
+    case 'stock_counts':
+      return { id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, name: p.name, blind: p.blind, started_at: p.startedAt }
+    case 'stock_count_lines':
+      return {
+        id: p.id, tenant_id: p.tenantId, count_id: p.countId, product_id: p.productId, counted: p.counted, expected: p.expected,
+        unit_cost: p.unitCost, counted_at: p.countedAt,
+      }
+    case 'stock_count_decisions':
+      return { id: p.id, tenant_id: p.tenantId, count_id: p.countId, decision: p.decision, note: p.note ?? null, decided_at: p.decidedAt }
     case 'suppliers':
       return { id: p.id, tenant_id: p.tenantId, name: p.name, phone: p.phone ?? null, notes: p.notes ?? null, created_at: p.createdAt }
     case 'purchases':
@@ -257,6 +269,17 @@ export function fromServer(table: SyncTable, r: Local): Local {
       return {
         id: r.id, tenantId: r.tenant_id, requestId: r.request_id, decidedBy: (r.decided_by as string) ?? '',
         decision: r.decision, note: opt(r.note), returnId: opt(r.return_id), decidedAt: r.decided_at,
+      }
+    case 'stock_counts':
+      return { id: r.id, tenantId: r.tenant_id, shopId: r.shop_id, name: r.name, blind: Boolean(r.blind), startedBy: (r.started_by as string) ?? '', startedAt: r.started_at }
+    case 'stock_count_lines':
+      return {
+        id: r.id, tenantId: r.tenant_id, countId: r.count_id, productId: r.product_id, counted: num(r.counted), expected: num(r.expected),
+        unitCost: num(r.unit_cost), countedBy: (r.counted_by as string) ?? '', countedAt: r.counted_at,
+      }
+    case 'stock_count_decisions':
+      return {
+        id: r.id, tenantId: r.tenant_id, countId: r.count_id, decision: r.decision, note: opt(r.note), decidedBy: (r.decided_by as string) ?? '', decidedAt: r.decided_at,
       }
     case 'suppliers':
       return { id: r.id, tenantId: r.tenant_id, name: r.name, phone: opt(r.phone), notes: opt(r.notes), createdAt: r.created_at }

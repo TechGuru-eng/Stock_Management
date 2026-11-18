@@ -47,6 +47,7 @@ export function installWriteGuard(): void {
     db.products, db.units, db.movements, db.sales, db.saleLines, db.transactions, db.customers, db.customerEntries,
     db.payments, db.allocations, db.expenses, db.cashSessions, db.suppliers, db.purchases, db.purchaseLines,
     db.receipts, db.receiptLines, db.supplierEntries, db.saleReturns, db.returnLines, db.approvalRequests, db.approvalDecisions,
+    db.stockCounts, db.countLines, db.countDecisions,
   ]
   for (const t of tables) t.hook('creating', () => { guard() })
 }

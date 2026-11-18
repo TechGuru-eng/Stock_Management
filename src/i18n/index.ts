@@ -130,6 +130,16 @@ const fr = {
     tab: 'Factures', pdf: 'Facture PDF', share: 'Partager', search: 'Chercher par numéro ou client', none: 'Aucune vente.', onCredit: 'à crédit',
     latest: 'Les 50 dernières ventes. Utilisez la recherche pour en trouver d\'autres.', error: 'Facture impossible : {{msg}}', download: 'Télécharger',
   },
+  counts: {
+    hint: "Comptez le stock réel, produit par produit. Les différences avec le stock du système sont revues par un responsable avant d'être corrigées.",
+    start: 'Nouveau comptage', name: 'Nom (ex. Inventaire de novembre)', startAction: 'Commencer', blind: 'Comptage à l\'aveugle (les compteurs ne voient pas le stock attendu)',
+    blindShort: 'à l\'aveugle', none: 'Aucun comptage.', nCounted: '{{n}} compté(s)', status: { open: 'En cours', approved: 'Approuvé', rejected: 'Rejeté' },
+    search: 'Chercher un produit ou un code-barres', save: 'Enregistrer', recount: 'Recompter', notCounted: 'Pas encore compté', lastCounted: 'Compté : {{n}} {{unit}}', expectedWas: 'attendu {{n}}',
+    review: 'Revue des différences', summary: '{{diff}} différence(s) sur {{total}} produit(s)', missing: 'Manque', extra: 'Excédent', accuracy: 'Exactitude {{pct}} %',
+    product: 'Produit', expected: 'Attendu', counted: 'Compté', diff: 'Écart', unitCost: 'Coût unitaire', value: 'Valeur', recountAdvised: 'recompter ?',
+    uncounted: "{{n}} produit(s) pas encore comptés : leur stock ne sera pas modifié.", approve: 'Approuver et corriger le stock', reject: 'Rejeter', rejectWhy: 'Pourquoi ? (obligatoire)',
+    approveHint: "Approuver corrige le stock uniquement des écarts (les ventes faites depuis le comptage sont conservées). Un comptage décidé ne peut plus être modifié.",
+  },
   shops: {
     title: 'Boutiques', hint: "Ajoutez vos boutiques et choisissez qui peut travailler dans chacune. Une nouvelle boutique n'est accessible qu'à vous au début.",
     planAllows: 'Votre formule autorise {{n}} boutique(s) ({{used}} active(s)).', current: 'Boutique actuelle', here: 'ici', off: 'désactivée',
@@ -148,7 +158,7 @@ const fr = {
     },
   },
   purch: {
-    products: 'Produits', purchases: 'Achats', suppliers: 'Fournisseurs', transfers: 'Transferts', newOrder: 'Nouvelle commande', supplier: 'Fournisseur',
+    products: 'Produits', purchases: 'Achats', suppliers: 'Fournisseurs', transfers: 'Transferts', counts: 'Comptages', newOrder: 'Nouvelle commande', supplier: 'Fournisseur',
     newSupplier: 'Nouveau fournisseur', supplierName: 'Nom du fournisseur', phone: 'Téléphone', invoice: 'N° de facture (facultatif)',
     addLine: 'Ajouter un produit', product: 'Produit', unit: 'Unité', quantity: 'Quantité', totalCost: 'Coût total (FCFA)',
     createOrder: 'Enregistrer la commande', noOrders: 'Aucune commande.', noSuppliers: 'Aucun fournisseur.',
@@ -380,6 +390,16 @@ const en: typeof fr = {
     tab: 'Invoices', pdf: 'PDF invoice', share: 'Share', search: 'Search by number or customer', none: 'No sales.', onCredit: 'on credit',
     latest: 'The latest 50 sales. Use search to find older ones.', error: 'Could not make the invoice: {{msg}}', download: 'Download',
   },
+  counts: {
+    hint: 'Count the real stock, product by product. A manager reviews the differences from the system stock before anything is corrected.',
+    start: 'New count', name: 'Name (e.g. November stock-take)', startAction: 'Start', blind: 'Blind count (counters do not see the expected stock)',
+    blindShort: 'blind', none: 'No counts yet.', nCounted: '{{n}} counted', status: { open: 'In progress', approved: 'Approved', rejected: 'Rejected' },
+    search: 'Search a product or barcode', save: 'Save', recount: 'Recount', notCounted: 'Not counted yet', lastCounted: 'Counted: {{n}} {{unit}}', expectedWas: 'expected {{n}}',
+    review: 'Review the differences', summary: '{{diff}} difference(s) in {{total}} product(s)', missing: 'Missing', extra: 'Surplus', accuracy: 'Accuracy {{pct}}%',
+    product: 'Product', expected: 'Expected', counted: 'Counted', diff: 'Difference', unitCost: 'Unit cost', value: 'Value', recountAdvised: 'recount?',
+    uncounted: '{{n}} product(s) not counted yet: their stock will not be changed.', approve: 'Approve and correct the stock', reject: 'Reject', rejectWhy: 'Why? (required)',
+    approveHint: 'Approving corrects stock by the differences only (sales made since the count are kept). A decided count cannot be changed.',
+  },
   shops: {
     title: 'Shops', hint: 'Add your shops and choose who can work in each one. A new shop is only open to you at first.',
     planAllows: 'Your plan allows {{n}} shop(s) ({{used}} active).', current: 'Current shop', here: 'here', off: 'switched off',
@@ -398,7 +418,7 @@ const en: typeof fr = {
     },
   },
   purch: {
-    products: 'Products', purchases: 'Purchases', suppliers: 'Suppliers', transfers: 'Transfers', newOrder: 'New order', supplier: 'Supplier',
+    products: 'Products', purchases: 'Purchases', suppliers: 'Suppliers', transfers: 'Transfers', counts: 'Counts', newOrder: 'New order', supplier: 'Supplier',
     newSupplier: 'New supplier', supplierName: 'Supplier name', phone: 'Phone', invoice: 'Invoice no. (optional)',
     addLine: 'Add a product', product: 'Product', unit: 'Unit', quantity: 'Quantity', totalCost: 'Total cost (FCFA)',
     createOrder: 'Save order', noOrders: 'No orders.', noSuppliers: 'No suppliers.',
