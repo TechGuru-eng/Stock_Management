@@ -20,6 +20,7 @@ import { applyGuard, refreshLicence } from './billing/licenceStore'
 import { BillingScreen } from './billing/BillingScreen'
 import { AlertSettings } from './features/alerts/AlertSettings'
 import { LoyaltySettings } from './features/loyalty/LoyaltySettings'
+import { TillProviders } from './features/money/TillProviders'
 import { StockAlertBanner } from './features/alerts/StockAlertBanner'
 import { useAlertNotifications, useAlerts } from './features/alerts/useAlerts'
 import { NoticeBanner } from './billing/NoticeBanner'
@@ -90,6 +91,7 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
         {tab === 'more' && membership?.role === 'owner' && <BillingScreen />}
         {tab === 'more' && <AlertSettings />}
         {tab === 'more' && <LoyaltySettings />}
+        {tab === 'more' && <TillProviders />}
         {tab === 'more' && membership?.role === 'owner' && <ShopsScreen />}
         {tab === 'more' && membership?.role === 'owner' && <StaffScreen />}
         {tab === 'more' && membership?.role === 'owner' && <SupportAccessLog />}

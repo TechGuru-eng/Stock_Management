@@ -10,6 +10,7 @@ import { cartTotals, lineTotals, type CartLine, type CheckoutResult } from '../.
 import type { PaymentMethod } from '../../domain/payments'
 import { useExpiry } from '../expiry/useExpiry'
 import { loadRules, pointsOf } from '../../data/loyaltyRepo'
+import { CollectPanel } from './CollectPanel'
 import { DEFAULT_LOYALTY, checkRedeem, maxRedeemPoints, redeemValue, splitDiscount } from '../../domain/loyalty'
 import { ScanButton } from '../../scanner/ScanButton'
 import { findByBarcode, sameBarcode } from '../../domain/barcode'
@@ -24,6 +25,8 @@ const METHODS: PaymentMethod[] = ['cash', 'mtn_momo', 'orange_money', 'credit']
 interface PayRow {
   method: PaymentMethod
   amount: string
+  /** Set when the operator has confirmed this mobile-money payment (a till collection): the row is then fixed. */
+  collectionId?: string
 }
 
 function Receipt({ result, payments, shopName, phone, onNew }: { result: CheckoutResult; payments: PayRow[]; shopName: string; phone?: string; onNew: () => void }) {
@@ -39,6 +42,7 @@ function Receipt({ result, payments, shopName, phone, onNew }: { result: Checkou
       <h3 className="text-xl font-semibold">{t('pos.saleDone')}</h3>
       {result.oversoldProductIds.length > 0 && <p role="alert" className="rounded bg-amber-100 p-3 text-amber-900">{t('pos.oversold')}</p>}
       <pre className="overflow-x-auto rounded border border-slate-200 p-3 text-sm whitespace-pre-wrap">{text}</pre>
+      {result.transactions.some((x) => x.verification === 'provider_verified') && <p role="status" className="rounded bg-teal-50 p-2 text-sm text-teal-900">{t('collect.receipt', { n: result.transactions.filter((x) => x.verification === 'provider_verified').length })}</p>}
       {result.loyalty && (result.loyalty.earned > 0 || result.loyalty.redeemed > 0) && (
         <p role="status" className="rounded bg-teal-50 p-2 text-sm text-teal-900">{t('loyalty.receipt', { earned: result.loyalty.earned, redeemed: result.loyalty.redeemed, balance: result.loyalty.balanceAfter })}</p>
       )}
@@ -172,7 +176,8 @@ export function PosScreen() {
     setBusy(true)
     try {
       const payments = pays.filter((p) => num(p.amount) > 0).map((p) => ({ method: p.method, amount: Math.round(num(p.amount)) }))
-      const result = await checkout(ctx, { lines: cart, payments, customerId: customerId || undefined, usePoints: pts > 0 ? pts : undefined })
+      const collectionIds = pays.filter((p) => p.collectionId).map((p) => p.collectionId!)
+      const result = await checkout(ctx, { lines: cart, payments, customerId: customerId || undefined, usePoints: pts > 0 ? pts : undefined, collectionIds })
       setDone({ result, pays, phone: customers.find((c) => c.id === customerId)?.phone })
     } catch (err) {
       setError((err as Error).message)
@@ -267,10 +272,11 @@ export function PosScreen() {
             <h3 className="font-semibold">{t('pos.payments')}</h3>
             {pays.map((p, i) => (
               <div key={i} className="flex gap-2">
-                <select className={input} value={p.method} onChange={(e) => setPay(i, { method: e.target.value as PaymentMethod })}>
+                <select className={input} value={p.method} disabled={!!p.collectionId} onChange={(e) => setPay(i, { method: e.target.value as PaymentMethod })}>
                   {METHODS.map((m) => <option key={m} value={m}>{t(`pos.${m}`)}</option>)}
                 </select>
-                <input className={input} inputMode="numeric" placeholder={t('pos.amount')} value={p.amount} onChange={(e) => setPay(i, { amount: e.target.value })} />
+                <input className={input} inputMode="numeric" placeholder={t('pos.amount')} value={p.amount} readOnly={!!p.collectionId} onChange={(e) => setPay(i, { amount: e.target.value })} />
+                {p.collectionId && <span className="flex items-center text-sm font-medium text-teal-700" title={t('collect.verifiedHint')}>✓ {t('collect.verified')}</span>}
                 <button onClick={() => setPays((r) => r.filter((_, k) => k !== i))} className="min-h-12 px-2 text-red-700" aria-label={t('pos.remove')}>✕</button>
               </div>
             ))}
@@ -279,7 +285,9 @@ export function PosScreen() {
               <button onClick={() => setPays((r) => [...r, { method: 'cash', amount: remaining > 0 ? String(remaining) : '' }])} className="min-h-12 flex-1 rounded border border-slate-300">+ {t('pos.add')}</button>
             </div>
             <p className={`text-sm ${remaining === 0 ? 'text-teal-700' : 'text-amber-800'}`}>{t('pos.remaining')}: {formatXaf(remaining)}</p>
-            {pays.some((p) => p.method === 'mtn_momo' || p.method === 'orange_money') && <p className="text-xs text-slate-500">{t('pos.notRecorded')}</p>}
+            {pays.some((p) => (p.method === 'mtn_momo' || p.method === 'orange_money') && !p.collectionId) && <p className="text-xs text-slate-500">{t('pos.notRecorded')}</p>}
+            <CollectPanel ctx={ctx} remaining={remaining} customerPhone={customers.find((c) => c.id === customerId)?.phone} usedIds={pays.flatMap((p) => (p.collectionId ? [p.collectionId] : []))}
+              onUse={(c) => setPays((r) => (r.some((x) => x.collectionId === c.id) ? r : [...r.filter((x) => !(num(x.amount) === 0)), { method: c.provider, amount: String(c.amount), collectionId: c.id }]))} />
           </section>
 
           {error && <p role="alert" className="text-red-700">{error}</p>}

@@ -8,7 +8,8 @@ import { planLimit } from '../billing/licenceStore'
 import { db, deviceId, newId, type CustomerRec, type MovementRec, type ProductRec, type UnitRec } from './db'
 import { emptyCostState, issue, receive, type CostState } from '../domain/costing'
 import type { MovementType } from '../domain/inventory'
-import { buildSale, lineTotals, type CartLine, type CheckoutResult } from '../domain/pos'
+import { buildSale, lineTotals, type CartLine, type CheckoutResult, type CollectionUse } from '../domain/pos'
+import { isUsable } from '../domain/tillCollections'
 import type { PaymentInput } from '../domain/payments'
 import { toBaseQuantity } from '../domain/units'
 import type { Role } from '../domain/permissions'
@@ -254,6 +255,8 @@ export interface CheckoutArgs {
   customerId?: string
   /** Loyalty points the customer spends on this sale (needs a customer; checked against the rules and the balance). */
   usePoints?: number
+  /** Mobile-money payments already confirmed by the provider (ids of this device's till collections) that this sale uses. */
+  collectionIds?: string[]
 }
 
 /**
@@ -263,7 +266,7 @@ export interface CheckoutArgs {
 export async function checkout(ctx: Ctx, args: CheckoutArgs): Promise<CheckoutResult> {
   return db.transaction(
     'rw',
-    [db.sales, db.saleLines, db.movements, db.transactions, db.customerEntries, db.costs, db.customers, db.meta, db.loyaltyRules, db.loyaltyEntries, db.outbox],
+    [db.sales, db.saleLines, db.movements, db.transactions, db.customerEntries, db.costs, db.customers, db.meta, db.loyaltyRules, db.loyaltyEntries, db.tillCollections, db.outbox],
     async () => {
       const costStates: Record<string, CostState> = {}
       for (const l of args.lines) {
@@ -290,7 +293,15 @@ export async function checkout(ctx: Ctx, args: CheckoutArgs): Promise<CheckoutRe
         loyaltyDiscounts = splitDiscount(redeemValue(redeemed, rules), nets)
       }
 
+      const collections: CollectionUse[] = []
+      for (const id of args.collectionIds ?? []) {
+        const c = await db.tillCollections.get(id)
+        if (!c || !isUsable(c, { shopId: ctx.shopId, now: new Date() }) || !c.providerReference) throw new PaymentError('that mobile-money payment cannot be used (not confirmed, already used, or from another shop)')
+        collections.push({ id: c.id, method: c.provider, amount: c.amount, providerReference: c.providerReference })
+      }
+
       const result = buildSale({
+        collections,
         loyaltyDiscounts,
         newId, tenantId: ctx.tenantId, shopId: ctx.shopId, userId: ctx.userId, deviceId: deviceId(), role: ctx.role,
         saleNumber: await nextSaleNumber(ctx.shopId), nowIso: new Date().toISOString(),
@@ -303,6 +314,7 @@ export async function checkout(ctx: Ctx, args: CheckoutArgs): Promise<CheckoutRe
       if (result.transactions.length) await db.transactions.bulkAdd(result.transactions)
       if (result.customerEntry) await db.customerEntries.add(result.customerEntry)
       for (const [productId, state] of Object.entries(result.newCostStates)) await saveCost(ctx.shopId, productId, state)
+      for (const u of collections) await db.tillCollections.update(u.id, { saleId: result.sale.id })
 
       // One group: the sale and everything it produced upload together or not at all.
       const g = result.sale.id

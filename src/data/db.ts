@@ -3,6 +3,7 @@ import type { StockMovement } from '../domain/inventory'
 import type { CustomerEntryRecord, FinancialTxnRecord, SaleLineRecord, SaleRecord } from '../domain/pos'
 import type { AllocationRecord, CashClosureRecord, CashSessionRecord, ExpenseRecord, PaymentRecord } from '../domain/finance'
 import type { LoyaltyEntry } from '../domain/loyalty'
+import type { CollectionRecord } from '../domain/tillCollections'
 import type { LoyaltyRulesRecord } from './loyaltyRepo'
 import type { BatchRecord } from '../domain/expiry'
 import type { SupplierPriceRecord } from '../domain/supplierPrices'
@@ -129,6 +130,8 @@ class StockCmDb extends Dexie {
   stockBatches!: EntityTable<BatchRecord, 'id'>
   loyaltyRules!: EntityTable<LoyaltyRulesRecord, 'id'>
   loyaltyEntries!: EntityTable<LoyaltyEntry, 'id'>
+  /** This device's copy of mobile-money payments collected at the till. NOT uploaded: the server holds the truth; this is what a sale can use. */
+  tillCollections!: EntityTable<CollectionRecord, 'id'>
   outbox!: EntityTable<OutboxRec, 'seq'>
   syncLog!: EntityTable<SyncLogRec, 'id'>
   meta!: EntityTable<MetaRec, 'key'>
@@ -190,6 +193,9 @@ class StockCmDb extends Dexie {
     this.version(10).stores({
       loyaltyRules: 'id, setAt',
       loyaltyEntries: 'id, customerId, saleId',
+    })
+    this.version(11).stores({
+      tillCollections: 'id, saleId, shopId',
     })
   }
 }

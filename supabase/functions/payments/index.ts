@@ -6,6 +6,11 @@
 // POST ?cb=<attempt id>                       the provider's callback. NOT believed: it only makes us ask the provider.
 // POST ?reconcile=1  (signed like the billing webhook)   a scheduled sweep that asks about every open attempt
 //
+// Till collections (mobile money taken from a shop customer, paid into the BUSINESS own provider account):
+// POST { action: 'till_start', shop_id, provider, phone, amount }   signed in as someone who may sell
+// POST { action: 'till_check', id }                                  signed in: asks the provider, settles when it is over
+// POST ?cb=<id>&k=till                                               the provider callback (same rule: only a nudge)
+//
 // verify_jwt is OFF for this function because the callback has no login; 'start' and 'check' check the user themselves.
 // Truth only ever comes from asking the provider with our own credentials; settling goes through the database's
 // idempotent confirm path (amount must match, a provider reference can be used once).
@@ -32,8 +37,11 @@ const http: Http = async (u, init) => {
   return { status: res.status, text: await res.text() }
 }
 
-async function config(provider: string) {
-  const { data } = await admin.from('platform_secrets').select('value').eq('key', `provider_${provider}`).maybeSingle()
+async function config(provider: string, tenant?: string) {
+  // Subscription payments use the platform credentials; till collections use the credentials of the business itself.
+  const { data } = tenant
+    ? await admin.from('tenant_provider_secrets').select('value:config').eq('tenant_id', tenant).eq('provider', provider).maybeSingle()
+    : await admin.from('platform_secrets').select('value').eq('key', `provider_${provider}`).maybeSingle()
   if (!data?.value) return null
   try {
     const raw = JSON.parse(data.value)
@@ -107,6 +115,68 @@ async function start(req: Request, paymentId: string) {
   }
 }
 
+/** Same as refresh(), for a till collection and the credentials of the business. */
+async function refreshTill(id: string): Promise<{ status: string; reason?: string }> {
+  const touch = (await admin.rpc('till_collection_touch', { p_id: id })).data as { ok: boolean; done?: boolean; throttled?: boolean; status?: string } | null
+  if (!touch?.ok) return { status: 'unknown' }
+  if (touch.done || touch.throttled) return { status: touch.status ?? 'pending' }
+  const a = (await admin.rpc('till_collection_get', { p_id: id })).data as { id: string; tenant_id: string; provider: string; amount: number; pay_token: string | null } | null
+  if (!a) return { status: 'unknown' }
+  const c = await config(a.provider, a.tenant_id)
+  if (!c?.cfg) {
+    await admin.rpc('till_collection_error', { p_id: id, p_reason: 'provider_not_configured' })
+    return { status: 'error', reason: 'provider_not_configured' }
+  }
+  let st: StatusResult
+  try {
+    if (c.kind === 'mtn') st = await mtnStatus(c.cfg as never, http, a.id, cache)
+    else if (!a.pay_token) return { status: 'pending' }
+    else st = await orangeStatus(c.cfg as never, http, { attemptId: a.id, amount: Number(a.amount), payToken: a.pay_token }, cache)
+  } catch (e) {
+    if (e instanceof ProviderError && e.retryable) return { status: 'pending' }
+    const reason = e instanceof ProviderError ? e.message : 'provider_error'
+    await admin.rpc('till_collection_error', { p_id: id, p_reason: reason })
+    return { status: 'error', reason }
+  }
+  if (st.state === 'pending') return { status: 'pending' }
+  const { data } = await admin.rpc('settle_till_collection', { p_id: id, p_state: st.state, p_amount: st.amount ?? null, p_provider_ref: st.providerReference ?? null, p_reason: st.reason ?? null })
+  const r = data as { status?: string; reason?: string } | null
+  return { status: r?.status ?? 'pending', reason: r?.reason }
+}
+
+async function tillStart(req: Request, b: Record<string, unknown>) {
+  const authorization = req.headers.get('Authorization')
+  if (!authorization) return json({ error: 'unauthorized' }, 401)
+  if (typeof b.shop_id !== 'string' || !UUID.test(b.shop_id) || typeof b.provider !== 'string' || typeof b.phone !== 'string' || typeof b.amount !== 'number' || !Number.isInteger(b.amount)) return json({ error: 'bad_request' }, 400)
+  const user = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authorization } }, auth: { persistSession: false, autoRefreshToken: false } })
+  const { data, error } = await user.rpc('begin_till_collection', { p_shop: b.shop_id, p_provider: b.provider, p_phone: b.phone, p_amount: b.amount })
+  if (error) return json({ error: 'not_allowed' }, error.code === '42501' ? 403 : 400)
+  const r = data as { ok: boolean; reason?: string; id: string; tenant: string; provider: string; phone: string; amount: number }
+  if (!r.ok) return json({ ok: false, reason: r.reason })
+  const c = await config(r.provider, r.tenant)
+  if (!c?.cfg) {
+    await admin.rpc('till_collection_error', { p_id: r.id, p_reason: 'provider_not_configured' })
+    return json({ ok: false, reason: 'not_configured' })
+  }
+  const callbackUrl = `${url}/functions/v1/payments?cb=${r.id}&k=till`
+  const externalId = `TILL-${r.id.slice(0, 8).toUpperCase()}`
+  try {
+    if (c.kind === 'mtn') {
+      await mtnRequestToPay(c.cfg as never, http, { attemptId: r.id, amount: Number(r.amount), phone: r.phone, externalId, message: 'Payment', callbackUrl }, cache)
+      await admin.rpc('till_collection_sent', { p_id: r.id, p_pay_token: null, p_payment_url: null })
+      return json({ ok: true, id: r.id, provider: r.provider })
+    }
+    const lang = (new URL(req.url).searchParams.get('lang') ?? 'fr') === 'en' ? 'en' : 'fr'
+    const o = await orangeInitiate(c.cfg as never, http, { attemptId: r.id, amount: Number(r.amount), externalId, notifUrl: callbackUrl, lang }, cache)
+    await admin.rpc('till_collection_sent', { p_id: r.id, p_pay_token: o.payToken, p_payment_url: o.paymentUrl })
+    return json({ ok: true, id: r.id, provider: r.provider, payment_url: o.paymentUrl })
+  } catch (e) {
+    const reason = e instanceof ProviderError ? e.message : 'provider_error'
+    await admin.rpc('till_collection_error', { p_id: r.id, p_reason: reason })
+    return json({ ok: false, reason: 'provider_error', retryable: e instanceof ProviderError ? e.retryable : true })
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST' && req.method !== 'GET') return json({ error: 'method_not_allowed' }, 405)
@@ -115,7 +185,7 @@ Deno.serve(async (req) => {
   // The provider's callback: ignore what it says, just look into this attempt. Always the same harmless answer.
   const cb = q.get('cb')
   if (cb !== null) {
-    if (UUID.test(cb)) await refresh(cb)
+    if (UUID.test(cb)) await (q.get('k') === 'till' ? refreshTill(cb) : refresh(cb))
     return json({ ok: true })
   }
 
@@ -129,6 +199,8 @@ Deno.serve(async (req) => {
     const { data: ids } = await admin.rpc('payment_attempts_open', { p_limit: 20 })
     let n = 0
     for (const id of (ids as string[] | null) ?? []) { await refresh(id); n++ }
+    const { data: tids } = await admin.rpc('till_collections_open', { p_limit: 20 })
+    for (const id of (tids as string[] | null) ?? []) { await refreshTill(id); n++ }
     return json({ ok: true, checked: n })
   }
 
@@ -137,6 +209,15 @@ Deno.serve(async (req) => {
 
   if (body.action === 'start' && typeof body.payment_id === 'string' && UUID.test(body.payment_id)) return await start(req, body.payment_id)
 
+  if (body.action === 'till_start') return await tillStart(req, body)
+  if (body.action === 'till_check' && typeof body.id === 'string' && UUID.test(body.id)) {
+    const authorization = req.headers.get('Authorization')
+    if (!authorization) return json({ error: 'unauthorized' }, 401)
+    const user = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authorization } }, auth: { persistSession: false, autoRefreshToken: false } })
+    const { data } = await user.from('till_collections').select('id').eq('id', body.id).maybeSingle() // row-level security: only people who may sell in that business
+    if (!data) return json({ error: 'not_found' }, 404)
+    return json({ ok: true, ...(await refreshTill(body.id)) })
+  }
   if (body.action === 'check' && typeof body.attempt_id === 'string' && UUID.test(body.attempt_id)) {
     const authorization = req.headers.get('Authorization')
     if (!authorization) return json({ error: 'unauthorized' }, 401)

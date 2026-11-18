@@ -121,6 +121,10 @@ export interface FinancialTxnRecord {
   /** Set when this money moved because of a customer return or refund. */
   returnId?: string
   description?: string
+  /** The provider's own reference, for a payment the provider confirmed. Set only by the server's check. */
+  providerReference?: string
+  /** The till collection this payment is (provider-verified payments only). */
+  collectionId?: string
   occurredAt: string
 }
 
@@ -157,6 +161,18 @@ export interface CheckoutInput {
    * is NOT a manual discount: it never needs a manager's approval (the points were earned, and the amount is capped by the loyalty rules).
    */
   loyaltyDiscounts?: readonly number[]
+  /**
+   * Mobile-money payments the provider has already confirmed (see tillCollections). Each covers part of that method's payment and becomes its
+   * own provider-verified ledger entry; whatever is left of the method's amount stays an ordinary "recorded" entry.
+   */
+  collections?: readonly CollectionUse[]
+}
+
+export interface CollectionUse {
+  id: string
+  method: 'mtn_momo' | 'orange_money'
+  amount: Xaf
+  providerReference: string
 }
 
 export interface CheckoutResult {
@@ -268,15 +284,44 @@ export function buildSale(input: CheckoutInput): CheckoutResult {
     occurredAt: input.nowIso,
   }
 
-  const transactions: FinancialTxnRecord[] = (['cash', 'mtn_momo', 'orange_money'] as const)
-    .filter((m) => settlement.byMethod[m] > 0)
-    .map((m) => ({
+  const uses = input.collections ?? []
+  if (new Set(uses.map((u) => u.id)).size !== uses.length) throw new PaymentError('the same collected payment cannot be used twice')
+  for (const m of ['mtn_momo', 'orange_money'] as const) {
+    const used = sumXaf(uses.filter((u) => u.method === m).map((u) => u.amount))
+    if (used > settlement.byMethod[m]) throw new PaymentError(`collected ${m} payments (${used}) are more than the ${m} payment of this sale (${settlement.byMethod[m]})`)
+  }
+  for (const u of uses) {
+    assertXaf(u.amount, 'collected payment')
+    if (u.amount <= 0 || !u.providerReference) throw new PaymentError('collected payment is incomplete')
+  }
+  const verified: FinancialTxnRecord[] = uses.map((u, i) => ({
+    id: input.newId(),
+    tenantId: input.tenantId,
+    shopId: input.shopId,
+    reference: `${input.saleNumber}-${u.method}-c${i + 1}`,
+    txnType: 'sale_collection' as const,
+    amount: u.amount,
+    method: u.method,
+    // The server confirms this against the provider's own record when the sale uploads; the device cannot make it true by saying so.
+    verification: 'provider_verified' as const,
+    providerReference: u.providerReference,
+    collectionId: u.id,
+    staffId: input.userId,
+    deviceId: input.deviceId,
+    customerId: input.customer?.id,
+    saleId,
+    occurredAt: input.nowIso,
+  }))
+  const recorded: FinancialTxnRecord[] = (['cash', 'mtn_momo', 'orange_money'] as const)
+    .map((m) => [m, settlement.byMethod[m] - sumXaf(uses.filter((u) => u.method === m).map((u) => u.amount))] as const)
+    .filter(([, amount]) => amount > 0)
+    .map(([m, amount]) => ({
       id: input.newId(),
       tenantId: input.tenantId,
       shopId: input.shopId,
       reference: `${input.saleNumber}-${m}`,
       txnType: 'sale_collection' as const,
-      amount: settlement.byMethod[m],
+      amount,
       method: m,
       // A manually entered mobile-money payment is only "recorded", never provider-verified.
       verification: 'recorded' as const,
@@ -300,5 +345,6 @@ export function buildSale(input: CheckoutInput): CheckoutResult {
         }
       : undefined
 
+  const transactions = [...verified, ...recorded]
   return { sale, lines: lineRecords, movements, transactions, customerEntry, newCostStates, oversoldProductIds: [...oversold] }
 }

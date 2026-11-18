@@ -19,6 +19,8 @@ export class FakeServer implements SyncTransport {
   /** Force small pages to exercise pagination. */
   pageLimit?: number
   revoked = new Set<string>()
+  /** The till collections the 'server' knows (the provider confirmed them). A sale may claim one once, with the exact amount. */
+  collections = new Map<string, { amount: number; method: string; providerReference: string; status: string; usedBy?: string }>()
   /** Tests may plug these in to watch support reports. */
   reportIssue?: SyncTransport['reportIssue']
   resolveIssue?: SyncTransport['resolveIssue']
@@ -97,6 +99,18 @@ export class FakeServer implements SyncTransport {
         throw new TransportError('permanent', 'this count has already been decided', '23514')
       }
       if (op.table === 'stock_count_decisions') decisionsInBatch.push(row.id as string)
+      if (op.table === 'financial_transactions') {
+        const cid = row.collection_id as string | null | undefined
+        if (cid) {
+          const c = this.collections.get(cid)
+          if (!c || c.status !== 'successful' || c.usedBy || c.amount !== Number(row.amount) || c.method !== row.method) throw new TransportError('permanent', 'collection cannot be used for this payment', '23514')
+          c.usedBy = row.sale_id as string
+          row.verification = 'provider_verified'
+          row.provider_reference = c.providerReference
+        } else if (row.verification === 'provider_verified') {
+          throw new TransportError('permanent', 'a verified payment needs a collection', '23514')
+        }
+      }
       if (op.table === 'loyalty_entries') {
         const k = row.kind as string
         const pts = Number(row.points)

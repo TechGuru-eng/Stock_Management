@@ -94,6 +94,8 @@ export function toServer(table: string, p: Local): Row {
         id: p.id, tenant_id: p.tenantId, shop_id: p.shopId, reference: p.reference, txn_type: p.txnType,
         amount: p.amount, method: p.method, verification: p.verification, customer_id: p.customerId ?? null,
         sale_id: p.saleId ?? null, return_id: p.returnId ?? null, description: p.description ?? null, occurred_at: p.occurredAt,
+        // Only the claim travels: the server checks it against the provider's own record and fills in the verified status and reference itself.
+        collection_id: p.collectionId ?? null,
       }
     case 'customer_account_entries':
       return {
@@ -240,6 +242,7 @@ export function fromServer(table: SyncTable, r: Local): Local {
         amount: num(r.amount), method: r.method, verification: r.verification, staffId: (r.staff_id as string) ?? '',
         deviceId: (r.device_id as string) ?? '', customerId: opt(r.customer_id), saleId: opt(r.sale_id),
         returnId: opt(r.return_id), description: opt(r.description), occurredAt: r.occurred_at,
+        providerReference: opt(r.provider_reference), collectionId: opt(r.collection_id),
       } satisfies FinancialTxnRecord
     case 'customer_account_entries':
       return {

@@ -807,3 +807,27 @@ When a provider is set up, the owner's "payment created" panel (More > Billing) 
 - Only subscription payments are covered. Taking mobile money from a shop's own customers at the till (each business with its own provider credentials) is not built; payments entered at the till remain "recorded", not provider-verified.
 - No refunds or reversals through the provider; no webhook signature exists on the provider side, which is why the server always asks.
 - Credentials are stored as plain text in a table only the server can read, not in a separate secrets vault; there is no admin screen for them yet, only the SQL function.
+
+## 32. Mobile money at the till (verified customer payments)
+
+Until now a MoMo / Orange payment typed into a sale was only **recorded**: the app took the cashier's word. With this module the customer can approve the payment on their own phone and the **operator** (MTN or Orange) tells the server it arrived; only then does the sale carry a **provider-verified** payment.
+
+**Money never passes through StockCM.** Each business connects its **own** MTN MoMo / Orange Money merchant accounts (More > Customer mobile payments, owner only). The codes are stored server-side (`tenant_provider_secrets`, no client can read the table); the owner can replace or remove them but never read them back. The platform's own accounts (section 31) are separate.
+
+**At the till** (online only; the offline till keeps working with manual, unverified entries): in the payments section, "Collect on the customer's phone": choose MTN or Orange, the customer's number (pre-filled from the customer), the amount (pre-filled with what is still due). MTN sends a prompt to the phone; Orange gives a payment page. The screen waits and asks the server. When the operator confirms, a payment row appears marked **confirmed**, with a fixed amount, and the sale shows "payment(s) confirmed by the operator".
+
+- **Same safety rule as section 31:** a callback is never believed; the server asks the operator with the business's own credentials. Settling needs the operator's amount to equal the amount asked (otherwise the collection becomes `error`, visible to the owner, never usable) and the operator's reference to be unused.
+- **Collected money is never lost.** A collection that succeeded but whose sale never happened (screen closed, customer paid late) stays listed under **Collected, not yet used** for 30 days, on every till of that shop, with a Use button. It can only go into a sale that still needs at least that amount.
+- **The database, not the device, decides what is verified (migration 0026, tested live, rolled back).** A sale's mobile-money payment can *claim* a collection (`financial_transactions.collection_id`). A trigger accepts the claim only if the collection is successful, from that business and shop, for exactly that amount and method, and unused; it then sets "provider verified" and the operator's reference itself and marks the collection used. A device that says "verified" without a collection is refused (that rule already existed), a wrong amount or method, a failed or errored collection, and a second use of the same collection are refused. One sale can use several collections; an amount not covered by one stays an ordinary recorded entry.
+- **Limits per request:** 100 to 2 000 000 FCFA; at most 3 open requests per person at a time; the status check is rate-limited.
+- **Tested:** the rules (request checks, what is usable, fixed amounts), the sale builder (verified entries per collection, recorded remainder, refusals of oversize, wrong-method, repeated or incomplete collections, behaviour unchanged without collections), the till with the local copy of collections (used once, refused when unconfirmed, other shop or unknown, nothing half-saved), and sync (a real collection uploads verified; a forged claim stops the sale uploading and it stays on the device), plus 23 live database checks of the rules above, the hidden provider token, permissions and rate limits.
+
+### Till mobile-money limitations (honest list)
+- **Never run against the real MTN or Orange servers** (same caveat as section 31; they share the adapter). Test each business's accounts with a small real payment before relying on it.
+- Online only: a prompt cannot be sent offline. Offline, the cashier can still enter a manual (unverified) mobile-money payment.
+- **A forged claim blocks that sale's upload.** A device that claims a collection the server does not accept keeps that sale stuck with a sync error (visible in the sync screen) rather than lose or alter it; the owner must look. This is deliberate: a forged "verified" must not reach the books.
+- Returns and cancellations of a verified mobile-money sale are refunded by hand (cash or a manual mobile-money entry, recorded not verified); there is no refund through the operator.
+- A collection larger than the sale ends up unused (it cannot be split); money that is collected but never used must be refunded to the customer by the owner, outside the app. The list shows it for 30 days.
+- Staff restricted to some shops are not blocked from requesting a collection for another shop of the same business at the database level (the screen only offers their own shop), the same as for sales.
+- Credentials are plain text in a server-only table (no vault) and there is no change history of who changed them beyond the audit log entry.
+- Owners must supply and update their own operator credentials; keys that expire are not renewed automatically.

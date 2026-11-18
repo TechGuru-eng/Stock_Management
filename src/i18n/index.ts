@@ -233,6 +233,25 @@ const fr = {
     noSupport: "Ce navigateur ne permet pas les notifications.", denied: 'Les notifications sont bloquées : autorisez-les dans les réglages du navigateur.',
     notifyOut: '{{count}} produit(s) en rupture', notifyLow: '{{count}} produit(s) à surveiller',
   },
+  collect: {
+    title: 'Encaisser sur le téléphone du client', hint: "Le client valide le paiement sur son propre téléphone. L'argent va directement sur le compte MTN / Orange de votre commerce. Seul l'opérateur peut confirmer que l'argent est arrivé.",
+    phone: 'Téléphone du client', sendPrompt: 'Envoyer la demande au client', orangePage: 'Créer la page de paiement Orange Money', waitingMtn: 'Demande envoyée : le client doit la valider avec son code secret.', waitingOrange: 'Faites ouvrir la page de paiement au client (ou ouvrez-la pour lui).',
+    stopWaiting: 'Arrêter d\'attendre', waitHint: "Si le client a validé, l'argent apparaît dans « Argent encaissé non utilisé » même si vous fermez cet écran : il ne sera pas perdu.",
+    unused: 'Argent encaissé non utilisé', use: 'Utiliser', verified: 'confirmé', verifiedHint: "Confirmé par l'opérateur : montant fixe", receipt: "{{n}} paiement(s) mobile confirmé(s) par l'opérateur.",
+    stopped: {
+      declined: "Le client a refusé ou n'a pas validé. Aucun argent n'a été pris.", expired: "La demande a expiré. Si le client a quand même payé, l'argent apparaîtra dans « Argent encaissé non utilisé ».",
+      error: "Le paiement n'a pas pu être vérifié. Si le client a été débité, vérifiez avec l'opérateur et prévenez le propriétaire.", phone: 'Numéro de téléphone invalide.', amount: 'Montant invalide (entre 100 et 2 000 000 FCFA).',
+      not_configured: "Ce mode de paiement n'est pas configuré (Plus > Paiements mobiles).", too_many_open: 'Trop de demandes en cours : attendez quelques minutes.', provider_error: "L'opérateur n'a pas répondu correctement. Réessayez.",
+    },
+  },
+  tillProviders: {
+    title: 'Paiements mobiles des clients', hint: "Reliez vos propres comptes marchands MTN MoMo et Orange Money : l'argent de vos clients arrive directement chez vous, StockCM ne le touche jamais. Les codes sont enregistrés sur le serveur et ne peuvent plus être relus ensuite.",
+    on: 'activé', off: 'non configuré', setup: 'Configurer', replace: 'Remplacer les codes', remove: 'Retirer', save: 'Enregistrer', saved: 'Enregistré.', removed: 'Retiré.', invalid: 'Informations incomplètes ou adresses invalides (https obligatoire).',
+    field: {
+      baseUrl: 'Adresse du service (https)', subscriptionKey: "Clé d'abonnement", apiUser: 'Utilisateur API', apiKey: 'Clé API', targetEnvironment: 'Environnement (sandbox ou celui donné par MTN)', currency: 'Devise (XAF ; EUR pour le test MTN)',
+      authorization: "En-tête d'autorisation (Basic …)", merchantKey: 'Clé marchand', returnUrl: 'Adresse de retour après paiement (https)', cancelUrl: "Adresse après annulation (https)",
+    },
+  },
   payNow: {
     sendPrompt: 'Envoyer la demande de paiement à mon téléphone', openPage: 'Payer avec Orange Money', sending: 'Envoi en cours…',
     waitingMtn: 'Une demande de paiement est arrivée sur votre téléphone : validez-la avec votre code secret.', waitingOrange: "Ouvrez la page de paiement Orange Money et terminez le paiement.",
@@ -614,6 +633,25 @@ const en: typeof fr = {
     settings: 'Stock alerts', lead: 'Warn when a product will run out in less than', notify: 'Notifications on this device', notifyHint: 'A notification appears when a product goes out of stock, below its minimum or is about to run out. It only shows while the app is open or running in the background: nothing arrives while it is closed.',
     noSupport: 'This browser cannot show notifications.', denied: 'Notifications are blocked: allow them in the browser settings.',
     notifyOut: '{{count}} product(s) out of stock', notifyLow: '{{count}} product(s) to watch',
+  },
+  collect: {
+    title: "Collect on the customer's phone", hint: "The customer approves the payment on their own phone. The money goes straight to your business's MTN / Orange account. Only the operator can confirm that money arrived.",
+    phone: "Customer's phone", sendPrompt: 'Send the request to the customer', orangePage: 'Create the Orange Money payment page', waitingMtn: 'Request sent: the customer must approve it with their secret code.', waitingOrange: 'Have the customer open the payment page (or open it for them).',
+    stopWaiting: 'Stop waiting', waitHint: 'If the customer approved, the money shows under "Collected, not yet used" even if you close this screen: it will not be lost.',
+    unused: 'Collected, not yet used', use: 'Use', verified: 'confirmed', verifiedHint: 'Confirmed by the operator: fixed amount', receipt: '{{n}} mobile payment(s) confirmed by the operator.',
+    stopped: {
+      declined: 'The customer declined or did not approve. No money was taken.', expired: 'The request expired. If the customer paid anyway, the money will show under "Collected, not yet used".',
+      error: 'The payment could not be verified. If the customer was charged, check with the operator and tell the owner.', phone: 'Invalid phone number.', amount: 'Invalid amount (between 100 and 2,000,000 FCFA).',
+      not_configured: 'This payment method is not set up (More > Mobile payments).', too_many_open: 'Too many requests open: wait a few minutes.', provider_error: 'The operator did not answer properly. Try again.',
+    },
+  },
+  tillProviders: {
+    title: 'Customer mobile payments', hint: "Connect your own MTN MoMo and Orange Money merchant accounts: your customers' money arrives straight with you, StockCM never touches it. The codes are stored on the server and cannot be read back afterwards.",
+    on: 'on', off: 'not set up', setup: 'Set up', replace: 'Replace the codes', remove: 'Remove', save: 'Save', saved: 'Saved.', removed: 'Removed.', invalid: 'Incomplete details or invalid addresses (https is required).',
+    field: {
+      baseUrl: 'Service address (https)', subscriptionKey: 'Subscription key', apiUser: 'API user', apiKey: 'API key', targetEnvironment: 'Environment (sandbox or the one MTN gives you)', currency: 'Currency (XAF; EUR for the MTN test)',
+      authorization: 'Authorization header (Basic ...)', merchantKey: 'Merchant key', returnUrl: 'Address to return to after paying (https)', cancelUrl: 'Address after cancelling (https)',
+    },
   },
   payNow: {
     sendPrompt: 'Send the payment request to my phone', openPage: 'Pay with Orange Money', sending: 'Sending…',
