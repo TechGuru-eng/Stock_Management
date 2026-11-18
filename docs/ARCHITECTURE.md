@@ -510,5 +510,34 @@ Uploads made as another person on a shared till are checked against that person'
 - Two people counting the same product on different devices: the newest line wins, with no warning that they differ.
 - A line that reaches the server after the count was decided is refused (shown as a refused sync event); counting devices should sync before approval.
 - Adjustment cost uses the average cost at approval time, not at counting time, so the value shown in the review can differ slightly from what is posted if costs moved in between.
-- Barcode scanning with a camera is not built; the search box accepts a typed or scanner-entered barcode.
+- Camera scanning is available in counts (section 21); each scan adds one to a tally that the counter checks and saves.
+
+## 21. Barcode scanning
+
+Three ways to enter a barcode, all working offline:
+1. **Camera** (the barcode button beside search and barcode fields). It uses the browser's built-in `BarcodeDetector` where there is one
+   (Chrome / Edge on Android and desktop: fast, nothing to download); elsewhere (iPhone Safari, Firefox) it loads a small JavaScript reader
+   (`@zxing/browser`) the first time it is opened. Both are loaded on demand, so the app starts no slower. Images never leave the device.
+2. **A scanner that types** (USB / Bluetooth "keyboard" scanners): they type the code and press Enter, which the till's search box already
+   accepts; codes now also match when a scanner reports a UPC-A code as EAN-13 or the other way round.
+3. **Typing the code** in the scanner window, so a dirty label or a refused camera permission never blocks a sale.
+
+**Where it works.** Till: continuous mode (stays open for a whole basket; each scan adds the product, scanning the same item again adds one
+more; shows "added" or "unknown product"). Product form: fills the barcode, warns when it is already used by another product or when the last
+digit does not fit (a misread), and can make an in-store code for goods that have none (EAN-13 starting with 20, the range reserved for
+in-store use, never clashing with a manufacturer's code). Stock list search. Counts and transfers: each scan adds one to that product's tally,
+which the person checks and saves (transfers are capped at the stock available).
+
+**Reliability rules (tested).** Retail codes (EAN-13, EAN-8, UPC-A, ITF-14) are checked with their check digit and a misread frame is ignored;
+the same code seen again within 1.5 s is ignored (same item still in view); text is cleaned (spaces, line breaks, case). Product barcodes are
+stored cleaned, and the same code in UPC-A / EAN-13 spelling counts as a duplicate. The scanner window is drawn outside the till's form so
+a typed code can never submit the sale form.
+
+### Barcode limitations (honest list)
+- Camera scanning needs a secure connection (https or localhost) and the user's permission; the camera was NOT exercised on real devices
+  here (the test browser has no camera), only the logic, the screens, the typed fallback and the denied-permission message.
+- Low light, glossy labels and damaged codes are harder; the torch button appears only where the phone allows it.
+- One barcode per product (not per unit such as carton); cartons are sold by choosing the unit after scanning the base product.
+- QR codes and mobile-money QR payments are not read. No label printing: the in-store codes must be printed elsewhere.
+- Wedge-scanner bursts are recognised by the search boxes (code then Enter), not by a global listener, so the right field must be focused.
 

@@ -1,3 +1,5 @@
+import { ScanButton } from '../../scanner/ScanButton'
+import { describeBarcode, findByBarcode, nextInternalEan, sameBarcode } from '../../domain/barcode'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -57,10 +59,25 @@ function ProductForm({ ctx, onDone }: { ctx: Ctx; onDone: () => void }) {
     }
   }
 
+  const existing = useLiveQuery(() => db.products.toArray(), []) ?? []
+  const clash = f.barcode.trim() ? findByBarcode(existing, f.barcode) : undefined
+  const info = f.barcode.trim() ? describeBarcode(f.barcode) : null
+  const barcodeNote = clash
+    ? { bad: true, text: t('scan.alreadyUsed', { name: clash.name }) }
+    : info && info.checksumOk === false ? { bad: true, text: t('scan.badChecksum') }
+    : info && info.kind !== 'other' ? { bad: false, text: t('scan.valid', { kind: info.kind.toUpperCase() }) } : null
+
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
       <Field label={t('stock.name')}><input className={input} required value={f.name} onChange={(e) => set('name', e.target.value)} /></Field>
-      <Field label={t('stock.barcode')}><input className={input} inputMode="numeric" value={f.barcode} onChange={(e) => set('barcode', e.target.value)} /></Field>
+      <Field label={t('stock.barcode')}>
+        <div className="flex gap-2">
+          <input className={input} inputMode="numeric" value={f.barcode} onChange={(e) => set('barcode', e.target.value)} />
+          <ScanButton onCode={(c) => { set('barcode', c) }} />
+        </div>
+        {barcodeNote && <span role="status" className={`text-sm ${barcodeNote.bad ? 'text-red-700' : 'text-slate-600'}`}>{barcodeNote.text}</span>}
+        {!f.barcode.trim() && !f.isService && <button type="button" className="self-start text-sm text-teal-700 underline" onClick={() => set('barcode', nextInternalEan(existing.map((p) => p.barcode)))}>{t('scan.makeCode')}</button>}
+      </Field>
       <label className="flex items-center gap-2"><input type="checkbox" checked={f.isService} onChange={(e) => set('isService', e.target.checked)} /> {t('stock.isService')}</label>
       <Field label={t('stock.baseUnit')}><input className={input} value={f.baseUnit} onChange={(e) => set('baseUnit', e.target.value)} /></Field>
       <Field label={t('stock.basePrice')}><input className={input} inputMode="numeric" required value={f.basePrice} onChange={(e) => set('basePrice', e.target.value)} /></Field>
@@ -200,13 +217,14 @@ export function StockScreen() {
   if (detail) return <ProductDetail ctx={ctx} product={detail} onBack={() => setView('list')} />
 
   const q = search.trim().toLowerCase()
-  const shown = (rows ?? []).filter(({ p }) => !q || p.name.toLowerCase().includes(q) || p.barcode?.includes(q))
+  const shown = (rows ?? []).filter(({ p }) => !q || p.name.toLowerCase().includes(q) || p.barcode?.toLowerCase().includes(q) || (p.barcode ? sameBarcode(p.barcode, search) : false))
   const canWrite = can(ctx.role, 'products.write')
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex gap-3">
         <input className={input} placeholder={t('stock.search')} value={search} onChange={(e) => setSearch(e.target.value)} />
+        <ScanButton onCode={(c) => { setSearch(c) }} />
         {canWrite && <button onClick={() => setView('new')} className={`${btn} shrink-0`}>+ {t('stock.newProduct')}</button>}
       </div>
       {shown.length === 0 && <p className="text-slate-500">{t('stock.none')}</p>}

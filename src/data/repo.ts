@@ -1,4 +1,5 @@
 import { getOutboxActor } from './actor'
+import { cleanBarcode, findByBarcode } from '../domain/barcode'
 import { planLimit } from '../billing/licenceStore'
 import { db, deviceId, newId, type CustomerRec, type MovementRec, type ProductRec, type UnitRec } from './db'
 import { emptyCostState, issue, receive, type CostState } from '../domain/costing'
@@ -73,7 +74,7 @@ export async function addProduct(ctx: Ctx, input: NewProductInput): Promise<stri
     id: newId(),
     tenantId: ctx.tenantId,
     name: input.name.trim(),
-    barcode: input.barcode?.trim() || undefined,
+    barcode: cleanBarcode(input.barcode ?? '') || undefined,
     sku: input.sku?.trim() || undefined,
     baseUnit: input.baseUnit,
     minStock: input.minStock,
@@ -86,7 +87,7 @@ export async function addProduct(ctx: Ctx, input: NewProductInput): Promise<stri
 
   await db.transaction('rw', [db.products, db.units, db.movements, db.costs, db.outbox], async () => {
     if (product.barcode) {
-      const dup = await db.products.where('barcode').equals(product.barcode).first()
+      const dup = findByBarcode(await db.products.filter((p) => Boolean(p.barcode)).toArray(), product.barcode)
       if (dup) throw new Error('a product with this barcode already exists')
     }
     await db.products.add(product)

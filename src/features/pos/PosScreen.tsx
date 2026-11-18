@@ -8,6 +8,8 @@ import { useCtx } from '../../data/useCtx'
 import { formatXaf } from '../../domain/money'
 import { cartTotals, type CartLine, type CheckoutResult } from '../../domain/pos'
 import type { PaymentMethod } from '../../domain/payments'
+import { ScanButton } from '../../scanner/ScanButton'
+import { findByBarcode, sameBarcode } from '../../domain/barcode'
 import { InvoiceActions } from '../invoices/InvoiceActions'
 import { buildReceiptText, whatsappLink } from '../../domain/receipt'
 
@@ -107,7 +109,7 @@ export function PosScreen() {
   }
 
   const q = search.trim().toLowerCase()
-  const matches: ProductRec[] = q ? products.filter((p) => p.name.toLowerCase().includes(q) || p.barcode === search.trim()).slice(0, 8) : []
+  const matches: ProductRec[] = q ? products.filter((p) => p.name.toLowerCase().includes(q) || (p.barcode ? sameBarcode(p.barcode, search) : false)).slice(0, 8) : []
 
   function add(p: ProductRec, u: UnitRec) {
     setError(null)
@@ -125,11 +127,22 @@ export function PosScreen() {
   function onSearchKey(e: FormEvent) {
     e.preventDefault()
     // A barcode scanner types the code and presses Enter.
-    const hit = products.find((p) => p.barcode === search.trim()) ?? (matches.length === 1 ? matches[0] : undefined)
+    const hit = findByBarcode(products, search) ?? (matches.length === 1 ? matches[0] : undefined)
     if (!hit) return
     const us = unitsByProduct.get(hit.id) ?? []
     const u = us.find((x) => x.isBase) ?? us[0]
     if (u) add(hit, u)
+  }
+
+  /** Camera scan: add the product (one more each time the same item is scanned again) and say what happened. */
+  function onScanned(code: string): string {
+    const hit = findByBarcode(products, code)
+    if (!hit) return t('scan.unknown', { code })
+    const us = unitsByProduct.get(hit.id) ?? []
+    const u = us.find((x) => x.isBase) ?? us[0]
+    if (!u) return t('scan.noPrice', { name: hit.name })
+    add(hit, u)
+    return t('scan.added', { name: hit.name })
   }
 
   const patch = (i: number, p: Partial<CartLine>) => setCart((c) => c.map((l, k) => (k === i ? { ...l, ...p } : l)))
@@ -152,8 +165,9 @@ export function PosScreen() {
 
   return (
     <div className="flex flex-col gap-4">
-      <form onSubmit={onSearchKey}>
+      <form onSubmit={onSearchKey} className="flex gap-2">
         <input className={input} placeholder={t('pos.search')} value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
+        <ScanButton continuous onCode={onScanned} />
       </form>
 
       {q && (

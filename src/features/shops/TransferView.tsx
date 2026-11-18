@@ -1,6 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ScanButton } from '../../scanner/ScanButton'
+import { findByBarcode } from '../../domain/barcode'
 import { useAuth } from '../../auth/AuthProvider'
 import { db } from '../../data/db'
 import { transferStock } from '../../data/shopsRepo'
@@ -43,6 +45,13 @@ export function TransferView() {
   const check: ReturnType<typeof checkTransfer> = to ? checkTransfer(ctx.shopId, to, lines, have) : { ok: false, problem: 'no_lines' }
   const shopName = (id: string) => membership.shops.find((s) => s.id === id)?.name ?? '—'
 
+  function onScanned(code: string): string {
+    const hit = findByBarcode(rows.map((r) => r.p), code)
+    if (!hit) return t('scan.notInStock', { code })
+    setQty((q) => ({ ...q, [hit.id]: String(Math.min(Number(q[hit.id] || 0) + 1, have.get(hit.id) ?? 0)) }))
+    return t('scan.tally', { name: hit.name })
+  }
+
   async function go() {
     setMsg(null)
     try {
@@ -64,6 +73,7 @@ export function TransferView() {
           {others.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
       </label>
+      {rows.length > 0 && <div><ScanButton continuous onCode={onScanned} className="min-h-12 rounded border border-slate-300 px-4" /></div>}
       {rows.length === 0 ? <p className="text-slate-500">{t('shops.transfer.noStock')}</p> : (
         <ul className="flex flex-col gap-2">
           {rows.map(({ p, have: h }) => {

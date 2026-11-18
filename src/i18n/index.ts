@@ -140,6 +140,18 @@ const fr = {
     uncounted: "{{n}} produit(s) pas encore comptés : leur stock ne sera pas modifié.", approve: 'Approuver et corriger le stock', reject: 'Rejeter', rejectWhy: 'Pourquoi ? (obligatoire)',
     approveHint: "Approuver corrige le stock uniquement des écarts (les ventes faites depuis le comptage sont conservées). Un comptage décidé ne peut plus être modifié.",
   },
+  scan: {
+    title: 'Scanner un code-barres', open: 'Scanner avec la caméra', close: 'Fermer', done: 'Terminé', ok: 'OK', light: 'Lampe', typeCode: 'Ou tapez le code',
+    hint: 'Placez le code-barres dans le cadre. Bonne lumière, code bien à plat.',
+    errors: {
+      denied: "L'accès à la caméra est refusé. Autorisez-le dans les réglages du navigateur, ou tapez le code.",
+      no_camera: "Aucune caméra disponible. Tapez le code ou utilisez un lecteur.", insecure: 'La caméra ne marche que sur une connexion sécurisée (https).',
+      unsupported: "Ce navigateur ne permet pas d'utiliser la caméra. Tapez le code.",
+    },
+    unknown: 'Code {{code}} : produit inconnu', noPrice: '{{name}} : aucun prix défini', added: '{{name}} ajouté', tally: '{{name}} +1', notInStock: 'Code {{code}} : pas en stock ici',
+    makeCode: 'Créer un code pour ce produit (étiquette maison)', alreadyUsed: 'Ce code est déjà utilisé par « {{name}} ».',
+    badChecksum: 'Le dernier chiffre de ce code ne correspond pas : mauvaise lecture ? Vérifiez.', valid: 'Code {{kind}} valide.',
+  },
   shops: {
     title: 'Boutiques', hint: "Ajoutez vos boutiques et choisissez qui peut travailler dans chacune. Une nouvelle boutique n'est accessible qu'à vous au début.",
     planAllows: 'Votre formule autorise {{n}} boutique(s) ({{used}} active(s)).', current: 'Boutique actuelle', here: 'ici', off: 'désactivée',
@@ -399,6 +411,18 @@ const en: typeof fr = {
     product: 'Product', expected: 'Expected', counted: 'Counted', diff: 'Difference', unitCost: 'Unit cost', value: 'Value', recountAdvised: 'recount?',
     uncounted: '{{n}} product(s) not counted yet: their stock will not be changed.', approve: 'Approve and correct the stock', reject: 'Reject', rejectWhy: 'Why? (required)',
     approveHint: 'Approving corrects stock by the differences only (sales made since the count are kept). A decided count cannot be changed.',
+  },
+  scan: {
+    title: 'Scan a barcode', open: 'Scan with the camera', close: 'Close', done: 'Done', ok: 'OK', light: 'Light', typeCode: 'Or type the code',
+    hint: 'Put the barcode inside the frame. Good light, label held flat.',
+    errors: {
+      denied: 'Camera access is blocked. Allow it in the browser settings, or type the code.',
+      no_camera: 'No camera available. Type the code or use a scanner.', insecure: 'The camera only works on a secure (https) connection.',
+      unsupported: 'This browser cannot use the camera. Type the code.',
+    },
+    unknown: 'Code {{code}}: unknown product', noPrice: '{{name}}: no price set', added: '{{name}} added', tally: '{{name}} +1', notInStock: 'Code {{code}}: not in stock here',
+    makeCode: 'Make a code for this product (in-store label)', alreadyUsed: 'This code is already used by "{{name}}".',
+    badChecksum: 'The last digit does not match this code: misread? Please check.', valid: '{{kind}} code is valid.',
   },
   shops: {
     title: 'Shops', hint: 'Add your shops and choose who can work in each one. A new shop is only open to you at first.',

@@ -92,3 +92,17 @@ describe('transferring stock between shops', () => {
     expect(server.rows('stock_movements').filter((m) => String(m.movement_type).startsWith('transfer'))).toHaveLength(0)
   })
 })
+
+describe('barcodes on products', () => {
+  const add = (barcode: string, name: string) => repo.addProduct(A, {
+    name, barcode, baseUnit: 'piece', minStock: 0, taxRateBp: 0, isService: false,
+    units: [{ name: 'piece', factor: 1, sellPrice: 100, isBase: true }], openingQty: 0, openingTotalCost: 0,
+  })
+  it('stores a scanned code cleanly and refuses the same code again, even spelled as UPC-A / EAN-13', async () => {
+    const id = await add(' 036000291452\r\n', 'Soda')
+    expect((await db.products.get(id))!.barcode).toBe('036000291452')
+    await expect(add('0036000291452', 'Soda again')).rejects.toThrow(/barcode already exists/)
+    await expect(add('036000291452', 'Soda again')).rejects.toThrow(/barcode already exists/)
+    await expect(add('5449000000996', 'Cola')).resolves.toBeTruthy()
+  })
+})

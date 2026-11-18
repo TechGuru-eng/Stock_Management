@@ -1,6 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ScanButton } from '../../scanner/ScanButton'
+import { findByBarcode } from '../../domain/barcode'
 import { approveCount, recordCount, rejectCount, startCount } from '../../data/countsRepo'
 import { db } from '../../data/db'
 import { useCtx } from '../../data/useCtx'
@@ -97,6 +99,15 @@ function CountDetail({ ctx, countId, onBack }: { ctx: Ctx; countId: string; onBa
   const needle = q.trim().toLowerCase()
   const shown = products.filter((p) => !needle || p.name.toLowerCase().includes(needle) || (p.barcode ?? '').includes(needle))
 
+  /** Each scan adds one to the tally for that product; the counter checks it and presses Save. */
+  function onScanned(code: string): string {
+    const hit = findByBarcode(products, code)
+    if (!hit) return t('scan.unknown', { code })
+    setVals((v) => ({ ...v, [hit.id]: String((Number(v[hit.id] || 0)) + 1) }))
+    setQ('')
+    return t('scan.tally', { name: hit.name })
+  }
+
   async function save(productId: string) {
     setMsg(null)
     try {
@@ -134,7 +145,10 @@ function CountDetail({ ctx, countId, onBack }: { ctx: Ctx; countId: string; onBa
 
       {mayCount && (
         <>
-          <input className={input} placeholder={t('counts.search')} aria-label={t('counts.search')} value={q} onChange={(e) => setQ(e.target.value)} />
+          <div className="flex gap-2">
+            <input className={input} placeholder={t('counts.search')} aria-label={t('counts.search')} value={q} onChange={(e) => setQ(e.target.value)} />
+            <ScanButton continuous onCode={onScanned} />
+          </div>
           <ul className="flex flex-col gap-2">
             {shown.map((p) => {
               const l = latest.get(p.id)
