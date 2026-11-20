@@ -7,9 +7,6 @@ import {
   StaffApiError, cachedStaff, clearEnrollment, enrollDevice, getEnrollment, refreshStaff, staffLogin, type StaffEntry,
 } from './staffApi'
 
-const input = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
-const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
-
 /** Staff sign in: pick your name, enter your PIN. Only works on a device the owner has registered. */
 export function StaffLogin() {
   const { t } = useTranslation()
@@ -74,55 +71,52 @@ export function StaffLogin() {
 
   if (!enrollment) {
     return (
-      <form onSubmit={enroll} className="flex flex-col gap-3">
-        <p className="text-slate-600 dark:text-slate-300">{t('staff.enrollIntro')}</p>
-        <label className="flex flex-col gap-1">
-          <span className="font-medium">{t('staff.enrollCode')}</span>
-          <input className={`${input} uppercase tracking-widest`} autoComplete="off" autoCapitalize="characters" placeholder="XXXX-XXXX-XX" value={code} onChange={(e) => setCode(e.target.value)} />
+      <form onSubmit={enroll} className="flex flex-col gap-4">
+        <p className="body-md">{t('staff.enrollIntro')}</p>
+        <label className="field">
+          <span>{t('staff.enrollCode')}</span>
+          <input style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }} autoComplete="off" autoCapitalize="characters" placeholder="XXXX-XXXX-XX" value={code} onChange={(e) => setCode(e.target.value)} />
         </label>
-        <label className="flex flex-col gap-1">
-          <span className="font-medium">{t('staff.deviceName')}</span>
-          <input className={input} placeholder={t('staff.deviceNameHint')} value={deviceName} onChange={(e) => setDeviceName(e.target.value)} />
+        <label className="field">
+          <span>{t('staff.deviceName')}</span>
+          <input placeholder={t('staff.deviceNameHint')} value={deviceName} onChange={(e) => setDeviceName(e.target.value)} />
         </label>
-        <button disabled={busy || code.trim().length < 8} className={btn}>{t('staff.enroll')}</button>
-        {error && <p role="alert" className="text-red-700">{error}</p>}
+        <button disabled={busy || code.trim().length < 8} className="btn btn--primary btn--block">{t('staff.enroll')}</button>
+        {error && <p role="alert" className="field__error">{error}</p>}
       </form>
     )
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-sm text-slate-600 dark:text-slate-300">{enrollment.tenantName}</p>
+    <div className="flex flex-col gap-4">
+      <p className="label-lg muted">{enrollment.tenantName}</p>
       {!picked ? (
         <>
-          <p className="font-medium">{t('staff.whoAreYou')}</p>
-          {staff.length === 0 && <p className="text-slate-500">{t('staff.noStaff')}</p>}
+          <p className="h6">{t('staff.whoAreYou')}</p>
+          {staff.length === 0 && <p className="body-md muted">{t('staff.noStaff')}</p>}
           <ul className="flex flex-col gap-2">
             {staff.map((s) => (
               <li key={s.id}>
-                <button onClick={() => { setPicked(s); setError(null) }} className="min-h-14 w-full rounded border border-slate-300 px-4 text-left">
-                  <span className="font-semibold">{s.full_name}</span> <span className="text-sm text-slate-500">· {t(`staff.roles.${s.role}`)}</span>
+                <button onClick={() => { setPicked(s); setError(null) }} className="staff-pick">
+                  <span className="h6">{s.full_name}</span> <span className="label-lg muted">{t(`staff.roles.${s.role}`)}</span>
                 </button>
               </li>
             ))}
           </ul>
-          <button onClick={() => { clearEnrollment(); setEnrollment(null); setStaff([]) }} className="min-h-12 self-start text-sm text-slate-500 underline">{t('staff.unenroll')}</button>
+          <button onClick={() => { clearEnrollment(); setEnrollment(null); setStaff([]) }} className="btn btn--tertiary">{t('staff.unenroll')}</button>
         </>
       ) : (
-        <form onSubmit={login} className="flex flex-col gap-3">
-          <p className="text-lg font-semibold">{picked.full_name}</p>
-          <label className="flex flex-col gap-1">
-            <span className="font-medium">{t('staff.pin')}</span>
-            <input
-              className={`${input} text-center text-2xl tracking-[0.5em]`} type="password" inputMode="numeric" autoComplete="off"
-              maxLength={6} autoFocus value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-            />
+        <form onSubmit={login} className="flex flex-col gap-4">
+          <p className="h5">{picked.full_name}</p>
+          <label className="field">
+            <span>{t('staff.pin')}</span>
+            <input className="pin-input" type="password" inputMode="numeric" autoComplete="off" maxLength={6} autoFocus value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
           </label>
-          <button disabled={busy || pin.length < 4} className={btn}>{t('staff.signIn')}</button>
-          <button type="button" onClick={() => { setPicked(null); setPin(''); setError(null) }} className="min-h-12 text-teal-700 underline">{t('staff.notYou')}</button>
+          <button disabled={busy || pin.length < 4} className="btn btn--primary btn--block">{t('staff.signIn')}</button>
+          <button type="button" onClick={() => { setPicked(null); setPin(''); setError(null) }} className="btn btn--tertiary">{t('staff.notYou')}</button>
         </form>
       )}
-      {error && <p role="alert" className="text-red-700">{error}</p>}
+      {error && <p role="alert" className="field__error">{error}</p>}
     </div>
   )
 }
