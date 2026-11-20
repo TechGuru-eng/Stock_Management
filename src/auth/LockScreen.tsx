@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import '../marketing/editorial/styles.css'
+import { useEditorialFonts } from '../marketing/editorial/fonts'
 import { useAuth } from './AuthProvider'
 import { hasLocalPin, verifyLocalPin } from './localPin'
 import { unlock } from './lock'
@@ -11,6 +13,7 @@ import { unlock } from './lock'
  */
 export function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
   const { t } = useTranslation()
+  useEditorialFonts()
   const { session, membership, signOut, roster, actingUserId, switchActor } = useAuth()
   const [selected, setSelected] = useState(actingUserId)
   const [usable, setUsable] = useState<Set<string> | null>(null)
@@ -51,41 +54,48 @@ export function LockScreen({ onUnlocked }: { onUnlocked: () => void }) {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-6">
-      <h1 className="text-2xl font-semibold">{t('staff.locked')}</h1>
-      <p className="text-slate-600 dark:text-slate-300">{membership?.tenantName}</p>
-
-      {people.length > 1 && (
-        <div role="radiogroup" aria-label={t('staff.whoAreYou')} className="flex flex-col gap-2">
-          <span className="font-medium">{t('staff.whoAreYou')}</span>
-          <div className="flex flex-wrap gap-2">
-            {people.map((p) => (
-              <button
-                key={p.userId} type="button" role="radio" aria-checked={selected === p.userId}
-                onClick={() => { setSelected(p.userId); setError(null); setPin('') }}
-                className={`min-h-12 rounded px-4 ${selected === p.userId ? 'bg-teal-700 font-semibold text-white' : 'border border-slate-300'}`}
-              >
-                {p.name || t(`staff.roles.${p.role}`, { defaultValue: p.role })}
-              </button>
-            ))}
+    <div className="editorial-taste">
+      <main className="auth-shell">
+        <div className="auth-card">
+          <div className="auth-card__head">
+            <span className="eyebrow">Stockora</span>
+            <h1 className="h3">{t('staff.locked')}</h1>
+            <p>{membership?.tenantName}</p>
           </div>
-        </div>
-      )}
 
-      <form onSubmit={submit} className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1">
-          <span className="font-medium">{t('staff.pin')}</span>
-          <input
-            className="min-h-12 w-full rounded border border-slate-300 bg-transparent px-3 text-center text-2xl tracking-[0.5em]"
-            type="password" inputMode="numeric" autoComplete="off" maxLength={6} autoFocus value={pin}
-            onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-          />
-        </label>
-        <button disabled={busy || pin.length < 4} className="min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60">{t('staff.unlock')}</button>
-      </form>
-      {error && <p role="alert" className="text-red-700">{error}</p>}
-      <button onClick={() => void signOut()} className="min-h-12 text-sm text-slate-500 underline">{t('staff.switchUser')}</button>
-      <p className="text-xs text-slate-500">{t('staff.newPersonHint')}</p>
-    </main>
+          {people.length > 1 && (
+            <div role="radiogroup" aria-label={t('staff.whoAreYou')} className="stack" style={{ gap: 10 }}>
+              <span className="label-lg muted">{t('staff.whoAreYou')}</span>
+              <div className="flex flex-wrap gap-2">
+                {people.map((p) => (
+                  <button
+                    key={p.userId} type="button" role="radio" aria-checked={selected === p.userId}
+                    onClick={() => { setSelected(p.userId); setError(null); setPin('') }}
+                    className={selected === p.userId ? 'btn btn--primary' : 'btn btn--secondary'}
+                  >
+                    {p.name || t(`staff.roles.${p.role}`, { defaultValue: p.role })}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={submit} className="stack">
+            <label className="field">
+              <span>{t('staff.pin')}</span>
+              <input
+                className="pin-input"
+                type="password" inputMode="numeric" autoComplete="off" maxLength={6} autoFocus value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+              />
+            </label>
+            <button disabled={busy || pin.length < 4} className="btn btn--primary btn--block">{t('staff.unlock')}</button>
+          </form>
+          {error && <p role="alert" className="field__error">{error}</p>}
+          <button onClick={() => void signOut()} className="btn btn--tertiary">{t('staff.switchUser')}</button>
+          <p className="body-sm muted">{t('staff.newPersonHint')}</p>
+        </div>
+      </main>
+    </div>
   )
 }

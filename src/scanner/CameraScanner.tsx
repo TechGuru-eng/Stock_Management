@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import '../marketing/editorial/styles.css'
 import { cleanBarcode, REPEAT_IGNORE_MS } from '../domain/barcode'
 import { feedback, plausible, ScannerError, startScanning, type ScanSession } from './engine'
 
@@ -67,34 +68,34 @@ export function CameraScanner({ onCode, onClose, continuous = false }: { onCode:
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black text-white" role="dialog" aria-modal="true" aria-label={t('scan.title')}>
-      <div className="flex items-center justify-between p-3">
-        <h2 className="text-lg font-semibold">{t('scan.title')}</h2>
-        <button onClick={onClose} className="min-h-12 rounded border border-white/60 px-4">{continuous ? t('scan.done') : t('scan.close')}</button>
+    <div className="editorial-taste on-dark" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'var(--dark-100)', color: 'var(--light-100)' }} role="dialog" aria-modal="true" aria-label={t('scan.title')}>
+      <div className="flex items-center justify-between" style={{ padding: 15 }}>
+        <h2 className="h6">{t('scan.title')}</h2>
+        <button onClick={onClose} className="btn btn--glass">{continuous ? t('scan.done') : t('scan.close')}</button>
       </div>
-      <div className="relative flex-1">
-        <video ref={video} className="h-full w-full object-cover" muted playsInline />
-        {!error && <div className="pointer-events-none absolute inset-x-8 top-1/2 h-24 -translate-y-1/2 rounded border-2 border-teal-400" aria-hidden="true" />}
-        {error && <p role="alert" className="absolute inset-x-4 top-8 rounded bg-red-900/90 p-3">{t(`scan.errors.${error}`)}</p>}
+      <div style={{ position: 'relative', flex: 1 }}>
+        <video ref={video} style={{ height: '100%', width: '100%', objectFit: 'cover' }} muted playsInline />
+        {!error && <div style={{ pointerEvents: 'none', position: 'absolute', left: 32, right: 32, top: '50%', height: 96, transform: 'translateY(-50%)', borderRadius: 'var(--radius-10)', border: '2px solid var(--light-100)' }} aria-hidden="true" />}
+        {error && <p role="alert" className="body-md" style={{ position: 'absolute', left: 16, right: 16, top: 32, background: 'var(--dark-88)', borderRadius: 'var(--radius-10)', padding: 15 }}>! {t(`scan.errors.${error}`)}</p>}
       </div>
-      <div className="flex flex-col gap-2 p-3">
-        {info && <p role="status" className="rounded bg-teal-800 p-2 text-center">{info}</p>}
-        {!error && <p className="text-center text-sm text-white/80">{t('scan.hint')}</p>}
+      <div className="stack" style={{ padding: 15 }}>
+        {info && <p role="status" className="body-md" style={{ background: 'var(--light-16)', backdropFilter: 'var(--blur-glass)', borderRadius: 'var(--radius-10)', padding: 10, textAlign: 'center' }}>{info}</p>}
+        {!error && <p className="body-sm" style={{ textAlign: 'center', color: 'var(--light-64)' }}>{t('scan.hint')}</p>}
         <div className="flex gap-2">
           {torch && (
             <button
               onClick={() => { const next = !on; void session.current?.setTorch(next).then(() => setOn(next)) }}
-              className="min-h-12 rounded border border-white/60 px-4" aria-pressed={on}
+              className="btn btn--glass" aria-pressed={on}
             >
               {t('scan.light')}
             </button>
           )}
           <form onSubmit={submitTyped} className="flex flex-1 gap-2">
             <input
-              className="min-h-12 w-full rounded bg-white px-3 text-black" inputMode="numeric" placeholder={t('scan.typeCode')} aria-label={t('scan.typeCode')}
+              className="input" style={{ background: 'var(--neutral-white)', color: 'var(--dark-100)' }} inputMode="numeric" placeholder={t('scan.typeCode')} aria-label={t('scan.typeCode')}
               value={typed} onChange={(e) => setTyped(e.target.value)}
             />
-            <button className="min-h-12 rounded bg-teal-600 px-4 font-semibold" disabled={!typed.trim()}>{t('scan.ok')}</button>
+            <button className="btn btn--light" disabled={!typed.trim()}>{t('scan.ok')}</button>
           </form>
         </div>
       </div>
