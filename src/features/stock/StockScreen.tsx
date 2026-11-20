@@ -16,14 +16,14 @@ import { can } from '../../domain/permissions'
 import { formatXaf } from '../../domain/money'
 import { breakdown } from '../../domain/units'
 
-const input = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
-const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
+const input = 'input'
+const btn = 'btn btn--primary'
 const num = (s: string) => (s.trim() === '' ? 0 : Number(s))
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium">{label}</span>
+    <label className="field">
+      <span>{label}</span>
       {children}
     </label>
   )
@@ -75,23 +75,23 @@ function ProductForm({ ctx, onDone }: { ctx: Ctx; onDone: () => void }) {
     : info && info.kind !== 'other' ? { bad: false, text: t('scan.valid', { kind: info.kind.toUpperCase() }) } : null
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3">
+    <form onSubmit={submit} className="stack">
       <Field label={t('stock.name')}><input className={input} required value={f.name} onChange={(e) => set('name', e.target.value)} /></Field>
       <Field label={t('stock.barcode')}>
         <div className="flex gap-2">
           <input className={input} inputMode="numeric" value={f.barcode} onChange={(e) => set('barcode', e.target.value)} />
           <ScanButton onCode={(c) => { set('barcode', c) }} />
         </div>
-        {barcodeNote && <span role="status" className={`text-sm ${barcodeNote.bad ? 'text-red-700' : 'text-slate-600'}`}>{barcodeNote.text}</span>}
-        {!f.barcode.trim() && !f.isService && <button type="button" className="self-start text-sm text-teal-700 underline" onClick={() => set('barcode', nextInternalEan(existing.map((p) => p.barcode)))}>{t('scan.makeCode')}</button>}
+        {barcodeNote && <span role="status" className={barcodeNote.bad ? 'field__error' : 'label-lg muted'}>{barcodeNote.text}</span>}
+        {!f.barcode.trim() && !f.isService && <button type="button" className="btn btn--tertiary" onClick={() => set('barcode', nextInternalEan(existing.map((p) => p.barcode)))}>{t('scan.makeCode')}</button>}
       </Field>
-      <label className="flex items-center gap-2"><input type="checkbox" checked={f.isService} onChange={(e) => set('isService', e.target.checked)} /> {t('stock.isService')}</label>
+      <label className="check-row body-md"><input type="checkbox" checked={f.isService} onChange={(e) => set('isService', e.target.checked)} /> {t('stock.isService')}</label>
       <Field label={t('stock.baseUnit')}><input className={input} value={f.baseUnit} onChange={(e) => set('baseUnit', e.target.value)} /></Field>
       <Field label={t('stock.basePrice')}><input className={input} inputMode="numeric" required value={f.basePrice} onChange={(e) => set('basePrice', e.target.value)} /></Field>
       {!f.isService && (
         <>
-          <fieldset className="flex flex-col gap-3 rounded border border-slate-200 p-3">
-            <legend className="px-1 text-sm">{t('stock.bigUnit')}</legend>
+          <fieldset className="panel stack">
+            <legend className="label-lg muted">{t('stock.bigUnit')}</legend>
             <Field label={t('stock.bigUnitName')}><input className={input} value={f.bigName} onChange={(e) => set('bigName', e.target.value)} /></Field>
             <Field label={t('stock.bigUnitFactor')}><input className={input} inputMode="numeric" value={f.bigFactor} onChange={(e) => set('bigFactor', e.target.value)} /></Field>
             <Field label={t('stock.bigUnitPrice')}><input className={input} inputMode="numeric" value={f.bigPrice} onChange={(e) => set('bigPrice', e.target.value)} /></Field>
@@ -99,14 +99,14 @@ function ProductForm({ ctx, onDone }: { ctx: Ctx; onDone: () => void }) {
           <Field label={t('stock.minStock')}><input className={input} inputMode="numeric" value={f.minStock} onChange={(e) => set('minStock', e.target.value)} /></Field>
           <Field label={t('stock.openingQty')}><input className={input} inputMode="numeric" value={f.openingQty} onChange={(e) => set('openingQty', e.target.value)} /></Field>
           <Field label={t('stock.openingCost')}><input className={input} inputMode="numeric" value={f.openingCost} onChange={(e) => set('openingCost', e.target.value)} /></Field>
-          <label className="flex min-h-10 items-center gap-2"><input type="checkbox" checked={f.trackExpiry} onChange={(e) => set('trackExpiry', e.target.checked)} /> {t('expiry.track')}</label>
+          <label className="check-row body-md"><input type="checkbox" checked={f.trackExpiry} onChange={(e) => set('trackExpiry', e.target.checked)} /> {t('expiry.track')}</label>
           {f.trackExpiry && num(f.openingQty) > 0 && <Field label={t('expiry.openingDate')}><input type="date" className={input} value={f.openingExpiry} onChange={(e) => set('openingExpiry', e.target.value)} /></Field>}
         </>
       )}
       <Field label={t('stock.taxPercent')}><input className={input} inputMode="decimal" value={f.tax} onChange={(e) => set('tax', e.target.value)} /></Field>
-      {error && <p role="alert" className="text-red-700">{error}</p>}
+      {error && <p role="alert" className="field__error">{error}</p>}
       <div className="flex gap-3">
-        <button type="button" onClick={onDone} className="min-h-12 flex-1 rounded border border-slate-300">{t('stock.cancel')}</button>
+        <button type="button" onClick={onDone} className="btn btn--secondary flex-1">{t('stock.cancel')}</button>
         <button disabled={busy} className={`${btn} flex-1`}>{t('stock.save')}</button>
       </div>
     </form>
@@ -155,30 +155,30 @@ function ProductDetail({ ctx, product, onBack }: { ctx: Ctx; product: ProductRec
   const canRemove = can(ctx.role, 'stock.adjust_approve')
 
   return (
-    <div className="flex flex-col gap-3">
-      <button onClick={onBack} className="min-h-12 self-start text-teal-700 underline">{t('stock.back')}</button>
-      <h3 className="text-xl font-semibold">{product.name}{!product.active && <span className="ml-2 rounded bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700">{t('edit.hidden')}</span>}</h3>
-      <p>
-        {t('stock.onHand')}: <strong className={onHand <= product.minStock ? 'text-red-700' : ''}>{onHand} {product.baseUnit}</strong>
-        {parts.length > 1 && <span className="text-slate-500"> ({parts.map((p) => `${p.count} ${p.unit.name}`).join(' + ')})</span>}
+    <div className="stack">
+      <button onClick={onBack} className="btn btn--tertiary" style={{ alignSelf: 'flex-start' }}>{t('stock.back')}</button>
+      <h3 className="h4">{product.name}{!product.active && <span className="tag" style={{ marginLeft: 8 }}>{t('edit.hidden')}</span>}</h3>
+      <p className="body-md">
+        {t('stock.onHand')}: <strong>{onHand <= product.minStock ? '! ' : ''}{onHand} {product.baseUnit}</strong>
+        {parts.length > 1 && <span className="muted"> ({parts.map((p) => `${p.count} ${p.unit.name}`).join(' + ')})</span>}
       </p>
-      <ul className="text-sm text-slate-600 dark:text-slate-300">
+      <ul className="body-sm muted stack" style={{ gap: 4 }}>
         {units.map((u) => <li key={u.id}>{u.name}{u.factor > 1 ? ` (${u.factor})` : ''}: {formatXaf(u.sellPrice)}</li>)}
       </ul>
       {can(ctx.role, 'products.write') && !mode && (
-        <button onClick={() => setEditing((x) => !x)} aria-expanded={editing} className="min-h-12 self-start rounded border border-slate-300 px-4">{editing ? t('edit.close') : t('edit.open')}</button>
+        <button onClick={() => setEditing((x) => !x)} aria-expanded={editing} className="btn btn--secondary" style={{ alignSelf: 'flex-start' }}>{editing ? t('edit.close') : t('edit.open')}</button>
       )}
       {editing && <EditProduct ctx={ctx} product={product} onDone={() => setEditing(false)} />}
       {!product.isService && !editing && !mode && <ProductSuppliers productId={product.id} />}
       {!product.isService && !mode && !editing && (
         <div className="flex gap-3">
           <button disabled={!canReceive} onClick={() => setMode('receive')} className={`${btn} flex-1`}>{t('stock.receive')}</button>
-          <button disabled={!canRemove} onClick={() => setMode('remove')} className="min-h-12 flex-1 rounded border border-slate-300 disabled:opacity-50">{t('stock.remove')}</button>
+          <button disabled={!canRemove} onClick={() => setMode('remove')} className="btn btn--secondary flex-1">{t('stock.remove')}</button>
         </div>
       )}
-      {!canReceive && !canRemove && <p className="text-sm text-slate-500">{t('stock.noPermission')}</p>}
+      {!canReceive && !canRemove && <p className="body-sm muted">{t('stock.noPermission')}</p>}
       {mode && (
-        <form onSubmit={submit} className="flex flex-col gap-3 rounded border border-slate-200 p-3">
+        <form onSubmit={submit} className="panel stack">
           {mode === 'receive' ? (
             <>
               <Field label={t('stock.unit')}>
@@ -202,12 +202,12 @@ function ProductDetail({ ctx, product, onBack }: { ctx: Ctx; product: ProductRec
             </>
           )}
           <div className="flex gap-3">
-            <button type="button" onClick={() => setMode(null)} className="min-h-12 flex-1 rounded border border-slate-300">{t('stock.cancel')}</button>
+            <button type="button" onClick={() => setMode(null)} className="btn btn--secondary flex-1">{t('stock.cancel')}</button>
             <button className={`${btn} flex-1`}>{t('stock.save')}</button>
           </div>
         </form>
       )}
-      {msg && <p role="status" className="text-sm">{msg}</p>}
+      {msg && <p role="status" className="label-lg">{msg}</p>}
     </div>
   )
 }
@@ -244,25 +244,25 @@ export function StockScreen() {
   const canWrite = can(ctx.role, 'products.write')
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex gap-3">
-        <input className={input} placeholder={t('stock.search')} value={search} onChange={(e) => setSearch(e.target.value)} />
+    <div className="stack">
+      <div className="flex gap-3" style={{ flexWrap: 'wrap' }}>
+        <input className={input} style={{ flex: 1, minWidth: 160 }} placeholder={t('stock.search')} value={search} onChange={(e) => setSearch(e.target.value)} />
         <ScanButton onCode={(c) => { setSearch(c) }} />
-        {canWrite && <button onClick={() => setView('import')} className="min-h-12 shrink-0 rounded border border-slate-300 px-3">{t('import.open')}</button>}
-        {expiry && (expiry.rows.length > 0 || expiry.warnDays > 0) && <button onClick={() => setView('expiry')} className="min-h-12 shrink-0 rounded border border-slate-300 px-3">{t('expiry.open')}{expiry.rows.length > 0 && <span className={`ml-1 rounded-full px-1.5 text-[10px] font-bold text-white ${expiry.summary.expiredUnits > 0 ? 'bg-red-600' : 'bg-amber-600'}`}>{expiry.rows.length}</span>}</button>}
-        <button onClick={() => setView('labels')} className="min-h-12 shrink-0 rounded border border-slate-300 px-3">{t('labels.open')}</button>
-        {canWrite && <button onClick={() => setView('new')} className={`${btn} shrink-0`}>+ {t('stock.newProduct')}</button>}
+        {canWrite && <button onClick={() => setView('import')} className="btn btn--secondary">{t('import.open')}</button>}
+        {expiry && (expiry.rows.length > 0 || expiry.warnDays > 0) && <button onClick={() => setView('expiry')} className="btn btn--secondary" style={{ position: 'relative' }}>{t('expiry.open')}{expiry.rows.length > 0 && <span className="pos-tabbar__badge" style={{ top: -6, right: -6 }}>{expiry.rows.length}</span>}</button>}
+        <button onClick={() => setView('labels')} className="btn btn--secondary">{t('labels.open')}</button>
+        {canWrite && <button onClick={() => setView('new')} className={btn}>+ {t('stock.newProduct')}</button>}
       </div>
-      {hiddenCount > 0 && <label className="flex min-h-10 items-center gap-2 text-sm"><input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} /> {t('edit.showHidden', { n: hiddenCount })}</label>}
-      {shown.length === 0 && <p className="text-slate-500">{t('stock.none')}</p>}
-      <ul className="flex flex-col divide-y divide-slate-200 dark:divide-slate-800">
+      {hiddenCount > 0 && <label className="check-row body-md"><input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} /> {t('edit.showHidden', { n: hiddenCount })}</label>}
+      {shown.length === 0 && <p className="body-md muted">{t('stock.none')}</p>}
+      <ul className="list-wrap">
         {shown.map(({ p, onHand }) => (
-          <li key={p.id}>
-            <button onClick={() => setView(p.id)} className="flex min-h-14 w-full items-center justify-between py-2 text-left">
+          <li key={p.id} style={{ padding: 0 }}>
+            <button onClick={() => setView(p.id)} className="flex w-full items-center justify-between text-left" style={{ padding: '15px 20px' }}>
               <span>{p.name}</span>
-              {p.isService ? <span className="text-sm text-slate-500">service</span> : (
-                <span className={onHand <= p.minStock ? 'font-semibold text-red-700' : ''}>
-                  {onHand} {p.baseUnit}{onHand <= p.minStock ? ` · ${t('stock.low')}` : ''}
+              {p.isService ? <span className="label-lg muted">service</span> : (
+                <span className={onHand <= p.minStock ? 'label-lg' : 'body-md'}>
+                  {onHand <= p.minStock ? '! ' : ''}{onHand} {p.baseUnit}{onHand <= p.minStock ? ` · ${t('stock.low')}` : ''}
                 </span>
               )}
             </button>

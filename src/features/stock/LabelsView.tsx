@@ -9,9 +9,9 @@ import { can } from '../../domain/permissions'
 import { renderLabelsPdf } from '../../pdf/labelsPdf'
 import { downloadPdf, sharePdf } from '../../pdf/invoicePdf'
 
-const input = 'min-h-12 rounded border border-slate-300 bg-transparent px-3'
-const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
-const btn2 = 'min-h-12 rounded border border-slate-300 px-4 disabled:opacity-60'
+const input = 'input'
+const btn = 'btn btn--primary'
+const btn2 = 'btn btn--secondary'
 
 /** Stock > Labels: choose products and copies, pick the sticker sheet, get a PDF of barcode labels (with the price if wanted). */
 export function LabelsView({ ctx, onBack }: { ctx: Ctx; onBack: () => void }) {
@@ -73,25 +73,25 @@ export function LabelsView({ ctx, onBack }: { ctx: Ctx; onBack: () => void }) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <button onClick={onBack} className="min-h-12 self-start text-teal-700 underline">{t('stock.back')}</button>
-      <h3 className="text-xl font-semibold">{t('labels.title')}</h3>
-      <p className="text-sm text-slate-600 dark:text-slate-300">{t('labels.hint')}</p>
+    <div className="stack">
+      <button onClick={onBack} className="btn btn--tertiary" style={{ alignSelf: 'flex-start' }}>{t('stock.back')}</button>
+      <h3 className="h4">{t('labels.title')}</h3>
+      <p className="body-md muted">{t('labels.hint')}</p>
 
-      <fieldset className="grid gap-2 rounded border border-slate-200 p-3 dark:border-slate-700 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 text-sm font-medium sm:col-span-2">{t('labels.sheet')}
+      <fieldset className="panel" style={{ display: 'grid', gap: 10 }}>
+        <label className="field" style={{ gridColumn: '1 / -1' }}>{t('labels.sheet')}
           <select className={input} value={sheetId} onChange={(e) => { setSheetId(e.target.value); setStart('1') }}>
             {SHEETS.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </label>
         {labelsPerPage(sheet) > 1 && (
-          <label className="flex flex-col gap-1 text-sm font-medium">{t('labels.startAt', { max: labelsPerPage(sheet) })}
+          <label className="field">{t('labels.startAt', { max: labelsPerPage(sheet) })}
             <input className={input} inputMode="numeric" value={start} onChange={(e) => setStart(e.target.value.replace(/\D/g, ''))} />
           </label>
         )}
-        <div className="flex flex-col justify-end gap-1 text-sm">
-          <label className="flex min-h-10 items-center gap-2"><input type="checkbox" checked={withPrice} onChange={(e) => setWithPrice(e.target.checked)} /> {t('labels.price')}</label>
-          <label className="flex min-h-10 items-center gap-2"><input type="checkbox" checked={guides} onChange={(e) => setGuides(e.target.checked)} /> {t('labels.guides')}</label>
+        <div className="stack" style={{ justifyContent: 'flex-end' }}>
+          <label className="check-row body-md"><input type="checkbox" checked={withPrice} onChange={(e) => setWithPrice(e.target.checked)} /> {t('labels.price')}</label>
+          <label className="check-row body-md"><input type="checkbox" checked={guides} onChange={(e) => setGuides(e.target.checked)} /> {t('labels.guides')}</label>
         </div>
       </fieldset>
 
@@ -101,30 +101,30 @@ export function LabelsView({ ctx, onBack }: { ctx: Ctx; onBack: () => void }) {
         <button className={btn2} onClick={() => setCopies({})}>{t('labels.clear')}</button>
       </div>
 
-      <ul className="flex flex-col gap-2">
+      <ul className="stack" style={{ gap: 8 }}>
         {shown.map((p) => (
-          <li key={p.id} className="flex items-center justify-between gap-2 rounded border border-slate-200 p-2 dark:border-slate-700">
+          <li key={p.id} className="panel flex items-center justify-between gap-2">
             <div>
-              <div className="font-medium">{p.name}</div>
-              <div className="text-xs text-slate-500">{p.barcode ?? t('labels.noCode')}{data.price.has(p.id) ? ` · ${data.price.get(p.id)} FCFA` : ''}</div>
+              <div className="body-md">{p.name}</div>
+              <div className="body-sm muted">{p.barcode ?? t('labels.noCode')}{data.price.has(p.id) ? ` · ${data.price.get(p.id)} FCFA` : ''}</div>
             </div>
             <input
-              aria-label={`${p.name} — ${t('labels.copies')}`} inputMode="numeric" className={`${input} w-20 text-right`} placeholder="0" value={copies[p.id] ?? ''}
+              aria-label={`${p.name} — ${t('labels.copies')}`} inputMode="numeric" className={`${input} text-right`} style={{ maxWidth: 80 }} placeholder="0" value={copies[p.id] ?? ''}
               onChange={(e) => setCopies({ ...copies, [p.id]: e.target.value.replace(/\D/g, '') })}
             />
           </li>
         ))}
       </ul>
 
-      <section className="sticky bottom-0 flex flex-col gap-2 rounded border border-slate-300 bg-white p-3 dark:bg-slate-950">
-        <p className="text-sm">{t('labels.summary', { n: plan.items.length, pages: pageCount })}{plan.truncated && ` ${t('labels.truncated')}`}</p>
+      <section className="panel stack" style={{ position: 'sticky', bottom: 0, background: 'var(--neutral-white)' }}>
+        <p className="body-md">{t('labels.summary', { n: plan.items.length, pages: pageCount })}{plan.truncated && ` ${t('labels.truncated')}`}</p>
         {missing.length > 0 && (
-          <div className="rounded bg-amber-50 p-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+          <div className="notice notice--amber body-sm">
             {t('labels.missing', { names: plan.skipped.join(', ') })}
-            {canWrite && <button className="ml-2 underline" onClick={() => void makeCodes()}>{t('labels.makeCodes', { n: missing.length })}</button>}
+            {canWrite && <button className="btn btn--tertiary" style={{ marginLeft: 8 }} onClick={() => void makeCodes()}>{t('labels.makeCodes', { n: missing.length })}</button>}
           </div>
         )}
-        {msg && <p role="status" className="text-sm">{msg}</p>}
+        {msg && <p role="status" className="label-lg">{msg}</p>}
         <div className="flex gap-2">
           <button className={`${btn} flex-1`} disabled={busy || plan.items.length === 0} onClick={() => void make('download')}>{t('labels.download')}</button>
           <button className={btn2} disabled={busy || plan.items.length === 0} onClick={() => void make('share')}>{t('invoices.share')}</button>

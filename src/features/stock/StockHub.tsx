@@ -19,13 +19,10 @@ export function StockHub() {
   const canCount = Boolean(membership && can(membership.role, 'stock.count'))
   const tabs: Sub[] = ['products', 'purchases', 'suppliers', ...(canTransfer ? (['transfers'] as const) : []), ...(canCount ? (['counts'] as const) : [])]
   return (
-    <div className="flex flex-col gap-4">
-      <div role="tablist" className={`grid gap-1 ${tabs.length >= 5 ? 'grid-cols-5' : tabs.length === 4 ? 'grid-cols-4' : 'grid-cols-3'}`}>
+    <div className="stack">
+      <div role="tablist" className="auth-tabs" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
         {tabs.map((k) => (
-          <button
-            key={k} role="tab" aria-selected={sub === k} onClick={() => setSub(k)}
-            className={`min-h-12 rounded px-1 text-sm ${sub === k ? 'bg-teal-700 font-semibold text-white' : 'border border-slate-300'}`}
-          >
+          <button key={k} role="tab" aria-selected={sub === k} onClick={() => setSub(k)}>
             {t(`purch.${k}`)}
           </button>
         ))}

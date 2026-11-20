@@ -9,16 +9,16 @@ import { bpToPercent, percentToBp } from '../../domain/productEdit'
 import { supabase } from '../../lib/supabase'
 import { ScanButton } from '../../scanner/ScanButton'
 
-const input = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
-const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
-const btn2 = 'min-h-12 rounded border border-slate-300 px-4'
+const input = 'input'
+const btn = 'btn btn--primary'
+const btn2 = 'btn btn--secondary'
 
 function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium">{label}</span>
+    <label className="field">
+      <span>{label}</span>
       {children}
-      {hint && <span className="text-xs text-slate-500">{hint}</span>}
+      {hint && <span className="field__hint">{hint}</span>}
     </label>
   )
 }
@@ -72,8 +72,8 @@ export function EditProduct({ ctx, product, onDone }: { ctx: Ctx; product: Produ
   }
 
   return (
-    <form onSubmit={save} className="flex flex-col gap-3 rounded border border-slate-200 p-3 dark:border-slate-700">
-      <h4 className="font-semibold">{t('edit.title')}</h4>
+    <form onSubmit={save} className="panel stack">
+      <h4 className="h6">{t('edit.title')}</h4>
       <Field label={t('stock.name')}><input className={input} required maxLength={120} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
 
       <Field label={t('stock.barcode')}>
@@ -81,9 +81,9 @@ export function EditProduct({ ctx, product, onDone }: { ctx: Ctx; product: Produ
           <input className={input} value={f.barcode} onChange={(e) => setF({ ...f, barcode: e.target.value })} />
           <ScanButton onCode={(c) => { setF((x) => ({ ...x, barcode: c })) }} />
         </div>
-        {clash && <span role="status" className="text-sm text-red-700">{t('scan.alreadyUsed', { name: clash.name })}</span>}
-        {!clash && info?.checksumOk === false && <span role="status" className="text-sm text-red-700">{t('scan.badChecksum')}</span>}
-        {!f.barcode.trim() && <button type="button" className="self-start text-sm text-teal-700 underline" onClick={() => setF({ ...f, barcode: nextInternalEan(all.map((p) => p.barcode)) })}>{t('scan.makeCode')}</button>}
+        {clash && <span role="status" className="field__error">{t('scan.alreadyUsed', { name: clash.name })}</span>}
+        {!clash && info?.checksumOk === false && <span role="status" className="field__error">{t('scan.badChecksum')}</span>}
+        {!f.barcode.trim() && <button type="button" className="btn btn--tertiary" onClick={() => setF({ ...f, barcode: nextInternalEan(all.map((p) => p.barcode)) })}>{t('scan.makeCode')}</button>}
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
@@ -92,9 +92,9 @@ export function EditProduct({ ctx, product, onDone }: { ctx: Ctx; product: Produ
       </div>
       <Field label={t('edit.tax')} hint={t('edit.taxHint')}><input className={input} inputMode="decimal" value={f.tax} onChange={(e) => setF({ ...f, tax: e.target.value })} /></Field>
 
-      <fieldset className="flex flex-col gap-2 rounded border border-slate-200 p-3 dark:border-slate-700">
-        <legend className="px-1 text-sm font-medium">{t('edit.units')}</legend>
-        <p className="text-xs text-slate-500">{t('edit.unitsHint')}</p>
+      <fieldset className="panel stack" style={{ gap: 10 }}>
+        <legend className="label-lg muted">{t('edit.units')}</legend>
+        <p className="body-sm muted">{t('edit.unitsHint')}</p>
         {[...units].sort((a, b) => a.factor - b.factor).map((u) => (
           <div key={u.id} className="grid grid-cols-[1fr_6rem_auto] items-end gap-2">
             <Field label={u.isBase ? t('edit.baseUnit') : t('edit.unitName')}>
@@ -103,21 +103,21 @@ export function EditProduct({ ctx, product, onDone }: { ctx: Ctx; product: Produ
             <Field label={t('edit.price')}>
               <input className={`${input} text-right`} inputMode="numeric" value={prices[u.id]?.price ?? ''} onChange={(e) => setPrices({ ...prices, [u.id]: { ...(prices[u.id] ?? { name: '' }), price: e.target.value.replace(/\D/g, '') } })} />
             </Field>
-            <span className="pb-3 text-xs text-slate-500">{u.factor > 1 ? `= ${u.factor}` : ''}</span>
+            <span className="label-lg muted" style={{ paddingBottom: 12 }}>{u.factor > 1 ? `= ${u.factor}` : ''}</span>
           </div>
         ))}
-        <div className="grid grid-cols-3 gap-2 border-t border-slate-200 pt-2 dark:border-slate-700">
+        <div className="grid grid-cols-3 gap-2" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 10 }}>
           <Field label={t('edit.newUnit')}><input className={input} placeholder="carton" value={newUnit.name} onChange={(e) => setNewUnit({ ...newUnit, name: e.target.value })} /></Field>
           <Field label={t('edit.factor', { unit: product.baseUnit })}><input className={input} inputMode="numeric" value={newUnit.factor} onChange={(e) => setNewUnit({ ...newUnit, factor: e.target.value.replace(/\D/g, '') })} /></Field>
           <Field label={t('edit.price')}><input className={`${input} text-right`} inputMode="numeric" value={newUnit.price} onChange={(e) => setNewUnit({ ...newUnit, price: e.target.value.replace(/\D/g, '') })} /></Field>
         </div>
       </fieldset>
 
-      {!product.isService && <label className="flex min-h-10 items-center gap-2"><input type="checkbox" checked={f.trackExpiry} onChange={(e) => setF({ ...f, trackExpiry: e.target.checked })} /> {t('expiry.track')}</label>}
-      <label className="flex min-h-10 items-center gap-2"><input type="checkbox" checked={!f.active} onChange={(e) => setF({ ...f, active: !e.target.checked })} /> {t('edit.hide')}</label>
-      <p className="text-xs text-slate-500">{t('edit.fixed', { unit: product.baseUnit, kind: product.isService ? t('edit.service') : t('edit.goods') })}</p>
+      {!product.isService && <label className="check-row body-md"><input type="checkbox" checked={f.trackExpiry} onChange={(e) => setF({ ...f, trackExpiry: e.target.checked })} /> {t('expiry.track')}</label>}
+      <label className="check-row body-md"><input type="checkbox" checked={!f.active} onChange={(e) => setF({ ...f, active: !e.target.checked })} /> {t('edit.hide')}</label>
+      <p className="body-sm muted">{t('edit.fixed', { unit: product.baseUnit, kind: product.isService ? t('edit.service') : t('edit.goods') })}</p>
 
-      {msg && <p role="status" className={`text-sm ${msg.ok ? 'text-teal-700' : 'text-red-700'}`}>{msg.text}</p>}
+      {msg && <p role="status" className={msg.ok ? 'label-lg' : 'field__error'}>{msg.text}</p>}
       <div className="flex gap-3">
         <button type="button" onClick={onDone} className={`${btn2} flex-1`}>{t('edit.close')}</button>
         <button className={`${btn} flex-1`} disabled={busy}>{t('stock.save')}</button>
@@ -140,9 +140,9 @@ function History({ productId }: { productId: string }) {
   }, [productId])
   if (!rows || rows.length === 0) return null
   return (
-    <section className="border-t border-slate-200 pt-2 text-sm dark:border-slate-700">
-      <h5 className="font-medium">{t('edit.history')}</h5>
-      <ul className="mt-1 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+    <section style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 10 }}>
+      <h5 className="h6">{t('edit.history')}</h5>
+      <ul className="body-sm muted stack" style={{ gap: 4, marginTop: 4 }}>
         {rows.map((r) => (
           <li key={r.id}>{new Date(r.at).toLocaleString(i18n.language)} — {Object.entries(r.changes).map(([k, v]) => `${k}: ${r.before && k in r.before ? `${String(r.before[k] ?? '∅')} → ` : ''}${String(v ?? '∅')}`).join(', ')}</li>
         ))}
