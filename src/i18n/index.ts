@@ -117,6 +117,7 @@ const fr = {
     exportCsv: 'Exporter (CSV)', generated: 'Généré le {{date}}', summary: 'Résumé', item: 'Élément', amount: 'Montant', tax: 'Taxes collectées', discounts: 'Remises accordées',
     returned: 'Ventes retournées', payables: 'Dettes envers les fournisseurs', daily: 'Ventes par jour', date: 'Date', none: 'Rien sur cette période.',
     byProduct: 'Ventes par produit', product: 'Produit', qty: 'Quantité', margin: 'Marge', top50: 'Les 50 premiers produits sont affichés ; le fichier CSV contient tout.',
+    byEmployee: 'Ventes par employé', employee: 'Employé',
     stockValue: 'Valeur du stock', stockNote: "Valeur à la date d'aujourd'hui, au coût moyen (non liée à la période choisie).", unit: 'Unité', avgCost: 'Coût moyen', value: 'Valeur', min: 'Seuil', low: 'bas', total: 'Total',
     debtors: 'Clients qui nous doivent', customer: 'Client', phone: 'Téléphone', owes: 'Doit', lastActivity: 'Dernier mouvement', debtNote: "Soldes à la fin de la période, toutes boutiques confondues (les dettes clients sont communes à l'entreprise).",
     expenses: 'Dépenses',
@@ -247,6 +248,7 @@ const fr = {
   tillProviders: {
     title: 'Paiements mobiles des clients', hint: "Reliez vos propres comptes marchands MTN MoMo et Orange Money : l'argent de vos clients arrive directement chez vous, StockCM ne le touche jamais. Les codes sont enregistrés sur le serveur et ne peuvent plus être relus ensuite.",
     on: 'activé', off: 'non configuré', setup: 'Configurer', replace: 'Remplacer les codes', remove: 'Retirer', save: 'Enregistrer', saved: 'Enregistré.', removed: 'Retiré.', invalid: 'Informations incomplètes ou adresses invalides (https obligatoire).',
+    planLocked: "Le paiement mobile vérifié fait partie des formules Business et plus. Passez à une formule supérieure pour le configurer.",
     field: {
       baseUrl: 'Adresse du service (https)', subscriptionKey: "Clé d'abonnement", apiUser: 'Utilisateur API', apiKey: 'Clé API', targetEnvironment: 'Environnement (sandbox ou celui donné par MTN)', currency: 'Devise (XAF ; EUR pour le test MTN)',
       authorization: "En-tête d'autorisation (Basic …)", merchantKey: 'Clé marchand', returnUrl: 'Adresse de retour après paiement (https)', cancelUrl: "Adresse après annulation (https)",
@@ -269,6 +271,7 @@ const fr = {
     title: 'Fidélité clients', hint: "Les clients gagnent des points sur ce qu'ils paient et les dépensent en réduction à la caisse. Les points ne sont gagnés que sur l'argent réellement encaissé (pas sur le crédit).",
     enable: 'Activer le programme de points', earnPer: 'Un point gagné pour chaque … FCFA payés', pointValue: "Valeur d'un point (FCFA de réduction)", minRedeem: 'Minimum de points à utiliser', share: "Part maximale d'une vente payable en points (%)",
     cost: 'Coût pour vous : environ {{rate}} % de ce que le client dépense.', invalid: 'Valeurs invalides.', save: 'Enregistrer', saved: 'Règles enregistrées.',
+    planLocked: "La fidélité client fait partie des formules Business et plus. Passez à une formule supérieure pour l'activer.",
     points: 'Points de fidélité', balance: '{{n}} points (= {{value}})', negative: 'Solde négatif : des points ont été utilisés sur deux appareils hors ligne.',
     usePoints: 'Points à utiliser', max: 'Max ({{n}})', cannotYet: 'Minimum {{min}} points pour les utiliser, ou la vente est trop petite.', noPoints: 'Pas encore de points.',
     receipt: 'Points : +{{earned}} gagnés, {{redeemed}} utilisés. Nouveau solde : {{balance}}.',
@@ -342,6 +345,7 @@ const fr = {
       network: 'Une connexion internet est nécessaire.', server_error: 'Erreur du serveur. Réessayez.',
       no_local_pin: 'Reconnectez-vous avec internet pour continuer.', weak_pin: 'PIN trop facile à deviner.',
       forbidden: 'Réservé au propriétaire.', bad_name: 'Nom invalide.', bad_role: 'Rôle invalide.',
+      plan_limit_staff: "Votre formule n'autorise pas plus de personnel. Passez à une formule supérieure.",
     },
     problem: {
       format: 'Le PIN doit avoir 4 à 6 chiffres.', repeated: 'Évitez les chiffres identiques (0000).',
@@ -355,6 +359,7 @@ const fr = {
       devices: 'Appareils', newCode: "Enregistrer un nouvel appareil", codeHelp: "À saisir sur le nouvel appareil avant {{time}}. Utilisable une seule fois.",
       revoke: 'Retirer', revoked: 'retiré', confirmRevoke: 'Retirer cet appareil ? Il ne pourra plus se connecter ni se synchroniser.',
       done: 'Enregistré.', error: 'Erreur : {{msg}}', offline: 'Une connexion internet est nécessaire pour gérer le personnel.',
+      planAllows: 'Votre formule autorise {{n}} personne(s) ({{used}} active(s)).',
     },
   },
   billing: {
@@ -519,6 +524,7 @@ const en: typeof fr = {
     exportCsv: 'Export (CSV)', generated: 'Generated {{date}}', summary: 'Summary', item: 'Item', amount: 'Amount', tax: 'Tax collected', discounts: 'Discounts given',
     returned: 'Sales returned', payables: 'Owed to suppliers', daily: 'Sales by day', date: 'Date', none: 'Nothing in this period.',
     byProduct: 'Sales by product', product: 'Product', qty: 'Quantity', margin: 'Margin', top50: 'The top 50 products are shown; the CSV file has everything.',
+    byEmployee: 'Sales by employee', employee: 'Employee',
     stockValue: 'Stock value', stockNote: "Value as of today, at average cost (not tied to the chosen period).", unit: 'Unit', avgCost: 'Average cost', value: 'Value', min: 'Minimum', low: 'low', total: 'Total',
     debtors: 'Customers who owe us', customer: 'Customer', phone: 'Phone', owes: 'Owes', lastActivity: 'Last activity', debtNote: 'Balances at the end of the period, across all shops (customer debts are shared by the business).',
     expenses: 'Expenses',
@@ -648,6 +654,7 @@ const en: typeof fr = {
   tillProviders: {
     title: 'Customer mobile payments', hint: "Connect your own MTN MoMo and Orange Money merchant accounts: your customers' money arrives straight with you, StockCM never touches it. The codes are stored on the server and cannot be read back afterwards.",
     on: 'on', off: 'not set up', setup: 'Set up', replace: 'Replace the codes', remove: 'Remove', save: 'Save', saved: 'Saved.', removed: 'Removed.', invalid: 'Incomplete details or invalid addresses (https is required).',
+    planLocked: 'Verified mobile money is part of the Business plan and up. Upgrade the plan to set it up.',
     field: {
       baseUrl: 'Service address (https)', subscriptionKey: 'Subscription key', apiUser: 'API user', apiKey: 'API key', targetEnvironment: 'Environment (sandbox or the one MTN gives you)', currency: 'Currency (XAF; EUR for the MTN test)',
       authorization: 'Authorization header (Basic ...)', merchantKey: 'Merchant key', returnUrl: 'Address to return to after paying (https)', cancelUrl: 'Address after cancelling (https)',
@@ -670,6 +677,7 @@ const en: typeof fr = {
     title: 'Customer loyalty', hint: 'Customers earn points on what they pay and spend them as a discount at the till. Points are earned only on money actually collected (not on credit).',
     enable: 'Switch the points program on', earnPer: 'One point earned for every … FCFA paid', pointValue: 'Value of one point (FCFA of discount)', minRedeem: 'Minimum points to spend', share: 'Largest share of a sale payable with points (%)',
     cost: 'Cost to you: about {{rate}}% of what the customer spends.', invalid: 'Invalid values.', save: 'Save', saved: 'Rules saved.',
+    planLocked: 'Customer loyalty is part of the Business plan and up. Upgrade the plan to turn it on.',
     points: 'Loyalty points', balance: '{{n}} points (= {{value}})', negative: 'Negative balance: points were spent on two devices while offline.',
     usePoints: 'Points to use', max: 'Max ({{n}})', cannotYet: 'You need at least {{min}} points to spend them, or the sale is too small.', noPoints: 'No points yet.',
     receipt: 'Points: +{{earned}} earned, {{redeemed}} spent. New balance: {{balance}}.',
@@ -743,6 +751,7 @@ const en: typeof fr = {
       network: 'An internet connection is needed.', server_error: 'Server error. Please try again.',
       no_local_pin: 'Sign in again with internet to continue.', weak_pin: 'That PIN is too easy to guess.',
       forbidden: 'Owner only.', bad_name: 'Invalid name.', bad_role: 'Invalid role.',
+      plan_limit_staff: 'Your plan does not allow more staff. Upgrade the plan.',
     },
     problem: {
       format: 'The PIN must be 4 to 6 digits.', repeated: 'Avoid repeated digits (0000).',
@@ -756,6 +765,7 @@ const en: typeof fr = {
       devices: 'Devices', newCode: 'Register a new device', codeHelp: 'Enter this on the new device before {{time}}. Works once.',
       revoke: 'Remove', revoked: 'removed', confirmRevoke: 'Remove this device? It will no longer be able to sign in or sync.',
       done: 'Saved.', error: 'Error: {{msg}}', offline: 'An internet connection is needed to manage staff.',
+      planAllows: 'Your plan allows {{n}} staff member(s) ({{used}} active).',
     },
   },
   billing: {

@@ -132,6 +132,14 @@ export function ReportsScreen() {
             {data.products.length > 50 && <p className="mt-1 text-xs text-slate-500">{t('reports.top50')}</p>}
           </Section>
 
+          <Section title={t('reports.byEmployee')} onExport={() => save('sales-by-employee', [
+            { label: t('reports.employee'), value: (r) => r.name ?? t('staff.mode.owner') }, { label: t('money.salesCount'), value: (r) => r.salesCount },
+            { label: t('money.revenue'), value: (r) => r.revenue }, { label: t('reports.discounts'), value: (r) => r.discount }, { label: t('money.collected'), value: (r) => r.collected },
+          ], data.employees)}>
+            <Table head={[t('reports.employee'), t('money.salesCount'), t('money.revenue'), t('money.collected')]} empty={t('reports.none')}
+              rows={data.employees.map((r) => [r.name ?? t('staff.mode.owner'), r.salesCount, formatXaf(r.revenue), formatXaf(r.collected)])} />
+          </Section>
+
           <Section title={t('reports.stockValue')} onExport={() => save('stock-value', [
             { label: t('reports.product'), value: (r) => r.name }, { label: t('reports.qty'), value: (r) => r.quantity }, { label: t('reports.unit'), value: (r) => r.baseUnit },
             { label: t('reports.avgCost'), value: (r) => r.avgCost }, { label: t('reports.value'), value: (r) => r.value }, { label: t('reports.min'), value: (r) => r.minStock }, { label: t('reports.low'), value: (r) => (r.low ? 1 : 0) },

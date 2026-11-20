@@ -22,6 +22,9 @@ export interface LicencePayload {
   sub: string
   plan: string
   limits: LicenceLimits
+  /** Plan-gated features this business's plan includes, e.g. 'verified_momo', 'loyalty'. Absent on an old
+   *  cached token (before this field existed); treat that the same as an empty list, never as "everything". */
+  features: string[]
   /** 'trial' | 'active' | 'suspended' as stored; the live state is derived from the dates below. */
   base: 'trial' | 'active' | 'suspended'
   periodEnd: number
@@ -37,6 +40,7 @@ export function buildPayload(a: {
   tenantId: string
   plan: string
   limits: LicenceLimits
+  features: string[]
   base: 'trial' | 'active' | 'suspended'
   periodEndMs: number
   graceDays: number
@@ -45,7 +49,7 @@ export function buildPayload(a: {
 }): LicencePayload {
   const graceEnd = a.periodEndMs + a.graceDays * DAY
   return {
-    v: 1, sub: a.tenantId, plan: a.plan, limits: a.limits, base: a.base, periodEnd: a.periodEndMs, graceEnd,
+    v: 1, sub: a.tenantId, plan: a.plan, limits: a.limits, features: a.features, base: a.base, periodEnd: a.periodEndMs, graceEnd,
     issuedAt: a.nowMs, offlineDays: a.offlineDays, validUntil: Math.min(graceEnd, a.nowMs + a.offlineDays * DAY),
   }
 }

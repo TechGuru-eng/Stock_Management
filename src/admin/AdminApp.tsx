@@ -10,10 +10,14 @@ import { Payments } from './pages/Payments'
 import { Plans } from './pages/Plans'
 import { Reminders } from './pages/Reminders'
 import { SettingsPage } from './pages/Settings'
+import { SyncIssues } from './pages/SyncIssues'
 import { Button } from './ui'
 
 const IDLE_MS = 15 * 60_000
-const TITLES: Record<AdminPage, string> = { overview: 'Overview', businesses: 'Businesses', payments: 'Payments', reminders: 'Renewal reminders', plans: 'Plans & prices', audit: 'Audit log', settings: 'System settings' }
+const TITLES: Record<AdminPage, string> = {
+  overview: 'Overview', businesses: 'Businesses', payments: 'Payments', reminders: 'Renewal reminders', plans: 'Plans & prices',
+  syncIssues: 'Sync issues', audit: 'Audit log', settings: 'System settings',
+}
 
 type Phase = 'boot' | 'credentials' | 'code' | 'ready'
 
@@ -107,6 +111,7 @@ export function AdminApp({ api }: { api: AdminApi }) {
           {current === 'payments' && <Payments />}
           {current === 'reminders' && <Reminders />}
           {current === 'plans' && <Plans />}
+          {current === 'syncIssues' && <SyncIssues />}
           {current === 'audit' && <Audit />}
           {current === 'settings' && <SettingsPage />}
           <div className="mt-8"><Button kind="secondary" onClick={() => void signOut()}>Sign out</Button></div>

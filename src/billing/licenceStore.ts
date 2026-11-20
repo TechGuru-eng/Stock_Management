@@ -84,3 +84,11 @@ export async function refreshLicence(accessToken: string): Promise<LicencePayloa
 export async function planLimit(kind: 'shops' | 'staff' | 'products'): Promise<number | null> {
   return (await loadLicence())?.limits[kind] ?? null
 }
+
+/** Whether the signed licence includes a gated feature (e.g. 'verified_momo', 'loyalty'). No licence yet (fresh
+ *  install, same as `applyGuard`): not blocked. A licence that doesn't list the feature: blocked. An old cached
+ *  licence from before this field existed has no `features` array at all, which counts as "lists none". */
+export async function planHasFeature(feature: string): Promise<boolean> {
+  const payload = await loadLicence()
+  return payload ? (payload.features?.includes(feature) ?? false) : true
+}

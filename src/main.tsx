@@ -11,6 +11,10 @@ async function start() {
   if (import.meta.env.DEV && new URLSearchParams(location.search).has('dev')) {
     Root = (await import('./dev/DevApp')).DevApp
   }
+  // Public marketing page, no auth gate: /welcome.
+  if (location.pathname === '/welcome') {
+    Root = (await import('./marketing/editorial/Welcome')).Welcome
+  }
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <Root />

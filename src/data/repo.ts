@@ -4,7 +4,7 @@ import { loadRules, pointsOf } from './loyaltyRepo'
 import { can } from '../domain/permissions'
 import { cleanBarcode, findByBarcode } from '../domain/barcode'
 import { recordBatchInTx } from './batchesRepo'
-import { planLimit } from '../billing/licenceStore'
+import { planHasFeature, planLimit } from '../billing/licenceStore'
 import { db, deviceId, newId, type CustomerRec, type MovementRec, type ProductRec, type UnitRec } from './db'
 import { emptyCostState, issue, receive, type CostState } from '../domain/costing'
 import type { MovementType } from '../domain/inventory'
@@ -279,8 +279,11 @@ export async function checkout(ctx: Ctx, args: CheckoutArgs): Promise<CheckoutRe
         customer = { id: c.id, creditLimit: c.creditLimit, balance: await customerBalance(c.id) }
       }
 
-      // loyalty: points spent become a discount spread over the lines; points earned follow from what is actually paid
-      const rules = args.customerId ? await loadRules() : DEFAULT_LOYALTY
+      // loyalty: points spent become a discount spread over the lines; points earned follow from what is actually paid.
+      // Re-checked here (not just in the settings screen) so a plan downgrade takes effect on the next sale, not
+      // only once someone revisits the loyalty settings and saves them again.
+      const storedRules = args.customerId ? await loadRules() : DEFAULT_LOYALTY
+      const rules = storedRules.enabled && !(await planHasFeature('loyalty')) ? { ...storedRules, enabled: false } : storedRules
       let loyaltyDiscounts: number[] | undefined
       let redeemed = 0
       if (args.usePoints && args.usePoints > 0) {

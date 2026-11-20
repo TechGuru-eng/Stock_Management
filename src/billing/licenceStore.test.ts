@@ -29,10 +29,10 @@ installWriteGuard()
 const ctx: import('../data/repo').Ctx = { tenantId: 't1', shopId: 's1', userId: 'u1', role: 'owner', oversellPolicy: 'allow_and_flag' }
 const t0 = Date.parse('2026-11-17T12:00:00Z')
 
-async function giveLicence(opts: { periodEndMs: number; nowMs?: number; products?: number | null; base?: 'trial' | 'active' | 'suspended'; key?: typeof keys }) {
+async function giveLicence(opts: { periodEndMs: number; nowMs?: number; products?: number | null; features?: string[]; base?: 'trial' | 'active' | 'suspended'; key?: typeof keys }) {
   const payload = buildPayload({
     tenantId: 't1', plan: 'business', limits: { shops: 1, staff: 5, products: opts.products === undefined ? 5000 : opts.products },
-    base: opts.base ?? 'active', periodEndMs: opts.periodEndMs, graceDays: 7, offlineDays: 30, nowMs: opts.nowMs ?? t0,
+    features: opts.features ?? [], base: opts.base ?? 'active', periodEndMs: opts.periodEndMs, graceDays: 7, offlineDays: 30, nowMs: opts.nowMs ?? t0,
   })
   await db.meta.put({ key: 'licence', value: await signLicence(payload, (opts.key ?? keys).privateJwk) })
 }
@@ -146,5 +146,22 @@ describe('plan limits on the device', () => {
     await giveLicence({ periodEndMs: t0 + 10 * DAY, products: null })
     for (let i = 0; i < 4; i++) await repo.addProduct(ctx, water(`P${i}`))
     expect(await db.products.count()).toBe(4)
+  })
+})
+
+describe('plan features on the device', () => {
+  it('no licence yet (a fresh install) is not blocked, same as the write guard', async () => {
+    expect(await lic.planHasFeature('verified_momo')).toBe(true)
+  })
+  it('a plan without the feature does not have it', async () => {
+    await giveLicence({ periodEndMs: t0 + 10 * DAY, features: ['loyalty'] })
+    expect(await lic.planHasFeature('verified_momo')).toBe(false)
+    expect(await lic.planHasFeature('loyalty')).toBe(true)
+  })
+  it('a plan with the feature has it, until a renewal drops it', async () => {
+    await giveLicence({ periodEndMs: t0 + 10 * DAY, features: ['verified_momo', 'loyalty'] })
+    expect(await lic.planHasFeature('verified_momo')).toBe(true)
+    await giveLicence({ periodEndMs: t0 + 40 * DAY, features: [] }) // downgraded to a plan without it
+    expect(await lic.planHasFeature('verified_momo')).toBe(false)
   })
 })

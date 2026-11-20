@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../auth/AuthProvider'
 import { StaffApiError, createStaff } from '../../auth/staffApi'
+import { planLimit } from '../../billing/licenceStore'
 import { validatePin } from '../../domain/staffPin'
 import { supabase } from '../../lib/supabase'
 
@@ -26,6 +27,7 @@ export function StaffScreen() {
   const [pin, setPin] = useState('')
   const [newPin, setNewPin] = useState<Record<string, string>>({})
   const [code, setCode] = useState<{ code: string; expires_at: string } | null>(null)
+  const [limit, setLimit] = useState<number | null>(null)
 
   const load = useCallback(async () => {
     if (!supabase || !tenantId || !navigator.onLine) return
@@ -35,6 +37,7 @@ export function StaffScreen() {
     setLocks(Object.fromEntries(((l.data as Lock[]) ?? []).map((x) => [x.membership_id, x])))
     const d = await supabase.from('devices').select('id, name, last_sync_at, revoked_at').eq('tenant_id', tenantId).order('name')
     setDevices((d.data as Device[]) ?? [])
+    setLimit(await planLimit('staff'))
   }, [tenantId])
 
   useEffect(() => { void load() }, [load])
@@ -56,6 +59,8 @@ export function StaffScreen() {
   }
 
   if (!navigator.onLine) return <p className="text-slate-500">{t('staff.manage.offline')}</p>
+  const activeCount = members.filter((m) => m.active).length
+  const mayAdd = limit === null || activeCount < limit
 
   async function add(e: FormEvent) {
     e.preventDefault()
@@ -74,13 +79,15 @@ export function StaffScreen() {
 
       <form onSubmit={add} className="flex flex-col gap-3 rounded border border-slate-200 p-3">
         <h4 className="font-semibold">{t('staff.manage.add')}</h4>
+        {limit !== null && <p className="text-sm text-slate-600 dark:text-slate-300">{t('staff.manage.planAllows', { n: limit, used: activeCount })}</p>}
         <input className={input} required minLength={2} placeholder={t('staff.manage.fullName')} value={name} onChange={(e) => setName(e.target.value)} />
         <select className={input} value={role} onChange={(e) => setRole(e.target.value)} aria-label={t('staff.manage.role')}>
           {(['cashier', 'storekeeper', 'manager'] as const).map((r) => <option key={r} value={r}>{t(`staff.roles.${r}`)}</option>)}
         </select>
         <input className={input} type="password" inputMode="numeric" autoComplete="off" maxLength={6} placeholder={t('staff.manage.pinNew')} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} />
         <p className="text-xs text-slate-500">{t('staff.manage.pinRule')}</p>
-        <button className={btn}>{t('staff.manage.addButton')}</button>
+        <button className={btn} disabled={!mayAdd}>{t('staff.manage.addButton')}</button>
+        {!mayAdd && <p className="text-sm text-amber-700">{t('staff.errors.plan_limit_staff')}</p>}
       </form>
 
       <ul className="flex flex-col gap-3">

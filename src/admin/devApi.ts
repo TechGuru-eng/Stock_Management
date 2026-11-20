@@ -3,7 +3,7 @@
  * account. It is only imported behind `import.meta.env.DEV`, so it is not part of production builds.
  * Sign in with any email/password; the two-step code is 123456; the email picks the role (finance@ / support@ / anything else = super).
  */
-import type { AdminApi, AuditRow, BusinessRow, PaymentRow, PlanRow, Settings, SubState } from './api'
+import type { AdminApi, AuditRow, BusinessRow, PaymentRow, PlanRow, Settings, SubState, SyncIssueRow } from './api'
 import type { AdminRole } from './permissions'
 import { can, type AdminPerm } from './permissions'
 
@@ -31,15 +31,19 @@ export function makeDevApi(): AdminApi {
     { id: 'b3', name: 'Quincaillerie Fotso', category: 'hardware', town: 'Bafoussam', created_at: iso(90), plan_code: 'pro', state: 'grace', period_end: iso(3), shops: 2, staff: 8, last_sync: iso(40), open_issues: 0, owner_phone_masked: '65011••••902' },
     { id: 'b4', name: 'Alimentation Njoya', category: 'general_store', town: 'Garoua', created_at: iso(120), plan_code: 'starter', state: 'expired', period_end: iso(30), shops: 1, staff: 0, last_sync: iso(35), open_issues: 0, owner_phone_masked: '67433••••118' },
   ]
+  const issues: SyncIssueRow[] = [
+    { id: 'i1', tenant_id: 'b2', business: 'Pharmacie du Centre', kind: 'rejected', error: 'oversell blocked', device: 'Tablet counter', group_id: 'g1', first_seen: iso(1), last_seen: iso(0.3) },
+    { id: 'i2', tenant_id: 'b2', business: 'Pharmacie du Centre', kind: 'conflict', error: 'price edited on two devices', device: 'Old phone', group_id: 'g2', first_seen: iso(2), last_seen: iso(0.6) },
+  ]
   const pays: PaymentRow[] = [
     { id: 'p1', reference: 'STK-AB23CD45', business: 'Pharmacie du Centre', tenant_id: 'b2', kind: 'renewal', plan_code: 'starter', amount: 2500, method: 'mtn_momo', phone: '699886221', status: 'pending', created_at: iso(0.2), confirmed_at: null, confirmed_by: null, note: null },
     { id: 'p2', reference: 'STK-ZX98YW76', business: 'Boutique Mbarga', tenant_id: 'b1', kind: 'renewal', plan_code: 'business', amount: 5000, method: 'orange_money', phone: '677123456', status: 'provider_verified', created_at: iso(18), confirmed_at: iso(18), confirmed_by: 'provider', note: null },
   ]
   const plans: PlanRow[] = [
-    { code: 'starter', name: 'Starter', price_xaf: 2500, max_shops: 1, max_staff: 2, max_products: 500, active: true, subscribers: 2 },
-    { code: 'business', name: 'Business', price_xaf: 5000, max_shops: 1, max_staff: 5, max_products: 5000, active: true, subscribers: 1 },
-    { code: 'pro', name: 'Pro', price_xaf: 10000, max_shops: 3, max_staff: 15, max_products: null, active: true, subscribers: 1 },
-    { code: 'enterprise', name: 'Enterprise', price_xaf: null, max_shops: null, max_staff: null, max_products: null, active: true, subscribers: 0 },
+    { code: 'starter', name: 'Starter', price_xaf: 5000, max_shops: 1, max_staff: 3, max_products: 1000, features: [], active: true, subscribers: 2 },
+    { code: 'business', name: 'Business', price_xaf: 15000, max_shops: 3, max_staff: 10, max_products: 5000, features: ['verified_momo', 'loyalty'], active: true, subscribers: 1 },
+    { code: 'pro', name: 'Pro', price_xaf: 25000, max_shops: 10, max_staff: null, max_products: null, features: ['verified_momo', 'loyalty'], active: true, subscribers: 1 },
+    { code: 'enterprise', name: 'Enterprise', price_xaf: null, max_shops: null, max_staff: null, max_products: null, features: ['verified_momo', 'loyalty'], active: true, subscribers: 0 },
   ]
   let settings: Settings = {
     trial_days: 30, grace_days: 7, offline_limit_days: 30, payment_mode: 'manual',
@@ -66,7 +70,7 @@ export function makeDevApi(): AdminApi {
       return {
         businesses: biz.length, trial: n('trial'), paying: n('active'), grace: n('grace'), expired: n('expired'), suspended: n('suspended'),
         mrr_estimate: 5000, active_shops: 5, payments_pending: pays.filter((p) => p.status === 'pending').length, payment_failures_30d: 1, revenue_30d: 5000,
-        devices: { total: 9, synced_24h: 6, stale_over_48h: 3, stale_over_30d: 1 }, open_sync_issues: 2,
+        devices: { total: 9, synced_24h: 6, stale_over_48h: 3, stale_over_30d: 1 }, open_sync_issues: issues.length,
       }
     },
     async businesses(search, state) {
@@ -88,7 +92,7 @@ export function makeDevApi(): AdminApi {
       need('plans')
       if (!/^[a-z][a-z_]{2,19}$/.test(p.code)) throw new Error('plan code: 3-20 lowercase letters')
       const i = plans.findIndex((x) => x.code === p.code)
-      const row: PlanRow = { code: p.code, name: p.name, price_xaf: p.price, max_shops: p.shops, max_staff: p.staff, max_products: p.products, active: p.active, subscribers: i >= 0 ? plans[i].subscribers : 0 }
+      const row: PlanRow = { code: p.code, name: p.name, price_xaf: p.price, max_shops: p.shops, max_staff: p.staff, max_products: p.products, features: p.features, active: p.active, subscribers: i >= 0 ? plans[i].subscribers : 0 }
       if (i >= 0) plans[i] = row; else plans.push(row)
       log('plan.saved', null, { code: p.code })
     },
@@ -120,9 +124,18 @@ export function makeDevApi(): AdminApi {
         devices: [{ id: 'd1', name: 'Tablet counter', last_sync_at: b.last_sync, revoked: false }, { id: 'd2', name: 'Old phone', last_sync_at: iso(50), revoked: true }],
         staff: [{ name: 'Marie', role: 'cashier', active: true }, { name: 'Paul', role: 'stock_manager', active: false }],
         recent_actions: [{ action: 'sale.created', at: iso(0.1) }, { action: 'stock.received', at: iso(0.5) }],
-        sync_issues: b.open_issues ? [{ kind: 'rejected', error: 'oversell blocked', last_seen: iso(0.3), resolved: false }] : [],
+        sync_issues: issues.filter((i) => i.tenant_id === id).map((i) => ({ kind: i.kind, error: i.error, last_seen: i.last_seen, resolved: false })),
         payments: pays.filter((p) => p.tenant_id === id).map((p) => ({ reference: p.reference, status: p.status, amount: p.amount, at: p.created_at })),
       }
+    },
+    async syncIssues() { need('sync'); return issues.map((i) => ({ ...i })) },
+    async resolveSyncIssue(tenantId, groupId, note) {
+      need('sync'); if (note.trim().length < 5) throw new Error('give a note')
+      const i = issues.findIndex((x) => x.tenant_id === tenantId && x.group_id === groupId)
+      if (i < 0) throw new Error('issue not found or already resolved')
+      const [removed] = issues.splice(i, 1)
+      const b = biz.find((x) => x.id === tenantId); if (b) b.open_issues = Math.max(0, b.open_issues - 1)
+      log('sync_issue.resolved', tenantId, { group: removed.group_id, note })
     },
     async audit(limit) { need('support'); return audit.slice(0, limit) },
     async settings() { need('settings'); return JSON.parse(JSON.stringify(settings)) as Settings },

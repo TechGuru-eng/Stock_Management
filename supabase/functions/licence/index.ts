@@ -72,13 +72,14 @@ Deno.serve(async (req) => {
 
       const { data: sub } = await admin.from('subscriptions').select('plan_code, status, period_end').eq('tenant_id', tenantId).maybeSingle()
       if (!sub) return json({ error: 'no_subscription' }, 404)
-      const { data: plan } = await admin.from('plans').select('max_shops, max_staff, max_products').eq('code', sub.plan_code).maybeSingle()
+      const { data: plan } = await admin.from('plans').select('max_shops, max_staff, max_products, features').eq('code', sub.plan_code).maybeSingle()
       const { data: settings } = await admin.from('platform_settings').select('key, value').in('key', ['grace_days', 'offline_limit_days'])
       const num = (k: string, d: number) => Number(settings?.find((s: { key: string }) => s.key === k)?.value ?? d)
 
       const limits: LicenceLimits = { shops: plan?.max_shops ?? null, staff: plan?.max_staff ?? null, products: plan?.max_products ?? null }
+      const features: string[] = Array.isArray(plan?.features) ? plan.features : []
       const payload = buildPayload({
-        tenantId, plan: sub.plan_code, limits, base: sub.status === 'suspended' ? 'suspended' : sub.status === 'trial' ? 'trial' : 'active',
+        tenantId, plan: sub.plan_code, limits, features, base: sub.status === 'suspended' ? 'suspended' : sub.status === 'trial' ? 'trial' : 'active',
         periodEndMs: Date.parse(sub.period_end), graceDays: num('grace_days', 7), offlineDays: num('offline_limit_days', 30), nowMs: Date.now(),
       })
       const { privateJwk } = await loadKeys(admin)

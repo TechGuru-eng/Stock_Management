@@ -25,10 +25,10 @@ export interface PaymentRow {
 
 export interface PlanRow {
   code: string; name: string; price_xaf: number | null; max_shops: number | null; max_staff: number | null; max_products: number | null
-  active: boolean; subscribers: number
+  features: string[]; active: boolean; subscribers: number
 }
 
-export interface PlanInput { code: string; name: string; price: number | null; shops: number | null; staff: number | null; products: number | null; active: boolean }
+export interface PlanInput { code: string; name: string; price: number | null; shops: number | null; staff: number | null; products: number | null; features: string[]; active: boolean }
 
 export interface Revenue {
   by_month: { month: string; amount: number; invoices: number }[]
@@ -45,6 +45,11 @@ export interface SupportDetail {
   recent_actions: { action: string; at: string }[]
   sync_issues: { kind: string; error: string | null; last_seen: string; resolved: boolean }[]
   payments: { reference: string; status: string; amount: number; at: string }[]
+}
+
+export interface SyncIssueRow {
+  id: string; tenant_id: string; business: string; kind: 'rejected' | 'conflict'; error: string | null
+  device: string | null; group_id: string; first_seen: string; last_seen: string
 }
 
 export interface AuditRow { id: number; admin_id: string; action: string; tenant_id: string | null; business: string | null; detail: Record<string, unknown> | null; at: string }
@@ -81,6 +86,8 @@ export interface AdminApi {
   startSupport(tenant: string, reason: string): Promise<string>
   endSupport(grant: string): Promise<void>
   supportDetail(tenant: string): Promise<SupportDetail>
+  syncIssues(): Promise<SyncIssueRow[]>
+  resolveSyncIssue(tenant: string, groupId: string, note: string): Promise<void>
   audit(limit: number): Promise<AuditRow[]>
   settings(): Promise<Settings>
   setSetting(key: string, value: unknown): Promise<void>
@@ -156,7 +163,7 @@ export const realApi: AdminApi = {
   extendTrial: async (tenant, days, reason) => void (await rpc('admin_extend_trial', { p_tenant: tenant, p_days: days, p_reason: reason })),
   plans: () => rpc('admin_list_plans'),
   savePlan: (p) =>
-    rpc('admin_upsert_plan', { p_code: p.code, p_name: p.name, p_price: p.price, p_max_shops: p.shops, p_max_staff: p.staff, p_max_products: p.products, p_active: p.active }),
+    rpc('admin_upsert_plan', { p_code: p.code, p_name: p.name, p_price: p.price, p_max_shops: p.shops, p_max_staff: p.staff, p_max_products: p.products, p_active: p.active, p_features: p.features }),
   payments: (status) => rpc('admin_list_payments', { p_status: status || null, p_limit: 100 }),
   confirmPayment: async (id, note) => void (await rpc('admin_confirm_payment', { p_payment: id, p_note: note })),
   rejectPayment: (id, reason) => rpc('admin_reject_payment', { p_payment: id, p_reason: reason }),
@@ -164,6 +171,8 @@ export const realApi: AdminApi = {
   startSupport: (tenant, reason) => rpc('admin_start_support', { p_tenant: tenant, p_reason: reason }),
   endSupport: (grant) => rpc('admin_end_support', { p_grant: grant }),
   supportDetail: (tenant) => rpc('admin_support_detail', { p_tenant: tenant }),
+  syncIssues: () => rpc('admin_list_sync_issues', { p_limit: 200 }),
+  resolveSyncIssue: async (tenant, groupId, note) => void (await rpc('admin_resolve_sync_issue', { p_tenant: tenant, p_group: groupId, p_note: note })),
   audit: (limit) => rpc('admin_audit', { p_limit: limit, p_tenant: null }),
   settings: () => rpc('admin_list_settings'),
   setSetting: (key, value) => rpc('admin_set_setting', { p_key: key, p_value: value }),

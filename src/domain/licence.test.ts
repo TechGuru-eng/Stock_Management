@@ -11,7 +11,7 @@ const now = Date.parse('2026-11-17T12:00:00Z')
 const limits = { shops: 1, staff: 5, products: 5000 }
 
 const make = (over: Partial<Parameters<typeof buildPayload>[0]> = {}): LicencePayload =>
-  buildPayload({ tenantId: 'tenant-1', plan: 'business', limits, base: 'active', periodEndMs: now + 20 * DAY, graceDays: 7, offlineDays: 30, nowMs: now, ...over })
+  buildPayload({ tenantId: 'tenant-1', plan: 'business', limits, features: ['verified_momo', 'loyalty'], base: 'active', periodEndMs: now + 20 * DAY, graceDays: 7, offlineDays: 30, nowMs: now, ...over })
 
 describe('licence signature', () => {
   it('a token signed by the server verifies with the public key', async () => {

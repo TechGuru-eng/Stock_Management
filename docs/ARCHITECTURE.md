@@ -11,7 +11,10 @@ and the revised master prompt. Where they differ, the master prompt wins.
 | Offline oversell | Allow and flag (per-shop setting `allow_and_flag` or `block`) | Counter is never blocked; negative stock raises a manager alert. Oversold units are costed at the last known unit cost. |
 | Offline limit | 30 days, then read-only | A sync issues a licence token valid for `min(paid period end + grace, last sync + 30 days)`. Past that the device is read-only until it syncs. Unsynced data is never promised to be recoverable. |
 | Tax | Optional per-product rate (basis points) | Shown on receipts and reports. No legal invoice-compliance claim until reviewed. |
-| Plan prices | Starter 2,500 / Business 5,000 / Pro 10,000 FCFA | Stored in the `plans` table, editable by platform admin, not in code. Supersedes the SRS table. |
+| Plan prices (updated 20 Nov 2026) | Starter 5,000 / Business 15,000 / Pro 25,000 FCFA per month, Enterprise by quote | Stored in the `plans` table, editable by platform admin, not in code. Supersedes the SRS table and the earlier 2,500/5,000/10,000 figures — the database still needs updating to match. |
+| Billing cycle discounts | 6 months bills as 7, 12 months bills as 14 (1 and 2 free months) | Pricing/billing logic only; not yet reflected in `src/billing`. |
+| Subscription lapse | Read-only is for new records only | A lapsed shop keeps full view and export of everything already recorded — nothing is deleted. Only new sales/stock entries pause until renewal (see the Offline limit row above). |
+| Feature gating per plan | Decided, not yet built | Plans currently differ only by shop/staff/product limits (`max_shops`, `max_staff`, `max_products` on the `plans` table). Splitting features by plan (e.g. PDF invoices or loyalty points from Business up) is a future `src/billing` change. |
 
 ## 2. Principles
 

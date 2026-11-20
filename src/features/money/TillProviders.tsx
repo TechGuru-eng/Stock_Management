@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { planHasFeature } from '../../billing/licenceStore'
 import { useCtx } from '../../data/useCtx'
 import { can } from '../../domain/permissions'
 import { parseMtnConfig, parseOrangeConfig } from '../../domain/paymentProviders'
@@ -19,7 +20,7 @@ const FIELDS: Record<CollectionProvider, { key: string; secret?: boolean; placeh
   ],
 }
 
-function ProviderForm({ provider, tenantId, on, onChanged }: { provider: CollectionProvider; tenantId: string; on: boolean; onChanged: () => void }) {
+function ProviderForm({ provider, tenantId, on, locked, onChanged }: { provider: CollectionProvider; tenantId: string; on: boolean; locked: boolean; onChanged: () => void }) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [v, setV] = useState<Record<string, string>>({})
@@ -49,10 +50,11 @@ function ProviderForm({ provider, tenantId, on, onChanged }: { provider: Collect
       </div>
       {!open && (
         <div className="flex gap-2">
-          <button type="button" className="min-h-12 rounded border border-slate-300 px-3" onClick={() => setOpen(true)}>{on ? t('tillProviders.replace') : t('tillProviders.setup')}</button>
+          <button type="button" className="min-h-12 rounded border border-slate-300 px-3 disabled:opacity-50" disabled={locked} onClick={() => setOpen(true)}>{on ? t('tillProviders.replace') : t('tillProviders.setup')}</button>
           {on && <button type="button" className="min-h-12 rounded border border-red-300 px-3 text-red-700" onClick={() => void remove()}>{t('tillProviders.remove')}</button>}
         </div>
       )}
+      {locked && !on && <p className="text-sm text-amber-700">{t('tillProviders.planLocked')}</p>}
       {open && (
         <form onSubmit={save} className="flex flex-col gap-2">
           {FIELDS[provider].map((f) => (
@@ -76,10 +78,12 @@ export function TillProviders() {
   const { t } = useTranslation()
   const ctx = useCtx()
   const [on, setOn] = useState<Record<string, boolean>>({})
+  const [verifiedMomo, setVerifiedMomo] = useState(false)
   const load = useCallback(async () => {
     if (!supabase || !ctx || !navigator.onLine) return
     const r = await supabase.rpc('tenant_providers', { p_tenant: ctx.tenantId })
     setOn((r.data as Record<string, boolean> | null) ?? {})
+    setVerifiedMomo(await planHasFeature('verified_momo'))
   }, [ctx])
   useEffect(() => { void load() }, [load])
   if (!ctx || !can(ctx.role, 'settings.write') || !supabase || !navigator.onLine) return null
@@ -87,8 +91,8 @@ export function TillProviders() {
     <section className="mt-6 flex flex-col gap-3 rounded border border-slate-200 p-3 dark:border-slate-700">
       <h3 className="text-lg font-semibold">{t('tillProviders.title')}</h3>
       <p className="text-sm text-slate-600 dark:text-slate-300">{t('tillProviders.hint')}</p>
-      <ProviderForm provider="mtn_momo" tenantId={ctx.tenantId} on={Boolean(on.mtn_momo)} onChanged={() => void load()} />
-      <ProviderForm provider="orange_money" tenantId={ctx.tenantId} on={Boolean(on.orange_money)} onChanged={() => void load()} />
+      <ProviderForm provider="mtn_momo" tenantId={ctx.tenantId} on={Boolean(on.mtn_momo)} locked={!verifiedMomo} onChanged={() => void load()} />
+      <ProviderForm provider="orange_money" tenantId={ctx.tenantId} on={Boolean(on.orange_money)} locked={!verifiedMomo} onChanged={() => void load()} />
     </section>
   )
 }

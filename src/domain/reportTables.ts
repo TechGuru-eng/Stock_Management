@@ -103,6 +103,61 @@ export function productPerformance(r: ProductInput): ProductRow[] {
     .sort((x, y) => y.revenue - x.revenue || x.name.localeCompare(y.name))
 }
 
+/* ------------------------------ by employee ------------------------------ */
+
+export interface EmployeeRow {
+  cashierId: string
+  /** Resolved from the name lookup the caller supplies; null when the person isn't in it (most often the owner,
+   *  or someone since removed from the device roster). The screen decides the fallback label. */
+  name: string | null
+  salesCount: number
+  /** Revenue excluding tax, after discounts and returns (does not include COGS: a per-sale profit figure is not
+   *  attributed to whoever rang up the sale, since pricing and purchasing are the owner's decisions, not theirs). */
+  revenue: Xaf
+  discount: Xaf
+  collected: Xaf
+}
+
+export interface EmployeeInput {
+  sales: readonly SaleRecord[]
+  returns?: readonly ReturnRecord[]
+  from: string
+  to: string
+  shopId?: string
+  /** id -> display name, e.g. the device roster. Unlisted ids (most often the owner) get `name: null`. */
+  names: readonly { id: string; name: string }[]
+}
+
+export function employeePerformance(r: EmployeeInput): EmployeeRow[] {
+  const sales = r.sales.filter((s) => s.status === 'completed' && within(s.occurredAt, r.from, r.to) && (!r.shopId || s.shopId === r.shopId))
+  const byId = new Map(sales.map((s) => [s.id, s]))
+  const names = new Map(r.names.map((n) => [n.id, n.name]))
+  const acc = new Map<string, { salesCount: number; revenue: number; discount: number; collected: number }>()
+  const row = (cashierId: string) => {
+    let a = acc.get(cashierId)
+    if (!a) acc.set(cashierId, (a = { salesCount: 0, revenue: 0, discount: 0, collected: 0 }))
+    return a
+  }
+  for (const s of sales) {
+    const a = row(s.cashierId)
+    a.salesCount += 1
+    a.revenue += s.subtotal - s.discount
+    a.discount += s.discount
+    a.collected += s.collected
+  }
+  const returns = (r.returns ?? []).filter((x) => within(x.occurredAt, r.from, r.to) && (!r.shopId || x.shopId === r.shopId))
+  for (const x of returns) {
+    const original = byId.get(x.saleId)
+    if (!original) continue // the original sale is outside this period or shop: nothing here to net against
+    const a = row(original.cashierId)
+    a.revenue -= x.netValue
+    a.collected -= x.refundedAmount
+  }
+  return [...acc.entries()]
+    .map(([cashierId, a]) => ({ cashierId, name: names.get(cashierId) ?? null, ...a }))
+    .sort((x, y) => y.revenue - x.revenue || x.cashierId.localeCompare(y.cashierId))
+}
+
 /* ------------------------------ stock value ----------------------------- */
 
 export interface StockRow {

@@ -16,7 +16,7 @@ export function can(role: AdminRole | null | undefined, perm: AdminPerm): boolea
   return MAP[role]?.includes(perm) ?? false
 }
 
-export type AdminPage = 'overview' | 'businesses' | 'payments' | 'reminders' | 'plans' | 'audit' | 'settings'
+export type AdminPage = 'overview' | 'businesses' | 'payments' | 'reminders' | 'plans' | 'syncIssues' | 'audit' | 'settings'
 
 /** Which page needs which permission. */
 export const PAGE_PERM: Record<AdminPage, AdminPerm> = {
@@ -25,6 +25,7 @@ export const PAGE_PERM: Record<AdminPage, AdminPerm> = {
   payments: 'billing',
   reminders: 'billing',
   plans: 'plans',
+  syncIssues: 'sync',
   audit: 'support',
   settings: 'settings',
 }

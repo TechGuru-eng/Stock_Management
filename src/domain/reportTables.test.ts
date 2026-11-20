@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { toCsv } from './csv'
-import { dailyTable, debtors, dayEnd, dayStart, periodPreset, productPerformance, stockValuation } from './reportTables'
+import { dailyTable, debtors, dayEnd, dayStart, employeePerformance, periodPreset, productPerformance, stockValuation } from './reportTables'
 import { summarize } from './reports'
 import type { SaleLineRecord, SaleRecord } from './pos'
 import type { ReturnLineRecord, ReturnRecord } from './returns'
@@ -52,6 +52,36 @@ describe('product performance', () => {
   })
   it('respects the period', () => {
     expect(productPerformance({ sales, lines, from: '2026-12-01T00:00:00.000Z', to: '2026-12-31T00:00:00.000Z' })).toEqual([])
+  })
+})
+
+describe('employee performance', () => {
+  const bySale = sales.map((s) => ({ ...s, cashierId: s.id === 's3' ? 'bob' : 'alice' })) // alice: s1+s2, bob: s3
+  const names = [{ id: 'alice', name: 'Alice' }]
+
+  it('adds up exactly to the summary revenue, with and without returns', () => {
+    for (const shopId of [undefined, 'A', 'B']) {
+      const rows = employeePerformance({ sales: bySale, returns, from, to, shopId, names })
+      const s = summarize({ sales: bySale, lines, txns: [], expenses: [], entries: [], returns, returnLines, from, to, shopId })
+      expect(rows.reduce((t, r) => t + r.revenue, 0)).toBe(s.revenue)
+    }
+  })
+  it('groups by cashier, nets a return against the cashier who rang up the original sale, and resolves names', () => {
+    const rows = employeePerformance({ sales: bySale, returns, from, to, names })
+    const alice = rows.find((r) => r.cashierId === 'alice')!
+    expect(alice.name).toBe('Alice')
+    expect(alice.salesCount).toBe(2)
+    expect(alice.revenue).toBe(2950) // (2000 + 1450) - the 500 returned on s1
+    expect(alice.collected).toBe(2950)
+    const bob = rows.find((r) => r.cashierId === 'bob')!
+    expect(bob.name).toBeNull() // not in the roster (e.g. the owner)
+    expect(bob.salesCount).toBe(1)
+    expect(bob.revenue).toBe(3000)
+  })
+  it('respects the period and the shop filter', () => {
+    expect(employeePerformance({ sales: bySale, from: '2026-12-01T00:00:00.000Z', to: '2026-12-31T00:00:00.000Z', names })).toEqual([])
+    const onlyA = employeePerformance({ sales: bySale, returns, from, to, shopId: 'A', names })
+    expect(onlyA.map((r) => r.cashierId)).toEqual(['alice'])
   })
 })
 
