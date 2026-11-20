@@ -442,6 +442,7 @@ html.lenis { scroll-behavior: auto; }
 .editorial-taste .app-main__title { margin-bottom: var(--space-25); }
 
 .editorial-taste .panel { background: var(--neutral-white); border: 1px solid var(--border-subtle); border-radius: var(--radius-10); padding: var(--space-20); }
+.editorial-taste .panel--flag { border-color: var(--tone-strong); }
 .editorial-taste .panel__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-15); margin-bottom: var(--space-15); }
 .editorial-taste .panel-grid { display: grid; gap: var(--space-15); grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .editorial-taste .stack { display: flex; flex-direction: column; gap: var(--space-15); }

@@ -22,24 +22,24 @@ export function InvoicesView() {
   const shown = rows.filter((r) => !needle || r.s.saleNumber.toLowerCase().includes(needle) || (r.customer ?? '').toLowerCase().includes(needle)).slice(0, 50)
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="stack">
       <input
-        className="min-h-12 w-full rounded border border-slate-300 bg-transparent px-3" placeholder={t('invoices.search')} aria-label={t('invoices.search')}
+        className="input" placeholder={t('invoices.search')} aria-label={t('invoices.search')}
         value={q} onChange={(e) => setQ(e.target.value)}
       />
-      {shown.length === 0 && <p className="text-slate-500">{t('invoices.none')}</p>}
-      <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+      {shown.length === 0 && <p className="body-md muted">{t('invoices.none')}</p>}
+      <ul className="list-wrap">
         {shown.map(({ s, customer }) => (
-          <li key={s.id} className="flex items-center justify-between gap-2 py-2">
+          <li key={s.id} className="flex items-center justify-between gap-2">
             <div>
-              <div className="font-medium">{s.saleNumber} · {formatXaf(s.total)}</div>
-              <div className="text-sm text-slate-500">{new Date(s.occurredAt).toLocaleString(i18n.language)}{customer ? ` · ${customer}` : ''}{s.outstanding > 0 ? ` · ${t('invoices.onCredit')}` : ''}</div>
+              <div className="body-md">{s.saleNumber} · {formatXaf(s.total)}</div>
+              <div className="body-sm muted">{new Date(s.occurredAt).toLocaleString(i18n.language)}{customer ? ` · ${customer}` : ''}{s.outstanding > 0 ? ` · ${t('invoices.onCredit')}` : ''}</div>
             </div>
             <InvoiceActions saleId={s.id} compact />
           </li>
         ))}
       </ul>
-      {rows.length > 50 && !needle && <p className="text-xs text-slate-500">{t('invoices.latest')}</p>}
+      {rows.length > 50 && !needle && <p className="body-sm muted">{t('invoices.latest')}</p>}
     </div>
   )
 }

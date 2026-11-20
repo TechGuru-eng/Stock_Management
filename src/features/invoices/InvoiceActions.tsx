@@ -49,14 +49,14 @@ export function InvoiceActions({ saleId, compact }: { saleId: string; compact?: 
     }
   }
 
-  const cls = compact ? 'min-h-10 rounded border border-slate-300 px-3 text-sm' : 'min-h-12 flex-1 rounded border border-slate-300 px-3'
+  const cls = compact ? 'btn btn--secondary btn--sm' : 'btn btn--secondary flex-1'
   return (
     <span className={compact ? 'flex flex-col items-end gap-1' : 'flex flex-col gap-2'}>
       <span className="flex gap-2">
-        <button type="button" disabled={busy} onClick={() => void make('download')} className={`${cls} disabled:opacity-60`}>{busy ? '…' : t('invoices.pdf')}</button>
-        <button type="button" disabled={busy} onClick={() => void make('share')} className={`${cls} disabled:opacity-60`}>{t('invoices.share')}</button>
+        <button type="button" disabled={busy} onClick={() => void make('download')} className={cls}>{busy ? '…' : t('invoices.pdf')}</button>
+        <button type="button" disabled={busy} onClick={() => void make('share')} className={cls}>{t('invoices.share')}</button>
       </span>
-      {msg && <span role="alert" className="text-xs text-red-700">{msg}</span>}
+      {msg && <span role="alert" className="field__error">{msg}</span>}
     </span>
   )
 }
