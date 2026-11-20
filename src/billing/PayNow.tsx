@@ -5,7 +5,7 @@ import { isStale, pollDelayMs } from '../domain/paymentAttempts'
 import { supabase } from '../lib/supabase'
 
 const base = `${(import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? ''}/functions/v1`
-const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
+const btn = 'btn btn--primary'
 
 type Phase =
   | { k: 'idle' }
@@ -74,21 +74,21 @@ export function PayNow({ paymentId, method, onPaid }: { paymentId: string; metho
   }
 
   if (!available) return null
-  if (phase.k === 'paid') return <p role="status" className="mt-2 rounded bg-teal-50 p-2 font-semibold text-teal-900">{t('payNow.paid')}</p>
+  if (phase.k === 'paid') return <p role="status" className="notice body-md" style={{ marginTop: 8 }}>{t('payNow.paid')}</p>
   return (
-    <div className="mt-3 flex flex-col gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+    <div className="stack" style={{ marginTop: 15, borderTop: '1px solid var(--border-subtle)', paddingTop: 15 }}>
       {(phase.k === 'idle' || phase.k === 'stopped') && (
         <>
           <button type="button" className={btn} onClick={() => void start()}>{t(method === 'mtn_momo' ? 'payNow.sendPrompt' : 'payNow.openPage')}</button>
-          {phase.k === 'stopped' && <p role="alert" className="text-sm text-red-700">{t(`payNow.stopped.${['declined', 'expired', 'error', 'in_progress', 'too_many', 'already_paid', 'not_payable', 'not_configured', 'provider_error'].includes(phase.reason) ? phase.reason : 'error'}`)}</p>}
+          {phase.k === 'stopped' && <p role="alert" className="field__error">{t(`payNow.stopped.${['declined', 'expired', 'error', 'in_progress', 'too_many', 'already_paid', 'not_payable', 'not_configured', 'provider_error'].includes(phase.reason) ? phase.reason : 'error'}`)}</p>}
         </>
       )}
-      {phase.k === 'sending' && <p role="status">{t('payNow.sending')}</p>}
+      {phase.k === 'sending' && <p role="status" className="body-md">{t('payNow.sending')}</p>}
       {phase.k === 'waiting' && (
         <>
-          <p role="status" className="font-medium">{t(method === 'mtn_momo' ? 'payNow.waitingMtn' : 'payNow.waitingOrange')}</p>
+          <p role="status" className="body-md">{t(method === 'mtn_momo' ? 'payNow.waitingMtn' : 'payNow.waitingOrange')}</p>
           {phase.url && <a className={`${btn} inline-flex items-center justify-center`} href={phase.url} target="_blank" rel="noopener noreferrer">{t('payNow.openPageLink')}</a>}
-          <p className="text-xs text-slate-500">{t('payNow.waitHint')}</p>
+          <p className="body-sm muted">{t('payNow.waitHint')}</p>
         </>
       )}
     </div>

@@ -15,12 +15,12 @@ export function SupportAccessLog() {
   }, [])
   if (!rows) return null
   return (
-    <section className="mt-6 rounded border border-slate-200 p-3 dark:border-slate-700">
-      <h3 className="font-semibold">{t('billing.supportLog.title')}</h3>
-      <p className="mb-2 text-sm text-slate-600 dark:text-slate-300">{t('billing.supportLog.hint')}</p>
-      {rows.length === 0 ? <p className="text-sm">{t('billing.supportLog.none')}</p> : (
-        <ul className="space-y-1 text-sm">
-          {rows.map((g) => <li key={g.id}><span className="tabular-nums">{new Date(g.created_at).toLocaleString()}</span> — {g.reason}</li>)}
+    <section className="panel" style={{ marginTop: 24 }}>
+      <h3 className="h6">{t('billing.supportLog.title')}</h3>
+      <p className="body-sm muted" style={{ marginBottom: 8 }}>{t('billing.supportLog.hint')}</p>
+      {rows.length === 0 ? <p className="body-sm">{t('billing.supportLog.none')}</p> : (
+        <ul className="body-sm stack" style={{ gap: 4 }}>
+          {rows.map((g) => <li key={g.id}><span className="num">{new Date(g.created_at).toLocaleString()}</span> — {g.reason}</li>)}
         </ul>
       )}
     </section>

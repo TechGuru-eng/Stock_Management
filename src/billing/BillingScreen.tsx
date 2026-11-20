@@ -12,8 +12,8 @@ import { refreshLicence } from './licenceStore'
 import { PayNow } from './PayNow'
 import { useSubscription } from './useSubscription'
 
-const input = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
-const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
+const input = 'input'
+const btn = 'btn btn--primary'
 
 interface PlanRow { code: string; name: string; price_xaf: number | null; max_shops: number | null; max_staff: number | null; max_products: number | null }
 interface Info { terms: BillingTerm[]; merchant_numbers: Record<string, string>; grace_days: number }
@@ -124,39 +124,39 @@ export function BillingScreen() {
     })
   }
 
-  if (!navigator.onLine) return <p className="text-slate-500">{t('billing.offlineNeeded')}</p>
+  if (!navigator.onLine) return <p className="body-md muted">{t('billing.offlineNeeded')}</p>
   if (!current) return null
 
   const days = state?.daysLeft ?? 0
   const lim = (v: number | null) => (v === null ? t('billing.unlimited') : String(v))
 
   return (
-    <div className="flex flex-col gap-4">
-      <h3 className="text-lg font-semibold">{t('billing.title')}</h3>
+    <div className="stack">
+      <h3 className="h5">{t('billing.title')}</h3>
 
-      <section className="rounded border border-slate-200 p-3">
-        <p className="text-xl font-bold">{current.name}</p>
-        <p>{status ? t(`billing.status.${status === 'valid' ? (sub?.status === 'trial' ? 'trial' : 'active') : status === 'sync_required' || status === 'clock_changed' ? 'active' : status}`) : ''}</p>
-        {sub && <p className="text-sm text-slate-600 dark:text-slate-300">{t('billing.endsOn', { date: new Date(sub.period_end).toLocaleDateString() })} · {t('billing.daysLeft', { n: Math.max(days, 0) })}</p>}
+      <section className="panel">
+        <p className="h4">{current.name}</p>
+        <p className="body-md">{status ? t(`billing.status.${status === 'valid' ? (sub?.status === 'trial' ? 'trial' : 'active') : status === 'sync_required' || status === 'clock_changed' ? 'active' : status}`) : ''}</p>
+        {sub && <p className="body-sm muted">{t('billing.endsOn', { date: new Date(sub.period_end).toLocaleDateString() })} · {t('billing.daysLeft', { n: Math.max(days, 0) })}</p>}
         {sub?.next_plan_code && (
-          <p className="mt-2 text-sm">{t('billing.scheduled', { plan: plans.find((p) => p.code === sub.next_plan_code)?.name })}{' '}
-            <button className="text-teal-700 underline" onClick={() => void guard(async () => { await supabase!.rpc('change_plan', { p_tenant: tenantId, p_plan: current.code }) })}>{t('billing.cancelScheduled')}</button>
+          <p className="body-md" style={{ marginTop: 8 }}>{t('billing.scheduled', { plan: plans.find((p) => p.code === sub.next_plan_code)?.name })}{' '}
+            <button className="btn btn--tertiary" onClick={() => void guard(async () => { await supabase!.rpc('change_plan', { p_tenant: tenantId, p_plan: current.code }) })}>{t('billing.cancelScheduled')}</button>
           </p>
         )}
-        <p className="mt-2 text-sm font-medium">{t('billing.limits')}</p>
-        <ul className="text-sm text-slate-600 dark:text-slate-300">
+        <p className="label-lg" style={{ marginTop: 8 }}>{t('billing.limits')}</p>
+        <ul className="body-sm muted stack" style={{ gap: 2 }}>
           <li>{t('billing.shops')}: {usage?.shops ?? '–'} / {lim(current.max_shops)}</li>
           <li>{t('billing.staff')}: {usage?.staff ?? '–'} / {lim(current.max_staff)}</li>
           <li>{t('billing.products')}: {usage?.products ?? '–'} / {lim(current.max_products)}</li>
         </ul>
       </section>
 
-      <form onSubmit={createPayment} className="flex flex-col gap-3 rounded border border-slate-200 p-3">
-        <h4 className="font-semibold">{t('billing.renew')}{effective && effective.code !== current.code ? ` (${effective.name})` : ''}</h4>
+      <form onSubmit={createPayment} className="panel stack">
+        <h4 className="h6">{t('billing.renew')}{effective && effective.code !== current.code ? ` (${effective.name})` : ''}</h4>
         <select className={input} value={months} onChange={(e) => setMonths(Number(e.target.value))} aria-label={t('billing.renew')}>
           {terms.map((x) => <option key={x.months} value={x.months}>{t('billing.term', { months: x.months })}{x.bonus ? ` · ${t('billing.bonus', { bonus: x.bonus })}` : ''}</option>)}
         </select>
-        {q && <p className="text-lg font-bold">{t('billing.total')}: {money(q.amount)}</p>}
+        {q && <p className="h5">{t('billing.total')}: {money(q.amount)}</p>}
         <select className={input} value={method} onChange={(e) => setMethod(e.target.value as typeof method)} aria-label={t('billing.method')}>
           <option value="mtn_momo">{t('pos.mtn_momo')}</option>
           <option value="orange_money">{t('pos.orange_money')}</option>
@@ -166,30 +166,30 @@ export function BillingScreen() {
       </form>
 
       {created && (
-        <section role="status" className="rounded border-2 border-teal-700 p-3">
-          <p>{t('billing.reference')}: <strong className="text-xl tracking-widest">{created.reference}</strong></p>
+        <section role="status" className="panel panel--flag">
+          <p>{t('billing.reference')}: <strong className="h5" style={{ letterSpacing: '0.1em' }}>{created.reference}</strong></p>
           <p>{t('billing.amountToPay')}: <strong>{money(created.expected_amount)}</strong></p>
           {info?.merchant_numbers?.[created.method]
             ? <p>{t('billing.sendTo', { method: t(`pos.${created.method}`) })}: <strong>{info.merchant_numbers[created.method]}</strong></p>
-            : <p className="text-amber-800">{t('billing.merchantMissing')}</p>}
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t('billing.howToPay')}</p>
+            : <p className="label-lg">! {t('billing.merchantMissing')}</p>}
+          <p className="body-sm muted" style={{ marginTop: 8 }}>{t('billing.howToPay')}</p>
           <PayNow paymentId={created.id} method={created.method as 'mtn_momo' | 'orange_money'} onPaid={() => void load()} />
         </section>
       )}
 
       <section>
-        <h4 className="mb-2 font-semibold">{t('billing.changePlan')}</h4>
-        <ul className="flex flex-col gap-2">
+        <h4 className="h6" style={{ marginBottom: 10 }}>{t('billing.changePlan')}</h4>
+        <ul className="stack" style={{ gap: 8 }}>
           {plans.filter((p) => p.code !== current.code).map((p) => {
             const up = p.price_xaf !== null && current.price_xaf !== null && p.price_xaf > current.price_xaf
             const charge = up && sub?.status !== 'trial' ? upgradeCharge(current.price_xaf!, p.price_xaf!, days) : 0
             return (
-              <li key={p.code} className="flex items-center justify-between gap-2 rounded border border-slate-200 p-3">
+              <li key={p.code} className="panel flex items-center justify-between gap-2">
                 <span>
                   <strong>{p.name}</strong> · {p.price_xaf === null ? t('billing.custom') : `${money(p.price_xaf)}/m`}
-                  {charge > 0 && <span className="block text-xs text-slate-500">{t('billing.upgradeCharge', { amount: money(charge), days })}</span>}
+                  {charge > 0 && <span className="block body-sm muted">{t('billing.upgradeCharge', { amount: money(charge), days })}</span>}
                 </span>
-                {p.price_xaf !== null && <button className="min-h-12 rounded border border-teal-700 px-3 text-teal-700" onClick={() => void switchPlan(p)}>{t('billing.switchTo', { plan: p.name })}</button>}
+                {p.price_xaf !== null && <button className="btn btn--secondary" onClick={() => void switchPlan(p)}>{t('billing.switchTo', { plan: p.name })}</button>}
               </li>
             )
           })}
@@ -197,25 +197,25 @@ export function BillingScreen() {
       </section>
 
       <section>
-        <h4 className="mb-2 font-semibold">{t('billing.history')}</h4>
-        {payments.length === 0 && <p className="text-slate-500">{t('billing.noHistory')}</p>}
-        <ul className="divide-y divide-slate-200 text-sm dark:divide-slate-800">
+        <h4 className="h6" style={{ marginBottom: 10 }}>{t('billing.history')}</h4>
+        {payments.length === 0 && <p className="body-md muted">{t('billing.noHistory')}</p>}
+        <ul className="list-wrap">
           {payments.map((p) => (
-            <li key={p.id} className="flex justify-between gap-2 py-2">
-              <span>{t(`billing.kind.${p.kind}`)} · {p.reference}<span className="block text-xs text-slate-500">{new Date(p.created_at).toLocaleDateString()}</span></span>
-              <span className="text-right">{money(p.expected_amount)}<span className="block text-xs">{p.status === 'provider_verified' ? t('billing.confirmed') : p.status === 'recorded' ? t('billing.recorded') : p.status === 'failed' ? t('billing.failed') : t('billing.pending')}</span></span>
+            <li key={p.id} className="flex justify-between gap-2 body-sm">
+              <span>{t(`billing.kind.${p.kind}`)} · {p.reference}<span className="block label-lg muted">{new Date(p.created_at).toLocaleDateString()}</span></span>
+              <span className="text-right">{money(p.expected_amount)}<span className="block label-lg muted">{p.status === 'provider_verified' ? t('billing.confirmed') : p.status === 'recorded' ? t('billing.recorded') : p.status === 'failed' ? t('billing.failed') : t('billing.pending')}</span></span>
             </li>
           ))}
         </ul>
       </section>
 
       <section>
-        <h4 className="mb-2 font-semibold">{t('billing.invoices')}</h4>
-        <ul className="divide-y divide-slate-200 text-sm dark:divide-slate-800">
-          {invoices.map((i) => <li key={i.id} className="flex items-center justify-between gap-2 py-2"><span>{i.number}<span className="block text-xs text-slate-500">{new Date(i.issued_at).toLocaleDateString()}</span></span><span className="flex items-center gap-3">{money(i.amount)}<button className="min-h-10 rounded border border-slate-300 px-3" onClick={() => void invoicePdf(i)}>{t('invoices.pdf')}</button></span></li>)}
+        <h4 className="h6" style={{ marginBottom: 10 }}>{t('billing.invoices')}</h4>
+        <ul className="list-wrap">
+          {invoices.map((i) => <li key={i.id} className="flex items-center justify-between gap-2 body-sm"><span>{i.number}<span className="block label-lg muted">{new Date(i.issued_at).toLocaleDateString()}</span></span><span className="flex items-center gap-3">{money(i.amount)}<button className="btn btn--secondary btn--sm" onClick={() => void invoicePdf(i)}>{t('invoices.pdf')}</button></span></li>)}
         </ul>
       </section>
-      {msg && <p role="status" className="text-sm text-red-700">{msg}</p>}
+      {msg && <p role="status" className="field__error">{msg}</p>}
     </div>
   )
 }
