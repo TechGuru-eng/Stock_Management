@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import './marketing/editorial/styles.css'
+import { useEditorialFonts } from './marketing/editorial/fonts'
 import { AuthProvider, useAuth } from './auth/AuthProvider'
 import { LoginScreen } from './auth/LoginScreen'
 import { OnboardingWizard } from './onboarding/OnboardingWizard'
@@ -42,6 +44,7 @@ const tabs: Tab[] = ['home', 'sales', 'stock', 'money', 'more']
 /** App shell. Module screens arrive in later phases; a tab says so plainly instead of faking data. */
 export function Shell({ autoSync = true }: { autoSync?: boolean }) {
   const { t } = useTranslation()
+  useEditorialFonts()
   const { membership, signOut, session } = useAuth()
   const alerts = useAlerts()
   useAlertNotifications()
@@ -69,10 +72,10 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
   }, [autoSync, membership, session])
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-      <header className="flex items-center justify-between bg-teal-700 px-4 py-3 text-white print:hidden">
-        <h1 className="text-lg font-semibold">{membership?.tenantName ?? 'StockCM'}</h1>
-        <span className="flex items-center gap-3 text-sm">
+    <div className="editorial-taste pos-shell">
+      <header className="pos-header print:hidden">
+        <h1 className="h6">{membership?.tenantName ?? 'Stockora'}</h1>
+        <span className="pos-header__right label-lg muted">
           <ShopSwitcher />
           <SwitchPerson />
           <SyncBadge onClick={() => setTab('more')} />
@@ -84,8 +87,8 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
         <NoticeBanner />
         <StockAlertBanner onSee={() => setTab('home')} />
       </div>
-      <main key={membership?.shopId} className="flex-1 p-4">
-        <h2 className="mb-2 text-xl font-semibold print:hidden">{t(`nav.${tab}`)}</h2>
+      <main key={membership?.shopId} className="pos-main">
+        <h2 className="h4 pos-main__title print:hidden">{t(`nav.${tab}`)}</h2>
         {tab === 'sales' && <SalesHub />}
         {tab === 'stock' && <StockHub />}
         {tab === 'more' && membership?.role === 'owner' && <BillingScreen />}
@@ -101,22 +104,21 @@ export function Shell({ autoSync = true }: { autoSync?: boolean }) {
         )}
         {tab === 'money' && <MoneyScreen key={moneySub} initial={moneySub} />}
         {tab === 'more' && (
-          <button onClick={() => void signOut()} className="mt-4 min-h-12 rounded border border-slate-300 px-4">
+          <button onClick={() => void signOut()} className="btn btn--secondary" style={{ marginTop: 15 }}>
             {t('auth.signOut')}
           </button>
         )}
       </main>
-      <nav className="grid grid-cols-5 border-t border-slate-200 dark:border-slate-800 print:hidden">
+      <nav className="pos-tabbar print:hidden">
         {tabs.map((id) => (
           <button
             key={id}
             onClick={() => setTab(id)}
             aria-current={tab === id ? 'page' : undefined}
-            className={`min-h-14 px-1 text-xs ${tab === id ? 'font-semibold text-teal-700' : 'text-slate-600 dark:text-slate-300'}`}
           >
             {t(`nav.${id}`)}
             {id === 'stock' && alerts && alerts.active.length > 0 && (
-              <span className={`ml-1 rounded-full px-1.5 text-[10px] font-bold text-white ${alerts.counts.out > 0 ? 'bg-red-600' : 'bg-amber-600'}`} aria-label={t('alerts.badge', { count: alerts.active.length })}>{alerts.active.length}</span>
+              <span className="pos-tabbar__badge" aria-label={t('alerts.badge', { count: alerts.active.length })}>{alerts.active.length}</span>
             )}
           </button>
         ))}
@@ -130,7 +132,7 @@ function Gate() {
   const { loading, session, membership, signOut } = useAuth()
   // Staff devices lock themselves when idle; the owner (phone login) has no PIN, so nothing to lock.
   const [locked, setLocked] = useIdleLock(Boolean(membership && membership.role !== 'owner'), signOut)
-  if (loading) return <p className="p-6">{t('app.loading')}</p>
+  if (loading) return <div className="editorial-taste"><p className="body-md" style={{ padding: 24 }}>{t('app.loading')}</p></div>
   if (!session) return <LoginScreen />
   if (!membership) return <OnboardingWizard />
   if (membership.role !== 'owner' && locked) return <LockScreen onUnlocked={() => setLocked(false)} />
@@ -141,10 +143,12 @@ export default function App() {
   const { t } = useTranslation()
   if (!isSupabaseConfigured) {
     return (
-      <main className="mx-auto max-w-md p-6">
-        <h1 className="text-2xl font-semibold">{t('config.title')}</h1>
-        <p className="mt-2">{t('config.body')}</p>
-      </main>
+      <div className="editorial-taste">
+        <main style={{ maxWidth: 420, margin: '0 auto', padding: 24 }}>
+          <h1 className="h4">{t('config.title')}</h1>
+          <p className="body-md" style={{ marginTop: 10 }}>{t('config.body')}</p>
+        </main>
+      </div>
     )
   }
   return (

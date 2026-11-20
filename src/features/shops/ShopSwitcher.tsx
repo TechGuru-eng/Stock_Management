@@ -7,12 +7,13 @@ export function ShopSwitcher() {
   const { membership, selectShop } = useAuth()
   if (!membership || membership.shops.length < 2) return null
   return (
-    <label className="flex items-center gap-2 text-sm">
+    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
       <span className="sr-only">{t('shops.current')}</span>
       <select
         value={membership.shopId}
         onChange={(e) => selectShop(e.target.value)}
-        className="min-h-10 max-w-[11rem] rounded border border-white/60 bg-teal-800 px-2 text-white"
+        className="input"
+        style={{ height: 32, maxWidth: '11rem', padding: '0 8px' }}
       >
         {membership.shops.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
       </select>

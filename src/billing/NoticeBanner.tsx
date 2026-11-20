@@ -10,9 +10,9 @@ export function NoticeBanner() {
   if (!maintenance && !announcement) return null
   return (
     <>
-      {maintenance && <div role="status" className="bg-amber-100 px-4 py-2 text-sm text-amber-900">{maintenance}</div>}
+      {maintenance && <div role="status" className="banner banner--flag">! {maintenance}</div>}
       {announcement && (
-        <div role="status" className={`px-4 py-2 text-sm ${n.announcement?.level === 'warn' ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900'}`}>{announcement}</div>
+        <div role="status" className={n.announcement?.level === 'warn' ? 'banner banner--flag' : 'banner'}>{n.announcement?.level === 'warn' ? `! ${announcement}` : announcement}</div>
       )}
     </>
   )

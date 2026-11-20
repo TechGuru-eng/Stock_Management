@@ -490,7 +490,31 @@ html.lenis { scroll-behavior: auto; }
 .editorial-taste .field textarea:hover { border-color: var(--dark-32); }
 .editorial-taste .field textarea:focus-visible { outline: 2px solid var(--tone-strong); outline-offset: 2px; border-color: var(--tone-strong); }
 
-/* ---------- 21. Responsive ---------- */
+/* ---------- 21. Operational app shell (phone-first, bottom tabs) ---------- */
+.editorial-taste .pos-shell { min-height: 100dvh; min-height: 100vh; display: flex; flex-direction: column; background: var(--bg-base); }
+.editorial-taste .pos-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-15); padding: var(--space-15) var(--space-20); background: var(--neutral-white); border-bottom: 1px solid var(--border-subtle); }
+.editorial-taste .pos-header__right { display: flex; align-items: center; gap: var(--space-15); }
+.editorial-taste .pos-main { flex: 1; min-width: 0; padding: var(--space-20); }
+.editorial-taste .pos-main__title { margin-bottom: var(--space-15); }
+.editorial-taste .pos-tabbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); background: var(--neutral-white); border-top: 1px solid var(--border-subtle); }
+.editorial-taste .pos-tabbar button {
+  min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  position: relative; font: 400 var(--label-sm-size)/var(--label-sm-lh) var(--font-ui); text-transform: uppercase; color: var(--text-muted);
+  transition: color var(--dur-fast) var(--ease);
+}
+.editorial-taste .pos-tabbar button[aria-current="page"] { color: var(--tone-strong); }
+.editorial-taste .pos-tabbar__badge { position: absolute; top: 4px; right: 22%; display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: var(--radius-pill); background: var(--tone-strong); color: var(--light-100); font: 400 9px/16px var(--font-ui); }
+
+.editorial-taste .sync-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--tone-strong); background: transparent; flex: none; }
+.editorial-taste .sync-dot--solid { background: var(--tone-strong); }
+.editorial-taste .sync-dot--pulse { animation: taSyncPulse 1.4s ease-in-out infinite; }
+@keyframes taSyncPulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+.editorial-taste .banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-15); padding: var(--space-15) var(--space-20); background: var(--bg-lift); color: var(--tone-strong); font: 400 var(--body-sm-size)/var(--body-sm-lh) var(--font-body); }
+.editorial-taste .banner--flag { background: var(--neutral-white); border-bottom: 1px solid var(--tone-strong); }
+.editorial-taste .banner .btn { height: 32px; padding: 0 14px; }
+
+/* ---------- 22. Responsive ---------- */
 @media (max-width: 1280px) {
   .editorial-taste .pricing { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

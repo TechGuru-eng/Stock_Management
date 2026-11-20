@@ -13,11 +13,11 @@ export function StockAlertBanner({ onSee }: { onSee: () => void }) {
   const sig = out.map((a) => a.productId).sort().join(',')
   if (out.length === 0 || dismissed === sig) return null
   return (
-    <div role="status" className="flex flex-wrap items-center justify-between gap-2 bg-red-100 px-4 py-2 text-sm text-red-900 print:hidden">
-      <span>{t('alerts.bannerOut', { count: out.length, names: out.slice(0, 3).map((a) => a.name).join(', ') + (out.length > 3 ? '…' : '') })}</span>
-      <span className="flex gap-2">
-        <button onClick={onSee} className="min-h-10 rounded border border-current px-3 font-semibold">{t('alerts.seeAll')}</button>
-        <button onClick={() => { try { sessionStorage.setItem(KEY, sig) } catch { /* shown again next time */ } setDismissed(sig) }} className="min-h-10 px-2 underline">{t('alerts.dismiss')}</button>
+    <div role="status" className="banner banner--flag print:hidden">
+      <span>! {t('alerts.bannerOut', { count: out.length, names: out.slice(0, 3).map((a) => a.name).join(', ') + (out.length > 3 ? '…' : '') })}</span>
+      <span className="btn-row">
+        <button onClick={onSee} className="btn btn--secondary">{t('alerts.seeAll')}</button>
+        <button onClick={() => { try { sessionStorage.setItem(KEY, sig) } catch { /* shown again next time */ } setDismissed(sig) }} className="btn btn--tertiary">{t('alerts.dismiss')}</button>
       </span>
     </div>
   )

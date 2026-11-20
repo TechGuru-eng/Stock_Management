@@ -25,12 +25,12 @@ export function SubscriptionBanner({ onRenew }: { onRenew: () => void }) {
   }
   if (!key) return null
 
-  const style = tone === 'bad' ? 'bg-red-100 text-red-900' : tone === 'warn' ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900'
+  const flagged = tone !== 'info'
   const canRenew = key !== 'sync_required' && key !== 'clock_changed' && key !== 'suspended'
   return (
-    <div role="status" className={`flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-sm ${style}`}>
-      <span>{t(`billing.banner.${key}`, { n })}</span>
-      {canRenew && <button onClick={onRenew} className="min-h-12 rounded border border-current px-3 font-semibold">{t('billing.banner.renewAction')}</button>}
+    <div role="status" className={flagged ? 'banner banner--flag' : 'banner'}>
+      <span>{flagged ? '! ' : ''}{t(`billing.banner.${key}`, { n })}</span>
+      {canRenew && <button onClick={onRenew} className="btn btn--secondary">{t('billing.banner.renewAction')}</button>}
     </div>
   )
 }

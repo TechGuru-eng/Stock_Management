@@ -15,9 +15,9 @@ type Go = (tab: 'sales' | 'stock' | 'money', sub?: 'summary' | 'debts' | 'expens
 
 function Card({ label, value, tone }: { label: string; value: string; tone?: 'warn' }) {
   return (
-    <div className={`rounded border p-3 ${tone === 'warn' ? 'border-amber-400 bg-amber-50 text-amber-900' : 'border-slate-200 dark:border-slate-800'}`}>
-      <p className="text-sm text-slate-600 dark:text-slate-300">{label}</p>
-      <p className="text-xl font-bold">{value}</p>
+    <div className={`stat-tile${tone === 'warn' ? ' stat-tile--flag' : ''}`}>
+      <p className="label-lg muted">{label}</p>
+      <p className="h4" style={{ marginTop: 4 }}>{value}</p>
     </div>
   )
 }
@@ -53,9 +53,9 @@ export function HomeScreen({ go }: { go: Go }) {
   ]
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="stack">
       <AttentionCard goOrder={() => go('stock')} goExpiry={() => go('stock')} />
-      <div className="grid grid-cols-2 gap-3">
+      <div className="panel-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
         <Card label={t('home.todaySales')} value={formatXaf(s.revenue)} />
         <Card label={t('home.collected')} value={formatXaf(s.collectedTotal)} />
         <Card label={t('home.owed')} value={formatXaf(s.receivables)} />
@@ -68,10 +68,10 @@ export function HomeScreen({ go }: { go: Go }) {
         {issues > 0 && <Card label={t('home.issues')} value={String(issues)} tone="warn" />}
       </div>
       <section>
-        <h3 className="mb-2 font-semibold">{t('home.shortcuts')}</h3>
-        <div className="grid grid-cols-2 gap-3">
+        <h3 className="h6" style={{ marginBottom: 10 }}>{t('home.shortcuts')}</h3>
+        <div className="panel-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
           {shortcuts.map((x) => (
-            <button key={x.label} onClick={x.run} className="min-h-14 rounded border border-teal-700 px-2 text-teal-700">{x.label}</button>
+            <button key={x.label} onClick={x.run} className="btn btn--secondary">{x.label}</button>
           ))}
         </div>
       </section>
