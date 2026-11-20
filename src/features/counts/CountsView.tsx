@@ -12,9 +12,9 @@ import { downloadText, reportFileName, toCsv } from '../../domain/csv'
 import { formatXaf } from '../../domain/money'
 import { can } from '../../domain/permissions'
 
-const input = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
-const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
-const btn2 = 'min-h-12 rounded border border-slate-300 px-4 disabled:opacity-60'
+const input = 'input'
+const btn = 'btn btn--primary'
+const btn2 = 'btn btn--secondary'
 
 export function CountsView() {
   const { t, i18n } = useTranslation()
@@ -46,24 +46,24 @@ export function CountsView() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm text-slate-600 dark:text-slate-300">{t('counts.hint')}</p>
+    <div className="stack">
+      <p className="body-md muted">{t('counts.hint')}</p>
       {can(ctx.role, 'stock.count') && (
-        <form onSubmit={start} className="flex flex-col gap-2 rounded border border-slate-200 p-3 dark:border-slate-700">
-          <h4 className="font-semibold">{t('counts.start')}</h4>
+        <form onSubmit={start} className="panel stack">
+          <h4 className="h6">{t('counts.start')}</h4>
           <input className={input} placeholder={t('counts.name')} aria-label={t('counts.name')} value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required />
-          <label className="flex min-h-10 items-center gap-2 text-sm"><input type="checkbox" checked={blind} onChange={(e) => setBlind(e.target.checked)} /> {t('counts.blind')}</label>
+          <label className="check-row body-md"><input type="checkbox" checked={blind} onChange={(e) => setBlind(e.target.checked)} /> {t('counts.blind')}</label>
           <button className={btn}>{t('counts.startAction')}</button>
-          {msg && <p role="alert" className="text-sm text-red-700">{msg}</p>}
+          {msg && <p role="alert" className="field__error">{msg}</p>}
         </form>
       )}
-      {list.length === 0 && <p className="text-slate-500">{t('counts.none')}</p>}
-      <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+      {list.length === 0 && <p className="body-md muted">{t('counts.none')}</p>}
+      <ul className="list-wrap">
         {list.map(({ c, status, counted }) => (
-          <li key={c.id}>
-            <button onClick={() => setSel(c.id)} className="flex min-h-14 w-full items-center justify-between py-2 text-left">
-              <span>{c.name}<span className="block text-xs text-slate-500">{new Date(c.startedAt).toLocaleDateString(i18n.language)} · {t('counts.nCounted', { n: counted })}</span></span>
-              <span className={status === 'approved' ? 'text-teal-700' : status === 'rejected' ? 'text-red-700' : 'text-amber-700'}>{t(`counts.status.${status}`)}</span>
+          <li key={c.id} style={{ padding: 0 }}>
+            <button onClick={() => setSel(c.id)} className="flex w-full items-center justify-between text-left" style={{ padding: '15px 20px' }}>
+              <span>{c.name}<span className="block label-lg muted">{new Date(c.startedAt).toLocaleDateString(i18n.language)} · {t('counts.nCounted', { n: counted })}</span></span>
+              <span className="tag">{t(`counts.status.${status}`)}</span>
             </button>
           </li>
         ))}
@@ -134,14 +134,14 @@ function CountDetail({ ctx, countId, onBack }: { ctx: Ctx; countId: string; onBa
   ], rows, sep))
 
   return (
-    <div className="flex flex-col gap-3">
-      <button onClick={onBack} className="min-h-12 self-start text-teal-700 underline">{t('stock.back')}</button>
-      <h3 className="text-xl font-semibold">{count.name}</h3>
-      <p className="text-sm text-slate-600 dark:text-slate-300">
+    <div className="stack">
+      <button onClick={onBack} className="btn btn--tertiary" style={{ alignSelf: 'flex-start' }}>{t('stock.back')}</button>
+      <h3 className="h4">{count.name}</h3>
+      <p className="body-md muted">
         {t(`counts.status.${countStatus(decision)}`)} · {t('counts.nCounted', { n: latest.size })} / {products.length}
         {count.blind && ` · ${t('counts.blindShort')}`}{decision?.note && ` · ${decision.note}`}
       </p>
-      {msg && <p role="alert" className="rounded bg-red-50 p-2 text-sm text-red-800">{msg}</p>}
+      {msg && <p role="alert" className="field__error">{msg}</p>}
 
       {mayCount && (
         <>
@@ -149,18 +149,18 @@ function CountDetail({ ctx, countId, onBack }: { ctx: Ctx; countId: string; onBa
             <input className={input} placeholder={t('counts.search')} aria-label={t('counts.search')} value={q} onChange={(e) => setQ(e.target.value)} />
             <ScanButton continuous onCode={onScanned} />
           </div>
-          <ul className="flex flex-col gap-2">
+          <ul className="stack" style={{ gap: 8 }}>
             {shown.map((p) => {
               const l = latest.get(p.id)
               return (
-                <li key={p.id} className="flex items-center justify-between gap-2 rounded border border-slate-200 p-2 dark:border-slate-700">
+                <li key={p.id} className="panel flex items-center justify-between gap-2">
                   <div>
-                    <div className="font-medium">{p.name}</div>
-                    <div className="text-xs text-slate-500">{l ? t('counts.lastCounted', { n: l.counted, unit: p.baseUnit }) : t('counts.notCounted')}{showExpected && l ? ` · ${t('counts.expectedWas', { n: l.expected })}` : ''}</div>
+                    <div className="body-md">{p.name}</div>
+                    <div className="body-sm muted">{l ? t('counts.lastCounted', { n: l.counted, unit: p.baseUnit }) : t('counts.notCounted')}{showExpected && l ? ` · ${t('counts.expectedWas', { n: l.expected })}` : ''}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
-                      aria-label={`${p.name} — ${t('counts.counted')}`} inputMode="numeric" className={`${input} w-24 text-right`} value={vals[p.id] ?? ''}
+                      aria-label={`${p.name} — ${t('counts.counted')}`} inputMode="numeric" className={`${input} text-right`} style={{ maxWidth: 90 }} value={vals[p.id] ?? ''}
                       onChange={(e) => setVals({ ...vals, [p.id]: e.target.value.replace(/\D/g, '') })}
                       onKeyDown={(e) => { if (e.key === 'Enter' && (vals[p.id] ?? '') !== '') void save(p.id) }}
                     />
@@ -174,28 +174,28 @@ function CountDetail({ ctx, countId, onBack }: { ctx: Ctx; countId: string; onBa
       )}
 
       {(mayDecide || !open) && rows.length > 0 && (
-        <section className="flex flex-col gap-2 rounded border border-slate-200 p-3 dark:border-slate-700">
-          <h4 className="font-semibold">{t('counts.review')}</h4>
-          <p className="text-sm">
-            {t('counts.summary', { diff: sum.withDifference, total: sum.counted })} · {t('counts.missing')}: <strong className="text-red-700">{formatXaf(sum.shortageValue)}</strong> · {t('counts.extra')}: <strong className="text-teal-700">{formatXaf(sum.surplusValue)}</strong>
+        <section className="panel stack">
+          <h4 className="h6">{t('counts.review')}</h4>
+          <p className="body-md">
+            {t('counts.summary', { diff: sum.withDifference, total: sum.counted })} · {t('counts.missing')}: <strong>{formatXaf(sum.shortageValue)}</strong> · {t('counts.extra')}: <strong>{formatXaf(sum.surplusValue)}</strong>
             {sum.accuracyBp !== null && ` · ${t('counts.accuracy', { pct: (sum.accuracyBp / 100).toFixed(0) })}`}
           </p>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[22rem] text-sm">
-              <thead><tr className="text-left text-xs text-slate-500"><th>{t('counts.product')}</th><th className="text-right">{t('counts.expected')}</th><th className="text-right">{t('counts.counted')}</th><th className="text-right">{t('counts.diff')}</th><th className="text-right">{t('counts.value')}</th></tr></thead>
+          <div className="table-wrap">
+            <table className="table" style={{ minWidth: '22rem' }}>
+              <thead><tr><th>{t('counts.product')}</th><th className="num">{t('counts.expected')}</th><th className="num">{t('counts.counted')}</th><th className="num">{t('counts.diff')}</th><th className="num">{t('counts.value')}</th></tr></thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.productId} className={`border-t border-slate-100 dark:border-slate-800 ${r.flagged ? 'bg-amber-50 dark:bg-amber-950' : ''}`}>
-                    <td className="py-1.5">{r.name}{r.flagged && <span className="ml-1 text-xs font-semibold text-amber-800">{t('counts.recountAdvised')}</span>}</td>
-                    <td className="text-right tabular-nums">{r.expected}</td><td className="text-right tabular-nums">{r.counted}</td>
-                    <td className={`text-right tabular-nums ${r.diff < 0 ? 'text-red-700' : r.diff > 0 ? 'text-teal-700' : ''}`}>{r.diff > 0 ? '+' : ''}{r.diff}</td>
-                    <td className="text-right tabular-nums">{formatXaf(r.value)}</td>
+                  <tr key={r.productId}>
+                    <td>{r.name}{r.flagged && <span className="tag tag--flag" style={{ marginLeft: 4 }}>{t('counts.recountAdvised')}</span>}</td>
+                    <td className="num">{r.expected}</td><td className="num">{r.counted}</td>
+                    <td className="num">{r.diff > 0 ? '+' : ''}{r.diff}</td>
+                    <td className="num">{formatXaf(r.value)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {open && products.length > latest.size && <p className="text-xs text-amber-800">{t('counts.uncounted', { n: products.length - latest.size })}</p>}
+          {open && products.length > latest.size && <p className="label-lg">! {t('counts.uncounted', { n: products.length - latest.size })}</p>}
           <div className="flex flex-wrap gap-2">
             <button className={btn2} onClick={exportCsv}>{t('reports.exportCsv')}</button>
             {mayDecide && !rejecting && (
@@ -205,9 +205,9 @@ function CountDetail({ ctx, countId, onBack }: { ctx: Ctx; countId: string; onBa
               </>
             )}
           </div>
-          {mayDecide && <p className="text-xs text-slate-500">{t('counts.approveHint')}</p>}
+          {mayDecide && <p className="body-sm muted">{t('counts.approveHint')}</p>}
           {rejecting && (
-            <div className="flex flex-col gap-2">
+            <div className="stack">
               <input className={input} placeholder={t('counts.rejectWhy')} aria-label={t('counts.rejectWhy')} value={note} onChange={(e) => setNote(e.target.value)} />
               <div className="flex gap-2"><button className={btn} disabled={!note.trim()} onClick={() => void decide('reject')}>{t('counts.reject')}</button><button className={btn2} onClick={() => setRejecting(false)}>{t('shops.cancel')}</button></div>
             </div>
