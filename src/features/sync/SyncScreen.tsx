@@ -29,46 +29,46 @@ export function SyncScreen({ canSync }: { canSync: boolean }) {
   const when = summary.lastSyncAt ? new Date(summary.lastSyncAt).toLocaleString() : t('sync.never')
 
   return (
-    <div className="flex flex-col gap-4">
-      <h3 className="text-lg font-semibold">{t('sync.title')}</h3>
-      <p>{status === 'pending' ? t('sync.pending', { n: summary.pendingGroups }) : t(`sync.${status}`)}</p>
-      <p className="text-sm text-slate-600 dark:text-slate-300">{t('sync.lastSync', { when })}</p>
+    <div className="stack">
+      <h3 className="h5">{t('sync.title')}</h3>
+      <p className="body-md">{status === 'pending' ? t('sync.pending', { n: summary.pendingGroups }) : t(`sync.${status}`)}</p>
+      <p className="body-sm muted">{t('sync.lastSync', { when })}</p>
 
-      {unsyncedTooLong(summary) && <p role="alert" className="rounded bg-amber-100 p-3 text-amber-900">{t('sync.warn48')}</p>}
-      {offlineLimitExceeded(summary.lastSyncAt) && <p role="alert" className="rounded bg-amber-100 p-3 text-amber-900">{t('sync.offlineLimit')}</p>}
-      {engine.revoked && <p role="alert" className="rounded bg-red-100 p-3 text-red-900">{t('sync.revoked')}</p>}
+      {unsyncedTooLong(summary) && <p role="alert" className="notice notice--amber body-sm">{t('sync.warn48')}</p>}
+      {offlineLimitExceeded(summary.lastSyncAt) && <p role="alert" className="notice notice--amber body-sm">{t('sync.offlineLimit')}</p>}
+      {engine.revoked && <p role="alert" className="panel panel--flag body-sm">! {t('sync.revoked')}</p>}
 
       <button
         disabled={!canSync || engine.running || !ctx}
         onClick={() => ctx && void runSync(supabaseTransport, { tenantId: ctx.tenantId, deviceName: navigator.platform || 'web' }, { manual: true })}
-        className="min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60"
+        className="btn btn--primary"
       >
         {t('sync.now')}
       </button>
 
       <section>
-        <div className="mb-2 flex items-center justify-between">
-          <h4 className="font-semibold">{t('sync.issues')}</h4>
+        <div className="panel__head">
+          <h4 className="h6">{t('sync.issues')}</h4>
           {issues.length > 1 && (
-            <button onClick={() => void retryAllFailed()} className="min-h-12 text-teal-700 underline">{t('sync.retryAll')}</button>
+            <button onClick={() => void retryAllFailed()} className="btn btn--tertiary">{t('sync.retryAll')}</button>
           )}
         </div>
-        {issues.length === 0 && <p className="text-slate-500">{t('sync.noIssues')}</p>}
-        <ul className="flex flex-col gap-3">
+        {issues.length === 0 && <p className="body-md muted">{t('sync.noIssues')}</p>}
+        <ul className="stack">
           {issues.map(([groupId, rows]) => (
-            <li key={groupId} className="rounded border border-slate-200 p-3">
-              <p className="font-medium">
-                {label(rows)} <span className="text-sm font-normal text-slate-500">({rows[0].status})</span>
+            <li key={groupId} className="panel">
+              <p className="body-md">
+                {label(rows)} <span className="body-sm muted">({rows[0].status})</span>
               </p>
-              {rows[0].status === 'conflict' && <p className="text-sm">{t('sync.conflictHelp')}</p>}
-              <p className="text-sm text-red-700">{/plan_limit/.test(rows[0].lastError ?? '') ? t('billing.planLimit') : rows[0].lastError}</p>
-              <div className="mt-2 flex flex-wrap gap-2">
+              {rows[0].status === 'conflict' && <p className="body-sm">{t('sync.conflictHelp')}</p>}
+              <p className="field__error">{/plan_limit/.test(rows[0].lastError ?? '') ? t('billing.planLimit') : rows[0].lastError}</p>
+              <div className="flex flex-wrap gap-2" style={{ marginTop: 8 }}>
                 {rows[0].status === 'conflict' && rows.some((r) => r.table === 'products') && (
-                  <button onClick={() => void resolveBarcodeConflict(groupId)} className="min-h-12 rounded bg-teal-700 px-3 text-white">
+                  <button onClick={() => void resolveBarcodeConflict(groupId)} className="btn btn--primary">
                     {t('sync.resolveBarcode')}
                   </button>
                 )}
-                <button onClick={() => void retryGroup(groupId)} className="min-h-12 rounded border border-slate-300 px-3">{t('sync.retry')}</button>
+                <button onClick={() => void retryGroup(groupId)} className="btn btn--secondary">{t('sync.retry')}</button>
               </div>
             </li>
           ))}
@@ -76,8 +76,8 @@ export function SyncScreen({ canSync }: { canSync: boolean }) {
       </section>
 
       <section>
-        <h4 className="mb-2 font-semibold">{t('sync.history')}</h4>
-        <ul className="text-sm text-slate-600 dark:text-slate-300">
+        <h4 className="h6" style={{ marginBottom: 10 }}>{t('sync.history')}</h4>
+        <ul className="body-sm muted stack" style={{ gap: 4 }}>
           {history.map((h) => (
             <li key={h.id}>
               {new Date(h.at).toLocaleTimeString()} · {h.outcome === 'conflict' ? t('sync.conflictLog') : t(`sync.${h.outcome}`)}

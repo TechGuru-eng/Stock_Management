@@ -6,9 +6,9 @@ import { ShopApiError, createShop, setMemberShops, updateShop } from '../../data
 import { canAddShop } from '../../domain/shops'
 import { supabase } from '../../lib/supabase'
 
-const input = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
-const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
-const btn2 = 'min-h-12 rounded border border-slate-300 px-4 disabled:opacity-50'
+const input = 'input'
+const btn = 'btn btn--primary'
+const btn2 = 'btn btn--secondary'
 
 interface ShopRow { id: string; name: string; town: string | null; active: boolean }
 interface Member { id: string; full_name: string | null; role: string; active: boolean }
@@ -55,7 +55,7 @@ export function ShopsScreen() {
     }
   }
 
-  if (!navigator.onLine) return <p className="text-slate-500">{t('shops.offline')}</p>
+  if (!navigator.onLine) return <p className="body-md muted">{t('shops.offline')}</p>
   const activeCount = shops.filter((s) => s.active).length
   const mayAdd = canAddShop(limit, activeCount)
 
@@ -65,23 +65,23 @@ export function ShopsScreen() {
   }
 
   return (
-    <section className="mt-6 flex flex-col gap-4 rounded border border-slate-200 p-3 dark:border-slate-700">
-      <h3 className="text-lg font-semibold">{t('shops.title')}</h3>
-      <p className="text-sm text-slate-600 dark:text-slate-300">
+    <section className="panel stack" style={{ marginTop: 24 }}>
+      <h3 className="h5">{t('shops.title')}</h3>
+      <p className="body-md muted">
         {t('shops.hint')} {limit !== null && t('shops.planAllows', { n: limit, used: activeCount })}
       </p>
-      {msg && <p role="status" className="rounded bg-slate-100 p-2 text-sm dark:bg-slate-800">{msg}</p>}
+      {msg && <p role="status" className="notice body-sm">{msg}</p>}
 
-      <ul className="flex flex-col gap-2">
+      <ul className="stack" style={{ gap: 8 }}>
         {shops.map((s) => (
-          <li key={s.id} className="rounded border border-slate-200 p-2 dark:border-slate-700">
+          <li key={s.id} className="panel">
             {editing === s.id ? (
               <EditShop shop={s} onCancel={() => setEditing(null)} onSave={(n, tw) => run(async () => { await updateShop(s.id, n, tw, s.active); setEditing(null) })} />
             ) : (
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <div className="font-medium">{s.name} {s.id === membership?.shopId && <span className="text-xs text-teal-700">· {t('shops.here')}</span>}</div>
-                  <div className="text-sm text-slate-500">{s.town || '—'}{s.active ? '' : ` · ${t('shops.off')}`}</div>
+                  <div className="body-md">{s.name} {s.id === membership?.shopId && <span className="label-lg muted">· {t('shops.here')}</span>}</div>
+                  <div className="body-sm muted">{s.town || '—'}{s.active ? '' : ` · ${t('shops.off')}`}</div>
                 </div>
                 <div className="flex gap-2">
                   <button className={btn2} onClick={() => setEditing(s.id)}>{t('shops.edit')}</button>
@@ -95,28 +95,28 @@ export function ShopsScreen() {
         ))}
       </ul>
 
-      <form onSubmit={add} className="flex flex-col gap-2">
-        <h4 className="font-semibold">{t('shops.add')}</h4>
+      <form onSubmit={add} className="stack">
+        <h4 className="h6">{t('shops.add')}</h4>
         <input className={input} placeholder={t('shops.name')} aria-label={t('shops.name')} value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={60} />
         <input className={input} placeholder={t('shops.town')} aria-label={t('shops.town')} value={town} onChange={(e) => setTown(e.target.value)} />
         <button className={btn} disabled={!mayAdd || name.trim().length < 2}>{t('shops.addAction')}</button>
-        {!mayAdd && <p className="text-sm text-amber-700">{t('shops.errors.plan_limit')}</p>}
+        {!mayAdd && <p className="label-lg">! {t('shops.errors.plan_limit')}</p>}
       </form>
 
       {members.length > 0 && activeCount > 1 && (
-        <div className="flex flex-col gap-2">
-          <h4 className="font-semibold">{t('shops.access')}</h4>
-          <p className="text-sm text-slate-600 dark:text-slate-300">{t('shops.accessHint')}</p>
+        <div className="stack">
+          <h4 className="h6">{t('shops.access')}</h4>
+          <p className="body-md muted">{t('shops.accessHint')}</p>
           {members.map((m) => {
             const mine = access[m.id] ?? new Set<string>()
             return (
-              <fieldset key={m.id} className="rounded border border-slate-200 p-2 dark:border-slate-700">
-                <legend className="px-1 text-sm font-medium">{m.full_name ?? '—'}</legend>
+              <fieldset key={m.id} className="panel" style={{ padding: 10 }}>
+                <legend className="label-lg muted">{m.full_name ?? '—'}</legend>
                 <div className="flex flex-wrap gap-3">
                   {shops.filter((s) => s.active).map((s) => {
                     const on = mine.has(s.id)
                     return (
-                      <label key={s.id} className="flex min-h-10 items-center gap-2 text-sm">
+                      <label key={s.id} className="check-row body-md">
                         <input
                           type="checkbox" checked={on}
                           onChange={() => {
@@ -145,7 +145,7 @@ function EditShop({ shop, onSave, onCancel }: { shop: ShopRow; onSave: (name: st
   const [n, setN] = useState(shop.name)
   const [tw, setTw] = useState(shop.town ?? '')
   return (
-    <div className="flex flex-col gap-2">
+    <div className="stack">
       <input className={input} aria-label={t('shops.name')} value={n} onChange={(e) => setN(e.target.value)} maxLength={60} />
       <input className={input} aria-label={t('shops.town')} value={tw} onChange={(e) => setTw(e.target.value)} />
       <div className="flex gap-2">

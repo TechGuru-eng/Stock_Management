@@ -8,30 +8,30 @@ import { dayEnd, dayStart, localDate, periodPreset, type PeriodKind } from '../.
 import { QuickReminder } from '../money/DebtReminder'
 import { useReport } from './useReport'
 
-const input = 'min-h-12 rounded border border-slate-300 bg-transparent px-3'
-const btn2 = 'min-h-12 rounded border border-slate-300 px-3 text-sm print:hidden'
+const input = 'input'
+const btn2 = 'btn btn--secondary btn--sm print:hidden'
 const KINDS: PeriodKind[] = ['today', 'last7', 'thisMonth', 'lastMonth']
 
 function Section({ title, onExport, children }: { title: string; onExport?: () => void; children: ReactNode }) {
   const { t } = useTranslation()
   return (
-    <section className="break-inside-avoid rounded border border-slate-200 p-3 dark:border-slate-700 print:border-slate-400">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h3 className="font-semibold">{title}</h3>
+    <section className="panel" style={{ breakInside: 'avoid' }}>
+      <div className="panel__head">
+        <h3 className="h6">{title}</h3>
         {onExport && <button className={btn2} onClick={onExport}>{t('reports.exportCsv')}</button>}
       </div>
-      <div className="overflow-x-auto">{children}</div>
+      <div style={{ overflowX: 'auto' }}>{children}</div>
     </section>
   )
 }
 
 function Table({ head, rows, empty, foot }: { head: string[]; rows: ReactNode[][]; empty: string; foot?: ReactNode[] }) {
-  if (rows.length === 0) return <p className="text-sm text-slate-500">{empty}</p>
+  if (rows.length === 0) return <p className="body-sm muted">{empty}</p>
   return (
-    <table className="w-full min-w-[20rem] text-sm">
-      <thead><tr className="text-left text-xs text-slate-500">{head.map((h, i) => <th key={h} className={`pb-1 font-medium ${i ? 'text-right' : ''}`}>{h}</th>)}</tr></thead>
-      <tbody>{rows.map((r, i) => <tr key={i} className="border-t border-slate-100 dark:border-slate-800">{r.map((c, j) => <td key={j} className={`py-1.5 ${j ? 'text-right tabular-nums' : ''}`}>{c}</td>)}</tr>)}</tbody>
-      {foot && <tfoot><tr className="border-t-2 border-slate-300 font-semibold">{foot.map((c, j) => <td key={j} className={`py-1.5 ${j ? 'text-right tabular-nums' : ''}`}>{c}</td>)}</tr></tfoot>}
+    <table className="table" style={{ minWidth: '20rem' }}>
+      <thead><tr>{head.map((h, i) => <th key={h} className={i ? 'num' : undefined}>{h}</th>)}</tr></thead>
+      <tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className={j ? 'num' : undefined}>{c}</td>)}</tr>)}</tbody>
+      {foot && <tfoot><tr style={{ borderTop: '2px solid var(--tone-strong)' }}>{foot.map((c, j) => <td key={j} className={j ? 'num' : undefined}>{c}</td>)}</tr></tfoot>}
     </table>
   )
 }
@@ -48,7 +48,7 @@ export function ReportsScreen() {
   const shopId = shop === 'all' ? undefined : shop
   const data = useReport(range.from, range.to, shopId)
 
-  if (!membership || !can(membership.role, 'reports.operational')) return <p className="text-slate-500">{t('reports.ownerOnly')}</p>
+  if (!membership || !can(membership.role, 'reports.operational')) return <p className="body-md muted">{t('reports.ownerOnly')}</p>
   const sep = i18n.language.startsWith('fr') ? ';' : ','
   const shopName = shopId ? (membership.shops.find((s) => s.id === shopId)?.name ?? '') : t('reports.allShops')
   const today = localDate(new Date().toISOString())
@@ -59,40 +59,40 @@ export function ReportsScreen() {
   const s = data?.summary
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2 print:hidden">
+    <div className="stack">
+      <div className="stack print:hidden">
         <div className="flex flex-wrap gap-2">
           {KINDS.map((k) => (
-            <button key={k} aria-pressed={kind === k} onClick={() => setKind(k)} className={`min-h-12 rounded px-3 text-sm ${kind === k ? 'bg-teal-700 font-semibold text-white' : 'border border-slate-300'}`}>{t(`reports.period.${k}`)}</button>
+            <button key={k} aria-pressed={kind === k} onClick={() => setKind(k)} className={kind === k ? 'btn btn--primary' : 'btn btn--secondary'}>{t(`reports.period.${k}`)}</button>
           ))}
-          <button aria-pressed={kind === 'custom'} onClick={() => setKind('custom')} className={`min-h-12 rounded px-3 text-sm ${kind === 'custom' ? 'bg-teal-700 font-semibold text-white' : 'border border-slate-300'}`}>{t('reports.period.custom')}</button>
+          <button aria-pressed={kind === 'custom'} onClick={() => setKind('custom')} className={kind === 'custom' ? 'btn btn--primary' : 'btn btn--secondary'}>{t('reports.period.custom')}</button>
         </div>
         {kind === 'custom' && (
           <div className="flex flex-wrap gap-2">
-            <label className="flex flex-col text-sm">{t('reports.from')}<input type="date" className={input} value={custom.from} max={custom.to} onChange={(e) => e.target.value && setCustom({ ...custom, from: e.target.value })} /></label>
-            <label className="flex flex-col text-sm">{t('reports.to')}<input type="date" className={input} value={custom.to} min={custom.from} onChange={(e) => e.target.value && setCustom({ ...custom, to: e.target.value })} /></label>
+            <label className="field">{t('reports.from')}<input type="date" className={input} value={custom.from} max={custom.to} onChange={(e) => e.target.value && setCustom({ ...custom, from: e.target.value })} /></label>
+            <label className="field">{t('reports.to')}<input type="date" className={input} value={custom.to} min={custom.from} onChange={(e) => e.target.value && setCustom({ ...custom, to: e.target.value })} /></label>
           </div>
         )}
         <div className="flex flex-wrap items-end gap-2">
           {membership.shops.length > 1 && (
-            <label className="flex flex-col text-sm">{t('reports.shop')}
+            <label className="field">{t('reports.shop')}
               <select className={input} value={shop} onChange={(e) => setShop(e.target.value)}>
                 <option value="all">{t('reports.allShops')}</option>
                 {membership.shops.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
               </select>
             </label>
           )}
-          <button className="min-h-12 rounded bg-teal-700 px-4 font-semibold text-white" onClick={() => window.print()}>{t('reports.print')}</button>
+          <button className="btn btn--primary" onClick={() => window.print()}>{t('reports.print')}</button>
         </div>
-        <p className="text-xs text-slate-500">{t('reports.printHint')}</p>
+        <p className="body-sm muted">{t('reports.printHint')}</p>
       </div>
 
       <header>
-        <h2 className="text-xl font-semibold">{t('reports.title')} — {membership.tenantName}</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-300">{shopName} · {d(range.from)} → {d(range.to)} · {t('reports.generated', { date: new Date().toLocaleString(i18n.language) })}</p>
+        <h2 className="h4">{t('reports.title')} — {membership.tenantName}</h2>
+        <p className="body-md muted">{shopName} · {d(range.from)} → {d(range.to)} · {t('reports.generated', { date: new Date().toLocaleString(i18n.language) })}</p>
       </header>
 
-      {!data || !s ? <p className="text-slate-500">…</p> : (
+      {!data || !s ? <p className="body-md muted">…</p> : (
         <>
           <Section
             title={t('reports.summary')}
@@ -112,7 +112,7 @@ export function ReportsScreen() {
               [t('money.repayments'), formatXaf(s.debtRepayments)], [<strong key="c">{t('money.collected')}</strong>, <strong key="cv">{formatXaf(s.collectedTotal)}</strong>],
               [t('money.receivables'), formatXaf(s.receivables)], [t('reports.payables'), formatXaf(s.supplierPayables)],
             ]} />
-            <p className="mt-2 text-xs text-slate-500">{t('money.note')}</p>
+            <p className="body-sm muted" style={{ marginTop: 8 }}>{t('money.note')}</p>
           </Section>
 
           <Section title={t('reports.daily')} onExport={() => save('daily', [
@@ -129,7 +129,7 @@ export function ReportsScreen() {
           ], data.products)}>
             <Table head={[t('reports.product'), t('reports.qty'), t('money.revenue'), t('money.grossProfit'), t('reports.margin')]} empty={t('reports.none')}
               rows={data.products.slice(0, 50).map((r) => [r.name, r.quantity, formatXaf(r.revenue), formatXaf(r.profit), r.marginBp === null ? '—' : `${(r.marginBp / 100).toFixed(1)} %`])} />
-            {data.products.length > 50 && <p className="mt-1 text-xs text-slate-500">{t('reports.top50')}</p>}
+            {data.products.length > 50 && <p className="body-sm muted" style={{ marginTop: 4 }}>{t('reports.top50')}</p>}
           </Section>
 
           <Section title={t('reports.byEmployee')} onExport={() => save('sales-by-employee', [
@@ -144,9 +144,9 @@ export function ReportsScreen() {
             { label: t('reports.product'), value: (r) => r.name }, { label: t('reports.qty'), value: (r) => r.quantity }, { label: t('reports.unit'), value: (r) => r.baseUnit },
             { label: t('reports.avgCost'), value: (r) => r.avgCost }, { label: t('reports.value'), value: (r) => r.value }, { label: t('reports.min'), value: (r) => r.minStock }, { label: t('reports.low'), value: (r) => (r.low ? 1 : 0) },
           ], data.stock.rows)}>
-            <p className="mb-2 text-xs text-slate-500">{t('reports.stockNote')}</p>
+            <p className="body-sm muted" style={{ marginBottom: 8 }}>{t('reports.stockNote')}</p>
             <Table head={[t('reports.product'), t('reports.qty'), t('reports.avgCost'), t('reports.value')]} empty={t('reports.none')}
-              rows={data.stock.rows.map((r) => [<span key={r.productId}>{r.name}{r.low && <span className="ml-1 text-xs font-semibold text-red-700">{t('reports.low')}</span>}</span>, `${r.quantity} ${r.baseUnit}`, formatXaf(r.avgCost), formatXaf(r.value)])}
+              rows={data.stock.rows.map((r) => [<span key={r.productId}>{r.name}{r.low && <span className="tag tag--flag" style={{ marginLeft: 4 }}>{t('reports.low')}</span>}</span>, `${r.quantity} ${r.baseUnit}`, formatXaf(r.avgCost), formatXaf(r.value)])}
               foot={data.stock.rows.length ? [t('reports.total'), '', '', formatXaf(data.stock.totalValue)] : undefined} />
           </Section>
 
@@ -154,9 +154,9 @@ export function ReportsScreen() {
             { label: t('reports.customer'), value: (r) => r.name }, { label: t('reports.phone'), value: (r) => r.phone }, { label: t('reports.owes'), value: (r) => r.balance }, { label: t('reports.lastActivity'), value: (r) => (r.lastActivity ? localDate(r.lastActivity) : '') },
           ], data.debtors.rows)}>
             <Table head={[t('reports.customer'), t('reports.lastActivity'), t('reports.owes'), '']} empty={t('money.noDebts')}
-              rows={data.debtors.rows.map((r) => [<span key={r.customerId}>{r.name}{r.phone && <span className="block text-xs text-slate-500">{r.phone}</span>}</span>, r.lastActivity ? d(r.lastActivity) : '—', formatXaf(r.balance), <span key={`w${r.customerId}`} className="print:hidden"><QuickReminder customer={{ id: r.customerId, name: r.name, phone: r.phone }} balance={r.balance} /></span>])}
+              rows={data.debtors.rows.map((r) => [<span key={r.customerId}>{r.name}{r.phone && <span className="block body-sm muted">{r.phone}</span>}</span>, r.lastActivity ? d(r.lastActivity) : '—', formatXaf(r.balance), <span key={`w${r.customerId}`} className="print:hidden"><QuickReminder customer={{ id: r.customerId, name: r.name, phone: r.phone }} balance={r.balance} /></span>])}
               foot={data.debtors.rows.length ? [t('reports.total'), '', formatXaf(data.debtors.total), ''] : undefined} />
-            <p className="mt-1 text-xs text-slate-500">{t('reports.debtNote')}</p>
+            <p className="body-sm muted" style={{ marginTop: 4 }}>{t('reports.debtNote')}</p>
           </Section>
 
           <Section title={t('reports.expenses')} onExport={() => save('expenses', [
