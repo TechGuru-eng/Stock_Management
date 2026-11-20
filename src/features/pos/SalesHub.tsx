@@ -9,13 +9,10 @@ export function SalesHub() {
   const { t } = useTranslation()
   const [sub, setSub] = useState<'sale' | 'returns' | 'invoices'>('sale')
   return (
-    <div className="flex flex-col gap-4">
-      <div role="tablist" className="grid grid-cols-3 gap-1">
+    <div className="stack">
+      <div role="tablist" className="auth-tabs" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         {(['sale', 'returns', 'invoices'] as const).map((k) => (
-          <button
-            key={k} role="tab" aria-selected={sub === k} onClick={() => setSub(k)}
-            className={`min-h-12 rounded px-1 text-sm ${sub === k ? 'bg-teal-700 font-semibold text-white' : 'border border-slate-300'}`}
-          >
+          <button key={k} role="tab" aria-selected={sub === k} onClick={() => setSub(k)}>
             {k === 'invoices' ? t('invoices.tab') : t(`rets.${k}`)}
           </button>
         ))}

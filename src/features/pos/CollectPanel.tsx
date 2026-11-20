@@ -10,8 +10,8 @@ import { checkRequest, fitsSale, unusedCollections, type CollectionProvider, typ
 import { supabase } from '../../lib/supabase'
 
 const base = `${(import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? ''}/functions/v1`
-const input = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
-const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
+const input = 'input'
+const btn = 'btn btn--primary'
 const COLUMNS = 'id, tenant_id, shop_id, provider, phone, amount, status, payment_url, provider_reference, reason, sale_id, created_at'
 
 type Phase =
@@ -105,11 +105,11 @@ export function CollectPanel({ ctx, remaining, customerPhone, usedIds, onUse }: 
 
   const reasons = ['declined', 'expired', 'error', 'phone', 'amount', 'not_configured', 'too_many_open', 'provider_error']
   return (
-    <section className="flex flex-col gap-2 rounded border border-slate-200 p-3 dark:border-slate-700">
-      <h4 className="font-semibold">{t('collect.title')}</h4>
-      <p className="text-xs text-slate-500">{t('collect.hint')}</p>
+    <section className="panel stack">
+      <h4 className="h6">{t('collect.title')}</h4>
+      <p className="body-sm muted">{t('collect.hint')}</p>
       {(phase.k === 'idle' || phase.k === 'stopped') && (
-        <div className="flex flex-col gap-2">
+        <div className="stack">
           <select className={input} value={provider} onChange={(e) => setProvider(e.target.value as CollectionProvider)} aria-label={t('money.method')}>
             {providers.mtn_momo && <option value="mtn_momo">{t('pos.mtn_momo')}</option>}
             {providers.orange_money && <option value="orange_money">{t('pos.orange_money')}</option>}
@@ -117,25 +117,25 @@ export function CollectPanel({ ctx, remaining, customerPhone, usedIds, onUse }: 
           <input className={input} type="tel" inputMode="tel" placeholder={t('collect.phone')} aria-label={t('collect.phone')} value={phone} onChange={(e) => setPhone(e.target.value)} />
           <input className={input} inputMode="numeric" placeholder={t('pos.amount')} aria-label={t('pos.amount')} value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} />
           <button type="button" className={btn} onClick={() => void send()}>{t(provider === 'mtn_momo' ? 'collect.sendPrompt' : 'collect.orangePage')}</button>
-          {phase.k === 'stopped' && <p role="alert" className="text-sm text-red-700">{t(`collect.stopped.${reasons.includes(phase.reason) ? phase.reason : 'error'}`)}</p>}
+          {phase.k === 'stopped' && <p role="alert" className="field__error">{t(`collect.stopped.${reasons.includes(phase.reason) ? phase.reason : 'error'}`)}</p>}
         </div>
       )}
-      {phase.k === 'sending' && <p role="status">{t('payNow.sending')}</p>}
+      {phase.k === 'sending' && <p role="status" className="body-md">{t('payNow.sending')}</p>}
       {phase.k === 'waiting' && (
-        <div className="flex flex-col gap-2">
-          <p role="status" className="font-medium">{t(phase.provider === 'mtn_momo' ? 'collect.waitingMtn' : 'collect.waitingOrange')}</p>
+        <div className="stack">
+          <p role="status" className="body-md">{t(phase.provider === 'mtn_momo' ? 'collect.waitingMtn' : 'collect.waitingOrange')}</p>
           {phase.url && <a className={`${btn} inline-flex items-center justify-center`} href={phase.url} target="_blank" rel="noopener noreferrer">{t('payNow.openPageLink')}</a>}
-          <button type="button" className="min-h-12 rounded border border-slate-300 px-3" onClick={() => setPhase({ k: 'idle' })}>{t('collect.stopWaiting')}</button>
-          <p className="text-xs text-slate-500">{t('collect.waitHint')}</p>
+          <button type="button" className="btn btn--secondary" onClick={() => setPhase({ k: 'idle' })}>{t('collect.stopWaiting')}</button>
+          <p className="body-sm muted">{t('collect.waitHint')}</p>
         </div>
       )}
       {waiting.filter((c) => !usedIds.includes(c.id)).length > 0 && (
-        <div className="flex flex-col gap-1 border-t border-slate-200 pt-2 dark:border-slate-700">
-          <p className="text-sm font-medium">{t('collect.unused')}</p>
+        <div className="stack" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 15 }}>
+          <p className="label-lg">{t('collect.unused')}</p>
           {waiting.filter((c) => !usedIds.includes(c.id)).map((c) => (
-            <div key={c.id} className="flex items-center justify-between gap-2 text-sm">
+            <div key={c.id} className="flex items-center justify-between gap-2 body-sm">
               <span>{formatXaf(c.amount)} · {t(`pos.${c.provider}`)} · {c.phone} · {new Date(c.createdAt).toLocaleString()}</span>
-              <button type="button" className="min-h-12 rounded border border-teal-700 px-3 text-teal-700 disabled:opacity-50" disabled={fitsSale(c, remaining) !== null} onClick={() => onUse(c)}>{t('collect.use')}</button>
+              <button type="button" className="btn btn--secondary btn--sm" disabled={fitsSale(c, remaining) !== null} onClick={() => onUse(c)}>{t('collect.use')}</button>
             </div>
           ))}
         </div>

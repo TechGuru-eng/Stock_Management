@@ -514,6 +514,12 @@ html.lenis { scroll-behavior: auto; }
 .editorial-taste .banner--flag { background: var(--neutral-white); border-bottom: 1px solid var(--tone-strong); }
 .editorial-taste .banner .btn { height: 32px; padding: 0 14px; }
 
+.editorial-taste .list-wrap { border: 1px solid var(--border-subtle); border-radius: var(--radius-10); overflow: hidden; }
+.editorial-taste .list-wrap > ul > li, .editorial-taste .list-wrap > li { padding: var(--space-15) var(--space-20); border-bottom: 1px solid var(--border-subtle); }
+.editorial-taste .list-wrap > ul > li:last-child, .editorial-taste .list-wrap > li:last-child { border-bottom: 0; }
+.editorial-taste .stepper { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; flex: none; border: 1px solid var(--border-subtle); border-radius: var(--radius-btn); font: 400 var(--btn-lg-size)/1 var(--font-ui); transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+.editorial-taste .stepper:hover { background: var(--bg-lift); border-color: var(--dark-32); }
+
 /* ---------- 22. Responsive ---------- */
 @media (max-width: 1280px) {
   .editorial-taste .pricing { grid-template-columns: repeat(2, minmax(0, 1fr)); }
