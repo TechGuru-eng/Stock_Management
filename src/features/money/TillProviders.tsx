@@ -7,7 +7,7 @@ import { parseMtnConfig, parseOrangeConfig } from '../../domain/paymentProviders
 import type { CollectionProvider } from '../../domain/tillCollections'
 import { supabase } from '../../lib/supabase'
 
-const box = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
+const box = 'input'
 
 const FIELDS: Record<CollectionProvider, { key: string; secret?: boolean; placeholder?: string }[]> = {
   mtn_momo: [
@@ -43,32 +43,32 @@ function ProviderForm({ provider, tenantId, on, locked, onChanged }: { provider:
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded border border-slate-200 p-3 dark:border-slate-700">
+    <div className="panel stack">
       <div className="flex items-center justify-between gap-2">
-        <strong>{t(`pos.${provider}`)}</strong>
-        <span className={on ? 'text-teal-700' : 'text-slate-500'}>{on ? t('tillProviders.on') : t('tillProviders.off')}</span>
+        <strong className="body-md">{t(`pos.${provider}`)}</strong>
+        <span className={on ? 'tag tag--solid' : 'tag'}>{on ? t('tillProviders.on') : t('tillProviders.off')}</span>
       </div>
       {!open && (
         <div className="flex gap-2">
-          <button type="button" className="min-h-12 rounded border border-slate-300 px-3 disabled:opacity-50" disabled={locked} onClick={() => setOpen(true)}>{on ? t('tillProviders.replace') : t('tillProviders.setup')}</button>
-          {on && <button type="button" className="min-h-12 rounded border border-red-300 px-3 text-red-700" onClick={() => void remove()}>{t('tillProviders.remove')}</button>}
+          <button type="button" className="btn btn--secondary" disabled={locked} onClick={() => setOpen(true)}>{on ? t('tillProviders.replace') : t('tillProviders.setup')}</button>
+          {on && <button type="button" className="btn btn--danger" onClick={() => void remove()}>{t('tillProviders.remove')}</button>}
         </div>
       )}
-      {locked && !on && <p className="text-sm text-amber-700">{t('tillProviders.planLocked')}</p>}
+      {locked && !on && <p className="label-lg">! {t('tillProviders.planLocked')}</p>}
       {open && (
-        <form onSubmit={save} className="flex flex-col gap-2">
+        <form onSubmit={save} className="stack">
           {FIELDS[provider].map((f) => (
-            <label key={f.key} className="flex flex-col gap-1 text-sm">{t(`tillProviders.field.${f.key}`)}
+            <label key={f.key} className="field">{t(`tillProviders.field.${f.key}`)}
               <input className={box} type={f.secret ? 'password' : 'text'} autoComplete="off" placeholder={f.placeholder} value={v[f.key] ?? ''} onChange={(e) => setV({ ...v, [f.key]: e.target.value })} />
             </label>
           ))}
           <div className="flex gap-2">
-            <button className="min-h-12 flex-1 rounded bg-teal-700 px-4 font-semibold text-white">{t('tillProviders.save')}</button>
-            <button type="button" className="min-h-12 rounded border border-slate-300 px-3" onClick={() => { setOpen(false); setV({}) }}>{t('shops.cancel')}</button>
+            <button className="btn btn--primary flex-1">{t('tillProviders.save')}</button>
+            <button type="button" className="btn btn--secondary" onClick={() => { setOpen(false); setV({}) }}>{t('shops.cancel')}</button>
           </div>
         </form>
       )}
-      {msg && <p role="status" className="text-sm">{msg}</p>}
+      {msg && <p role="status" className="label-lg">{msg}</p>}
     </div>
   )
 }
@@ -88,9 +88,9 @@ export function TillProviders() {
   useEffect(() => { void load() }, [load])
   if (!ctx || !can(ctx.role, 'settings.write') || !supabase || !navigator.onLine) return null
   return (
-    <section className="mt-6 flex flex-col gap-3 rounded border border-slate-200 p-3 dark:border-slate-700">
-      <h3 className="text-lg font-semibold">{t('tillProviders.title')}</h3>
-      <p className="text-sm text-slate-600 dark:text-slate-300">{t('tillProviders.hint')}</p>
+    <section className="panel stack" style={{ marginTop: 24 }}>
+      <h3 className="h5">{t('tillProviders.title')}</h3>
+      <p className="body-md muted">{t('tillProviders.hint')}</p>
       <ProviderForm provider="mtn_momo" tenantId={ctx.tenantId} on={Boolean(on.mtn_momo)} locked={!verifiedMomo} onChanged={() => void load()} />
       <ProviderForm provider="orange_money" tenantId={ctx.tenantId} on={Boolean(on.orange_money)} locked={!verifiedMomo} onChanged={() => void load()} />
     </section>

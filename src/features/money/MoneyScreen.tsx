@@ -17,14 +17,14 @@ import { useBalances, useSummary } from './useSummary'
 
 type Sub = 'summary' | 'debts' | 'expenses' | 'cash' | 'reports'
 type Method = 'cash' | 'mtn_momo' | 'orange_money'
-const input = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
-const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
+const input = 'input'
+const btn = 'btn btn--primary'
 const num = (s: string) => (s.trim() === '' ? 0 : Math.round(Number(s)))
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium">{label}</span>
+    <label className="field">
+      <span>{label}</span>
       {children}
     </label>
   )
@@ -32,9 +32,9 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 
 function Row({ label, value, strong, hint }: { label: string; value: string; strong?: boolean; hint?: string }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 py-2">
-      <span className={strong ? 'font-semibold' : ''}>{label}{hint && <span className="block text-xs text-slate-500">{hint}</span>}</span>
-      <span className={strong ? 'text-lg font-bold' : ''}>{value}</span>
+    <div className="flex items-baseline justify-between gap-3" style={{ padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+      <span className={strong ? 'body-md' : 'body-md muted'}>{label}{hint && <span className="block body-sm muted">{hint}</span>}</span>
+      <span className={strong ? 'h5 num' : 'body-md num'}>{value}</span>
     </div>
   )
 }
@@ -57,8 +57,8 @@ function SummaryView({ ctx }: { ctx: Ctx }) {
   const profitVisible = can(ctx.role, 'reports.operational')
   if (!s) return null
   return (
-    <div className="flex flex-col divide-y divide-slate-200 dark:divide-slate-800">
-      <h3 className="pb-2 text-lg font-semibold">{t('money.today')}</h3>
+    <div className="flex flex-col">
+      <h3 className="h5" style={{ paddingBottom: 10 }}>{t('money.today')}</h3>
       <Row label={t('money.salesCount')} value={String(s.salesCount)} />
       <Row label={t('money.revenue')} value={formatXaf(s.revenue)} />
       <Row label={t('money.collected')} value={formatXaf(s.collectedTotal)} strong hint={`${t('money.repayments')}: ${formatXaf(s.debtRepayments)}`} />
@@ -70,7 +70,7 @@ function SummaryView({ ctx }: { ctx: Ctx }) {
           <Row label={t('money.grossProfit')} value={formatXaf(s.grossProfit)} strong />
           <Row label={t('money.expensesTotal')} value={formatXaf(s.expenses)} />
           <Row label={t('money.operatingProfit')} value={formatXaf(s.operatingProfit)} strong />
-          <p className="pt-3 text-xs text-slate-500">{t('money.note')}</p>
+          <p className="body-sm muted" style={{ paddingTop: 15 }}>{t('money.note')}</p>
         </>
       )}
     </div>
@@ -103,11 +103,11 @@ function DebtDetail({ ctx, customerId, onBack }: { ctx: Ctx; customerId: string;
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <button onClick={onBack} className="min-h-12 self-start text-teal-700 underline">{t('stock.back')}</button>
-      <h3 className="text-xl font-semibold">{customer?.name}</h3>
-      <p>{t('money.owes')}: <strong>{formatXaf(owed)}</strong></p>
-      <ul className="text-sm text-slate-600 dark:text-slate-300">
+    <div className="stack">
+      <button onClick={onBack} className="btn btn--tertiary" style={{ alignSelf: 'flex-start' }}>{t('stock.back')}</button>
+      <h3 className="h4">{customer?.name}</h3>
+      <p className="body-md">{t('money.owes')}: <strong>{formatXaf(owed)}</strong></p>
+      <ul className="body-sm muted stack" style={{ gap: 4 }}>
         {open.map((o) => (
           <li key={o.saleId}>{sales.find((x) => x.id === o.saleId)?.saleNumber} · {o.createdAt.slice(0, 10)} · {formatXaf(o.outstanding)}</li>
         ))}
@@ -115,14 +115,14 @@ function DebtDetail({ ctx, customerId, onBack }: { ctx: Ctx; customerId: string;
       {customer && <DebtReminder customer={customer} balance={balance} />}
       <CustomerPoints ctx={ctx} customerId={customerId} />
       {can(ctx.role, 'payments.receive') && owed > 0 && (
-        <form onSubmit={submit} className="flex flex-col gap-3 rounded border border-slate-200 p-3">
-          <h4 className="font-semibold">{t('money.repay')}</h4>
+        <form onSubmit={submit} className="panel stack">
+          <h4 className="h6">{t('money.repay')}</h4>
           <Field label={t('money.amount')}><input className={input} inputMode="numeric" required value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
           <Field label={t('money.method')}><MethodSelect value={method} onChange={setMethod} /></Field>
           <button className={btn}>{t('money.add')}</button>
         </form>
       )}
-      {msg && <p role="status" className="text-sm">{msg}</p>}
+      {msg && <p role="status" className="label-lg">{msg}</p>}
     </div>
   )
 }
@@ -135,14 +135,14 @@ function DebtsView({ ctx }: { ctx: Ctx }) {
   const list = (rows ?? []).filter((r) => r.balance !== 0)
   return (
     <div>
-      {list.length === 0 && <p className="text-slate-500">{t('money.noDebts')}</p>}
-      <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+      {list.length === 0 && <p className="body-md muted">{t('money.noDebts')}</p>}
+      <ul className="list-wrap">
         {list.map(({ customer, balance }) => (
-          <li key={customer.id} className="flex items-center gap-2">
-            <button onClick={() => setSel(customer.id)} className="flex min-h-14 flex-1 items-center justify-between py-2 text-left">
+          <li key={customer.id} className="flex items-center gap-2" style={{ padding: 0 }}>
+            <button onClick={() => setSel(customer.id)} className="flex flex-1 items-center justify-between text-left" style={{ padding: '15px 20px' }}>
               <span>{customer.name}</span>
-              <span className={balance > 0 ? 'font-semibold text-red-700' : 'text-teal-700'}>
-                {balance > 0 ? `${t('money.owes')} ${formatXaf(balance)}` : `${t('money.inCredit')} ${formatXaf(-balance)}`}
+              <span className={balance > 0 ? 'label-lg' : 'body-md muted'}>
+                {balance > 0 ? `! ${t('money.owes')} ${formatXaf(balance)}` : `${t('money.inCredit')} ${formatXaf(-balance)}`}
               </span>
             </button>
             <QuickReminder customer={customer} balance={balance} />
@@ -178,10 +178,10 @@ function ExpensesView({ ctx }: { ctx: Ctx }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="stack">
       {allowed && (
-        <form onSubmit={submit} className="flex flex-col gap-3 rounded border border-slate-200 p-3">
-          <h4 className="font-semibold">{t('money.newExpense')}</h4>
+        <form onSubmit={submit} className="panel stack">
+          <h4 className="h6">{t('money.newExpense')}</h4>
           <Field label={t('money.category')}>
             <select className={input} value={category} onChange={(e) => setCategory(e.target.value as ExpenseCategory)}>
               {expenseCategories.map((c) => <option key={c} value={c}>{t(`money.cat.${c}`)}</option>)}
@@ -191,15 +191,15 @@ function ExpensesView({ ctx }: { ctx: Ctx }) {
           <Field label={t('money.method')}><MethodSelect value={method} onChange={setMethod} /></Field>
           <Field label={t('money.description')}><input className={input} value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
           <button className={btn}>{t('money.add')}</button>
-          {msg && <p role="status" className="text-sm">{msg}</p>}
+          {msg && <p role="status" className="label-lg">{msg}</p>}
         </form>
       )}
-      {list.length === 0 && <p className="text-slate-500">{t('money.noExpenses')}</p>}
-      <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+      {list.length === 0 && <p className="body-md muted">{t('money.noExpenses')}</p>}
+      <ul className="list-wrap">
         {list.map((e) => (
-          <li key={e.id} className="flex justify-between py-2">
-            <span>{t(`money.cat.${e.category}`)} <span className="text-sm text-slate-500">{e.occurredAt.slice(0, 10)}{e.description ? ` · ${e.description}` : ''}</span></span>
-            <span>{formatXaf(e.amount)}</span>
+          <li key={e.id} className="flex justify-between">
+            <span>{t(`money.cat.${e.category}`)} <span className="body-sm muted">{e.occurredAt.slice(0, 10)}{e.description ? ` · ${e.description}` : ''}</span></span>
+            <span className="num">{formatXaf(e.amount)}</span>
           </li>
         ))}
       </ul>
@@ -229,15 +229,15 @@ function CashView({ ctx }: { ctx: Ctx }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="stack">
       {!session ? (
-        <form onSubmit={(e) => { e.preventDefault(); void guard(async () => { await openCashSession(ctx, num(opening)); setResult(null) }) }} className="flex flex-col gap-3 rounded border border-slate-200 p-3">
-          <p>{t('money.noSession')}</p>
+        <form onSubmit={(e) => { e.preventDefault(); void guard(async () => { await openCashSession(ctx, num(opening)); setResult(null) }) }} className="panel stack">
+          <p className="body-md">{t('money.noSession')}</p>
           <Field label={t('money.openingCash')}><input className={input} inputMode="numeric" required value={opening} onChange={(e) => setOpening(e.target.value)} /></Field>
           <button className={btn}>{t('money.openSession')}</button>
         </form>
       ) : (
-        <form onSubmit={(e) => { e.preventDefault(); void guard(async () => { const r = await closeCashSession(ctx, session.id, num(counted)); setResult(r.reconciliation); setCounted('') }) }} className="flex flex-col gap-3 rounded border border-slate-200 p-3">
+        <form onSubmit={(e) => { e.preventDefault(); void guard(async () => { const r = await closeCashSession(ctx, session.id, num(counted)); setResult(r.reconciliation); setCounted('') }) }} className="panel stack">
           <Row label={t('money.openingCash')} value={formatXaf(session.openingCash)} />
           <Row label={t('money.expectedNow')} value={formatXaf(expected)} strong />
           <Field label={t('money.counted')}><input className={input} inputMode="numeric" required value={counted} onChange={(e) => setCounted(e.target.value)} /></Field>
@@ -245,18 +245,18 @@ function CashView({ ctx }: { ctx: Ctx }) {
         </form>
       )}
       {result && (
-        <p role="status" className={`rounded p-3 ${result.status === 'balanced' ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900'}`}>
+        <p role="status" className={result.status === 'balanced' ? 'notice body-md' : 'notice notice--amber body-md'}>
           {t(`money.${result.status}`)} · {t('money.difference')}: {formatXaf(result.difference)}
         </p>
       )}
-      {msg && <p role="alert" className="text-red-700">{msg}</p>}
+      {msg && <p role="alert" className="field__error">{msg}</p>}
 
       <form
         onSubmit={(e) => { e.preventDefault(); void guard(async () => { await moveCash(ctx, { kind: moveKind, amount: num(moveAmount), reason: moveReason }); setMoveAmount(''); setMoveReason(''); setMsg(t('money.saved')) }) }}
-        className="flex flex-col gap-3 rounded border border-slate-200 p-3"
+        className="panel stack"
       >
-        <h4 className="font-semibold">{t('money.movement')}</h4>
-        {!can(ctx.role, 'finance.write') && <p className="text-sm text-slate-500">{t('money.ownerOnly')}</p>}
+        <h4 className="h6">{t('money.movement')}</h4>
+        {!can(ctx.role, 'finance.write') && <p className="body-sm muted">{t('money.ownerOnly')}</p>}
         <select className={input} value={moveKind} onChange={(e) => setMoveKind(e.target.value as typeof moveKind)} disabled={!can(ctx.role, 'finance.write')}>
           <option value="cash_withdrawal">{t('money.withdrawal')}</option>
           <option value="cash_deposit">{t('money.deposit')}</option>
@@ -267,13 +267,13 @@ function CashView({ ctx }: { ctx: Ctx }) {
       </form>
 
       <section>
-        <h4 className="mb-2 font-semibold">{t('money.closures')}</h4>
-        <ul className="divide-y divide-slate-200 text-sm dark:divide-slate-800">
+        <h4 className="h6" style={{ marginBottom: 10 }}>{t('money.closures')}</h4>
+        <ul className="list-wrap">
           {closures.map((c) => (
-            <li key={c.id} className="flex justify-between py-2">
+            <li key={c.id} className="flex justify-between body-sm">
               <span>{c.closedAt.slice(0, 16).replace('T', ' ')}</span>
-              <span className={c.difference === 0 ? 'text-teal-700' : 'font-semibold text-red-700'}>
-                {c.difference === 0 ? t('money.balanced') : `${t('money.difference')} ${formatXaf(c.difference)}`}
+              <span className={c.difference === 0 ? 'muted' : 'label-lg'}>
+                {c.difference === 0 ? t('money.balanced') : `! ${t('money.difference')} ${formatXaf(c.difference)}`}
               </span>
             </li>
           ))}
@@ -292,11 +292,10 @@ export function MoneyScreen({ initial = 'summary' }: { initial?: Sub }) {
   if (!ctx) return null
   const tabs: Sub[] = can(ctx.role, 'reports.operational') ? ['summary', 'debts', 'expenses', 'cash', 'reports'] : ['summary', 'debts', 'expenses', 'cash']
   return (
-    <div className="flex flex-col gap-4">
-      <div role="tablist" className={`grid gap-1 print:hidden ${tabs.length === 5 ? 'grid-cols-5' : 'grid-cols-4'}`}>
+    <div className="stack">
+      <div role="tablist" className="auth-tabs print:hidden" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
         {tabs.map((k) => (
-          <button key={k} role="tab" aria-selected={sub === k} onClick={() => setSub(k)}
-            className={`min-h-12 rounded px-1 text-sm ${sub === k ? 'bg-teal-700 font-semibold text-white' : 'border border-slate-300'}`}>
+          <button key={k} role="tab" aria-selected={sub === k} onClick={() => setSub(k)}>
             {t(`money.${k}`)}
           </button>
         ))}

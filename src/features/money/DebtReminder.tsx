@@ -37,16 +37,16 @@ export function QuickReminder({ customer, balance }: { customer: { id: string; n
   const text = useMessage(customer.name, balance)
   const link = waLink(customer.phone, text)
   if (balance <= 0) return null
-  if (!link) return <span className="text-xs text-slate-500">{t('reminders.noPhone')}</span>
+  if (!link) return <span className="label-lg muted">{t('reminders.noPhone')}</span>
   return (
-    <span className="flex flex-col items-end">
+    <span className="flex flex-col items-end" style={{ gap: 4 }}>
       <a
         href={link} target="_blank" rel="noopener noreferrer" onClick={() => void noteReminder(customer.id)}
-        className="inline-flex min-h-10 items-center rounded border border-emerald-600 px-3 text-sm font-medium text-emerald-700"
+        className="btn btn--secondary btn--sm"
       >
         {t('reminders.whatsapp')}
       </a>
-      {last && <span className="text-xs text-slate-500">{t('reminders.last', { when: ago(last, i18n.language) })}</span>}
+      {last && <span className="label-lg muted">{t('reminders.last', { when: ago(last, i18n.language) })}</span>}
     </span>
   )
 }
@@ -61,18 +61,18 @@ export function DebtReminder({ customer, balance }: { customer: { id: string; na
   if (balance <= 0) return null
   const link = waLink(customer.phone, text)
   return (
-    <section className="flex flex-col gap-2 rounded border border-slate-200 p-3 dark:border-slate-700">
-      <h4 className="font-semibold">{t('reminders.title')}</h4>
-      {!customer.phone || !link ? <p className="text-sm text-slate-600">{t('reminders.noPhoneLong')}</p> : (
+    <section className="panel stack">
+      <h4 className="h6">{t('reminders.title')}</h4>
+      {!customer.phone || !link ? <p className="body-md muted">{t('reminders.noPhoneLong')}</p> : (
         <>
-          <textarea aria-label={t('reminders.message')} rows={4} value={text} onChange={(e) => setText(e.target.value)} className="w-full rounded border border-slate-300 bg-transparent p-2 text-sm" />
+          <textarea aria-label={t('reminders.message')} rows={4} value={text} onChange={(e) => setText(e.target.value)} className="input" />
           <a
             href={link} target="_blank" rel="noopener noreferrer" onClick={() => void noteReminder(customer.id)}
-            className="inline-flex min-h-12 items-center justify-center rounded bg-emerald-600 px-4 font-semibold text-white"
+            className="btn btn--primary"
           >
             {t('reminders.open')}
           </a>
-          <p className="text-xs text-slate-500">{t('reminders.hint')}{last && ` ${t('reminders.last', { when: ago(last, i18n.language) })}`}</p>
+          <p className="body-sm muted">{t('reminders.hint')}{last && ` ${t('reminders.last', { when: ago(last, i18n.language) })}`}</p>
         </>
       )}
     </section>
