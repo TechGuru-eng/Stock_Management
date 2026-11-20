@@ -24,17 +24,17 @@ export function AlertSettings() {
   }
 
   return (
-    <section className="mt-6 flex flex-col gap-3 rounded border border-slate-200 p-3 dark:border-slate-700">
-      <h3 className="text-lg font-semibold">{t('alerts.settings')}</h3>
-      <label className="flex flex-col gap-1 text-sm">{t('alerts.lead')}
-        <select className="min-h-12 rounded border border-slate-300 bg-transparent px-3" value={settings.leadDays} onChange={(e) => void saveAlertSettings({ leadDays: Number(e.target.value) })}>
+    <section className="panel stack" style={{ marginTop: 24 }}>
+      <h3 className="h5">{t('alerts.settings')}</h3>
+      <label className="field" style={{ maxWidth: 220 }}>{t('alerts.lead')}
+        <select className="input" value={settings.leadDays} onChange={(e) => void saveAlertSettings({ leadDays: Number(e.target.value) })}>
           {[3, 5, 7, 10, 14, 21].map((d) => <option key={d} value={d}>{t('reorder.days', { n: d })}</option>)}
         </select>
       </label>
-      <label className="flex min-h-12 items-center gap-2">
+      <label className="check-row body-md">
         <input type="checkbox" checked={settings.notify && !denied} disabled={!supported || denied} onChange={(e) => void toggle(e.target.checked)} /> {t('alerts.notify')}
       </label>
-      <p className="text-xs text-slate-500">{!supported ? t('alerts.noSupport') : denied ? t('alerts.denied') : t('alerts.notifyHint')}</p>
+      <p className="body-sm muted">{!supported ? t('alerts.noSupport') : denied ? t('alerts.denied') : t('alerts.notifyHint')}</p>
     </section>
   )
 }

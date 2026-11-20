@@ -7,7 +7,7 @@ import { useCtx } from '../../data/useCtx'
 import { can } from '../../domain/permissions'
 import { DEFAULT_LOYALTY, rewardRateBp, validateRules, type LoyaltyRules } from '../../domain/loyalty'
 
-const box = 'min-h-12 rounded border border-slate-300 bg-transparent px-3'
+const box = 'input'
 
 /** More tab (owner): switch the points program on and set its rules. */
 export function LoyaltySettings() {
@@ -34,19 +34,19 @@ export function LoyaltySettings() {
   }
 
   return (
-    <form onSubmit={submit} className="mt-6 flex flex-col gap-3 rounded border border-slate-200 p-3 dark:border-slate-700">
-      <h3 className="text-lg font-semibold">{t('loyalty.title')}</h3>
-      <p className="text-sm text-slate-600 dark:text-slate-300">{t('loyalty.hint')}</p>
-      {!allowed && <p className="text-sm text-amber-700">{t('loyalty.planLocked')}</p>}
-      <label className="flex min-h-12 items-center gap-2"><input type="checkbox" disabled={!allowed} checked={f.enabled && allowed} onChange={(e) => setF({ ...f, enabled: e.target.checked })} />{t('loyalty.enable')}</label>
-      <label className="flex flex-col gap-1 text-sm">{t('loyalty.earnPer')}<input className={box} inputMode="numeric" value={f.earnPer} onChange={(e) => setF({ ...f, earnPer: e.target.value })} /></label>
-      <label className="flex flex-col gap-1 text-sm">{t('loyalty.pointValue')}<input className={box} inputMode="numeric" value={f.pointValue} onChange={(e) => setF({ ...f, pointValue: e.target.value })} /></label>
-      <label className="flex flex-col gap-1 text-sm">{t('loyalty.minRedeem')}<input className={box} inputMode="numeric" value={f.minRedeem} onChange={(e) => setF({ ...f, minRedeem: e.target.value })} /></label>
-      <label className="flex flex-col gap-1 text-sm">{t('loyalty.share')}<input className={box} inputMode="numeric" value={f.share} onChange={(e) => setF({ ...f, share: e.target.value })} /></label>
-      {rate !== null && <p className="text-sm">{t('loyalty.cost', { rate })}</p>}
-      {problems.length > 0 && <p role="alert" className="text-sm text-red-700">{t('loyalty.invalid')}</p>}
-      <button className="min-h-12 rounded bg-teal-700 px-4 text-white disabled:opacity-50" disabled={problems.length > 0}>{t('loyalty.save')}</button>
-      {msg && <p role="status" className="text-sm">{msg}</p>}
+    <form onSubmit={submit} className="panel stack" style={{ marginTop: 24 }}>
+      <h3 className="h5">{t('loyalty.title')}</h3>
+      <p className="body-md muted">{t('loyalty.hint')}</p>
+      {!allowed && <p className="label-lg">! {t('loyalty.planLocked')}</p>}
+      <label className="check-row body-md"><input type="checkbox" disabled={!allowed} checked={f.enabled && allowed} onChange={(e) => setF({ ...f, enabled: e.target.checked })} />{t('loyalty.enable')}</label>
+      <label className="field">{t('loyalty.earnPer')}<input className={box} inputMode="numeric" value={f.earnPer} onChange={(e) => setF({ ...f, earnPer: e.target.value })} /></label>
+      <label className="field">{t('loyalty.pointValue')}<input className={box} inputMode="numeric" value={f.pointValue} onChange={(e) => setF({ ...f, pointValue: e.target.value })} /></label>
+      <label className="field">{t('loyalty.minRedeem')}<input className={box} inputMode="numeric" value={f.minRedeem} onChange={(e) => setF({ ...f, minRedeem: e.target.value })} /></label>
+      <label className="field">{t('loyalty.share')}<input className={box} inputMode="numeric" value={f.share} onChange={(e) => setF({ ...f, share: e.target.value })} /></label>
+      {rate !== null && <p className="body-md">{t('loyalty.cost', { rate })}</p>}
+      {problems.length > 0 && <p role="alert" className="field__error">{t('loyalty.invalid')}</p>}
+      <button className="btn btn--primary" disabled={problems.length > 0}>{t('loyalty.save')}</button>
+      {msg && <p role="status" className="label-lg">{msg}</p>}
     </form>
   )
 }

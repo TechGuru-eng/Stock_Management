@@ -15,25 +15,25 @@ export function AttentionCard({ goOrder, goExpiry }: { goOrder: () => void; goEx
   if (!state || (state.active.length === 0 && !hasExpiry)) return null
   const c = state.counts
   return (
-    <section className="rounded border border-amber-400 bg-amber-50 p-3 text-amber-950 dark:bg-amber-950 dark:text-amber-50">
+    <section className="panel panel--flag body-md">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="font-semibold">{t('alerts.title')}</h3>
-        <button onClick={() => setOpen((x) => !x)} aria-expanded={open} className="min-h-10 rounded border border-current px-3 text-sm">{open ? t('alerts.hide') : t('alerts.seeAll')}</button>
+        <h3 className="h6">{t('alerts.title')}</h3>
+        <button onClick={() => setOpen((x) => !x)} aria-expanded={open} className="btn btn--secondary btn--sm">{open ? t('alerts.hide') : t('alerts.seeAll')}</button>
       </div>
-      <p className="mt-1 text-sm">
-        {c.out > 0 && <strong className="mr-2 text-red-700 dark:text-red-300">{t('alerts.nOut', { count: c.out })}</strong>}
-        {c.low > 0 && <span className="mr-2">{t('alerts.nLow', { count: c.low })}</span>}
+      <p style={{ marginTop: 4 }}>
+        {c.out > 0 && <strong style={{ marginRight: 8 }}>! {t('alerts.nOut', { count: c.out })}</strong>}
+        {c.low > 0 && <span style={{ marginRight: 8 }}>{t('alerts.nLow', { count: c.low })}</span>}
         {c.running_out > 0 && <span>{t('alerts.nRunning', { count: c.running_out })}</span>}
       </p>
       {hasExpiry && (
-        <p className="mt-1 text-sm">
-          {expiry!.summary.expiredUnits > 0 && <strong className="mr-2 text-red-700 dark:text-red-300">{t('expiry.expiredTotal', { units: expiry!.summary.expiredUnits, value: formatXaf(expiry!.summary.expiredValue) })}</strong>}
-          {expiry!.summary.soonUnits > 0 && <span className="mr-2">{t('expiry.soonTotal', { units: expiry!.summary.soonUnits, value: formatXaf(expiry!.summary.soonValue) })}</span>}
-          {goExpiry && <button onClick={goExpiry} className="min-h-10 rounded border border-current px-3 text-sm">{t('expiry.open')}</button>}
+        <p style={{ marginTop: 4 }}>
+          {expiry!.summary.expiredUnits > 0 && <strong style={{ marginRight: 8 }}>! {t('expiry.expiredTotal', { units: expiry!.summary.expiredUnits, value: formatXaf(expiry!.summary.expiredValue) })}</strong>}
+          {expiry!.summary.soonUnits > 0 && <span style={{ marginRight: 8 }}>{t('expiry.soonTotal', { units: expiry!.summary.soonUnits, value: formatXaf(expiry!.summary.soonValue) })}</span>}
+          {goExpiry && <button onClick={goExpiry} className="btn btn--secondary btn--sm">{t('expiry.open')}</button>}
         </p>
       )}
-      {!open && state.active.length > 0 && <p className="mt-1 text-sm">{state.active.slice(0, 4).map((a) => a.name).join(', ')}{state.active.length > 4 ? '…' : ''}</p>}
-      {open && <div className="mt-3 text-slate-900 dark:text-slate-100"><AlertsView onOrder={goOrder} /></div>}
+      {!open && state.active.length > 0 && <p style={{ marginTop: 4 }}>{state.active.slice(0, 4).map((a) => a.name).join(', ')}{state.active.length > 4 ? '…' : ''}</p>}
+      {open && <div style={{ marginTop: 15 }}><AlertsView onOrder={goOrder} /></div>}
     </section>
   )
 }
