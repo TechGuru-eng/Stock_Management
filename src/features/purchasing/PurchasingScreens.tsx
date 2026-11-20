@@ -13,14 +13,14 @@ import { can } from '../../domain/permissions'
 import { purchaseStatus, receivedByLine, supplierBalance, supplierStatement } from '../../domain/purchasing'
 
 type Method = 'cash' | 'mtn_momo' | 'orange_money'
-const input = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
-const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
+const input = 'input'
+const btn = 'btn btn--primary'
 const num = (s: string) => (s.trim() === '' ? 0 : Number(s))
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-sm font-medium">{label}</span>
+    <label className="field">
+      <span>{label}</span>
       {children}
     </label>
   )
@@ -88,7 +88,7 @@ function NewOrder({ ctx, onDone }: { ctx: Ctx; onDone: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3">
+    <form onSubmit={submit} className="stack">
       <Field label={t('purch.supplier')}>
         <select className={input} value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
           <option value="" />
@@ -96,18 +96,18 @@ function NewOrder({ ctx, onDone }: { ctx: Ctx; onDone: () => void }) {
         </select>
       </Field>
       {adding ? (
-        <div className="flex flex-col gap-2 rounded border border-slate-200 p-3">
+        <div className="panel stack">
           <input className={input} placeholder={t('purch.supplierName')} value={newName} onChange={(e) => setNewName(e.target.value)} />
           <input className={input} placeholder={t('purch.phone')} inputMode="tel" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
           <button type="button" onClick={() => void createSupplier()} className={btn}>{t('purch.save')}</button>
         </div>
       ) : (
-        <button type="button" onClick={() => setAdding(true)} className="min-h-12 self-start text-teal-700 underline">+ {t('purch.newSupplier')}</button>
+        <button type="button" onClick={() => setAdding(true)} className="btn btn--tertiary" style={{ alignSelf: 'flex-start' }}>+ {t('purch.newSupplier')}</button>
       )}
       <Field label={t('purch.invoice')}><input className={input} value={invoice} onChange={(e) => setInvoice(e.target.value)} /></Field>
 
       {lines.map((l, i) => (
-        <div key={i} className="flex flex-col gap-2 rounded border border-slate-200 p-3">
+        <div key={i} className="panel stack">
           <select className={input} value={l.productId} onChange={(e) => patch(i, { productId: e.target.value, unitId: '' })} aria-label={t('purch.product')}>
             <option value="">{t('purch.product')}</option>
             {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -129,12 +129,12 @@ function NewOrder({ ctx, onDone }: { ctx: Ctx; onDone: () => void }) {
           )}
         </div>
       ))}
-      <button type="button" onClick={() => setLines((ls) => [...ls, { productId: '', unitId: '', quantity: '', totalCost: '' }])} className="min-h-12 self-start text-teal-700 underline">
+      <button type="button" onClick={() => setLines((ls) => [...ls, { productId: '', unitId: '', quantity: '', totalCost: '' }])} className="btn btn--tertiary" style={{ alignSelf: 'flex-start' }}>
         + {t('purch.addLine')}
       </button>
-      {error && <p role="alert" className="text-red-700">{error}</p>}
+      {error && <p role="alert" className="field__error">{error}</p>}
       <div className="flex gap-3">
-        <button type="button" onClick={onDone} className="min-h-12 flex-1 rounded border border-slate-300">{t('purch.back')}</button>
+        <button type="button" onClick={onDone} className="btn btn--secondary flex-1">{t('purch.back')}</button>
         <button className={`${btn} flex-1`}>{t('purch.createOrder')}</button>
       </div>
     </form>
@@ -185,30 +185,30 @@ function OrderDetail({ ctx, purchaseId, onBack }: { ctx: Ctx; purchaseId: string
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <button onClick={onBack} className="min-h-12 self-start text-teal-700 underline">{t('purch.back')}</button>
-      <h3 className="text-xl font-semibold">{data.supplier?.name}</h3>
-      <p className="text-sm text-slate-600 dark:text-slate-300">
+    <div className="stack">
+      <button onClick={onBack} className="btn btn--tertiary" style={{ alignSelf: 'flex-start' }}>{t('purch.back')}</button>
+      <h3 className="h4">{data.supplier?.name}</h3>
+      <p className="body-md muted">
         {data.purchase.invoiceNumber ? `${data.purchase.invoiceNumber} · ` : ''}{data.purchase.orderedAt.slice(0, 10)} · <strong>{t(`purch.status.${status}`)}</strong>
       </p>
-      <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+      <ul className="list-wrap">
         {data.lines.map((l) => (
-          <li key={l.id} className="py-2">
-            <p className="font-medium">{data.products.get(l.productId)}</p>
-            <p className="text-sm">
+          <li key={l.id}>
+            <p className="body-md">{data.products.get(l.productId)}</p>
+            <p className="body-sm muted">
               {t('purch.ordered')} {l.baseQuantity} · {t('purch.received')} {got.get(l.id) ?? 0} · {t('purch.remaining')} {l.baseQuantity - (got.get(l.id) ?? 0)} · {formatXaf(l.totalCost)}
             </p>
           </li>
         ))}
       </ul>
       {status !== 'received' && canReceive && (
-        <form onSubmit={submit} className="flex flex-col gap-3 rounded border border-slate-200 p-3">
-          <h4 className="font-semibold">{t('purch.receiveGoods')}</h4>
-          <p className="text-xs text-slate-500">{t('purch.receiveHint')}</p>
+        <form onSubmit={submit} className="panel stack">
+          <h4 className="h6">{t('purch.receiveGoods')}</h4>
+          <p className="body-sm muted">{t('purch.receiveHint')}</p>
           {data.lines.filter((l) => (got.get(l.id) ?? 0) < l.baseQuantity).map((l) => (
             <Field key={l.id} label={`${data.products.get(l.productId)} (${t('purch.remaining')} ${l.baseQuantity - (got.get(l.id) ?? 0)})`}>
               <input className={input} inputMode="numeric" value={qty[l.id] ?? ''} onChange={(e) => setQty((q) => ({ ...q, [l.id]: e.target.value }))} />
-              {data.tracked.has(l.productId) && <input type="date" aria-label={t('expiry.dateOfGoods')} className={`${input} mt-1`} value={dates[l.id] ?? ''} onChange={(e) => setDates((d) => ({ ...d, [l.id]: e.target.value }))} />}
+              {data.tracked.has(l.productId) && <input type="date" aria-label={t('expiry.dateOfGoods')} className={input} style={{ marginTop: 8 }} value={dates[l.id] ?? ''} onChange={(e) => setDates((d) => ({ ...d, [l.id]: e.target.value }))} />}
             </Field>
           ))}
           {canPay && (
@@ -220,7 +220,7 @@ function OrderDetail({ ctx, purchaseId, onBack }: { ctx: Ctx; purchaseId: string
           <button className={btn}>{t('purch.receiveGoods')}</button>
         </form>
       )}
-      {msg && <p role="status" className="text-sm">{msg}</p>}
+      {msg && <p role="status" className="label-lg">{msg}</p>}
     </div>
   )
 }
@@ -247,20 +247,20 @@ export function PurchasesView() {
   if (view === 'reorder') return <ReorderView ctx={ctx} onBack={() => setView('list')} />
   if (view !== 'list') return <OrderDetail ctx={ctx} purchaseId={view} onBack={() => setView('list')} />
   return (
-    <div className="flex flex-col gap-3">
+    <div className="stack">
       {can(ctx.role, 'purchases.manage') && (
         <div className="flex gap-2">
           <button onClick={() => setView('new')} className={`${btn} flex-1`}>+ {t('purch.newOrder')}</button>
-          <button onClick={() => setView('reorder')} className="min-h-12 flex-1 rounded border border-slate-300 px-3">{t('reorder.open')}</button>
+          <button onClick={() => setView('reorder')} className="btn btn--secondary flex-1">{t('reorder.open')}</button>
         </div>
       )}
-      {rows.length === 0 && <p className="text-slate-500">{t('purch.noOrders')}</p>}
-      <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+      {rows.length === 0 && <p className="body-md muted">{t('purch.noOrders')}</p>}
+      <ul className="list-wrap">
         {rows.map(({ p, supplier, status, total }) => (
-          <li key={p.id}>
-            <button onClick={() => setView(p.id)} className="flex min-h-14 w-full items-center justify-between py-2 text-left">
-              <span>{supplier?.name}<span className="block text-sm text-slate-500">{p.orderedAt.slice(0, 10)} · {t(`purch.status.${status}`)}</span></span>
-              <span>{formatXaf(total)}</span>
+          <li key={p.id} style={{ padding: 0 }}>
+            <button onClick={() => setView(p.id)} className="flex w-full items-center justify-between text-left" style={{ padding: '15px 20px' }}>
+              <span>{supplier?.name}<span className="block body-sm muted">{p.orderedAt.slice(0, 10)} · {t(`purch.status.${status}`)}</span></span>
+              <span className="num">{formatXaf(total)}</span>
             </button>
           </li>
         ))}
@@ -291,14 +291,14 @@ function SupplierDetail({ ctx, supplierId, onBack }: { ctx: Ctx; supplierId: str
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <button onClick={onBack} className="min-h-12 self-start text-teal-700 underline">{t('purch.back')}</button>
-      <h3 className="text-xl font-semibold">{supplier?.name}</h3>
-      <p>{owed > 0 ? <>{t('purch.owedTo')}: <strong>{formatXaf(owed)}</strong></> : owed < 0 ? <>{t('purch.credit')}: <strong>{formatXaf(-owed)}</strong></> : t('purch.nothingOwed')}</p>
+    <div className="stack">
+      <button onClick={onBack} className="btn btn--tertiary" style={{ alignSelf: 'flex-start' }}>{t('purch.back')}</button>
+      <h3 className="h4">{supplier?.name}</h3>
+      <p className="body-md">{owed > 0 ? <>{t('purch.owedTo')}: <strong>{formatXaf(owed)}</strong></> : owed < 0 ? <>{t('purch.credit')}: <strong>{formatXaf(-owed)}</strong></> : t('purch.nothingOwed')}</p>
 
       {allowed && owed > 0 && (
-        <form onSubmit={(e) => { e.preventDefault(); void guard(async () => { await paySupplier(ctx, { supplierId, amount: Math.round(num(amount)), method }); setAmount('') }) }} className="flex flex-col gap-3 rounded border border-slate-200 p-3">
-          <h4 className="font-semibold">{t('purch.pay')}</h4>
+        <form onSubmit={(e) => { e.preventDefault(); void guard(async () => { await paySupplier(ctx, { supplierId, amount: Math.round(num(amount)), method }); setAmount('') }) }} className="panel stack">
+          <h4 className="h6">{t('purch.pay')}</h4>
           <Field label={t('purch.amount')}><input className={input} inputMode="numeric" required value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
           <Field label={t('purch.method')}><MethodSelect value={method} onChange={setMethod} /></Field>
           <button className={btn}>{t('purch.save')}</button>
@@ -306,8 +306,8 @@ function SupplierDetail({ ctx, supplierId, onBack }: { ctx: Ctx; supplierId: str
       )}
 
       {allowed && (
-        <form onSubmit={(e) => { e.preventDefault(); void guard(async () => { await returnToSupplier(ctx, { supplierId, productId: retProduct, baseQuantity: Math.round(num(retQty)), creditValue: Math.round(num(retCredit)), reason: retReason }); setRetQty(''); setRetCredit(''); setRetReason('') }) }} className="flex flex-col gap-3 rounded border border-slate-200 p-3">
-          <h4 className="font-semibold">{t('purch.returnGoods')}</h4>
+        <form onSubmit={(e) => { e.preventDefault(); void guard(async () => { await returnToSupplier(ctx, { supplierId, productId: retProduct, baseQuantity: Math.round(num(retQty)), creditValue: Math.round(num(retCredit)), reason: retReason }); setRetQty(''); setRetCredit(''); setRetReason('') }) }} className="panel stack">
+          <h4 className="h6">{t('purch.returnGoods')}</h4>
           <select className={input} required value={retProduct} onChange={(e) => setRetProduct(e.target.value)} aria-label={t('purch.product')}>
             <option value="">{t('purch.product')}</option>
             {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -318,17 +318,17 @@ function SupplierDetail({ ctx, supplierId, onBack }: { ctx: Ctx; supplierId: str
           <button className={btn}>{t('purch.save')}</button>
         </form>
       )}
-      {msg && <p role="status" className="text-sm">{msg}</p>}
+      {msg && <p role="status" className="label-lg">{msg}</p>}
 
       <SupplierPriceList ctx={ctx} supplierId={supplierId} />
 
       <section>
-        <h4 className="mb-2 font-semibold">{t('purch.statement')}</h4>
-        <ul className="divide-y divide-slate-200 text-sm dark:divide-slate-800">
+        <h4 className="h6" style={{ marginBottom: 10 }}>{t('purch.statement')}</h4>
+        <ul className="list-wrap">
           {supplierStatement(entries).map(({ entry, balance }) => (
-            <li key={entry.id} className="flex justify-between py-2">
+            <li key={entry.id} className="flex justify-between body-sm">
               <span>{entry.occurredAt.slice(0, 10)} · {t(`purch.kind.${entry.kind}`)}</span>
-              <span>{entry.amount > 0 ? '+' : ''}{formatXaf(entry.amount)} <span className="text-slate-500">→ {formatXaf(balance)}</span></span>
+              <span>{entry.amount > 0 ? '+' : ''}{formatXaf(entry.amount)} <span className="muted">→ {formatXaf(balance)}</span></span>
             </li>
           ))}
         </ul>
@@ -353,22 +353,22 @@ export function SuppliersView() {
   if (!ctx) return null
   if (sel) return <SupplierDetail ctx={ctx} supplierId={sel} onBack={() => setSel(null)} />
   return (
-    <div className="flex flex-col gap-3">
+    <div className="stack">
       {can(ctx.role, 'purchases.manage') && (
-        <form onSubmit={(e) => { e.preventDefault(); setErr(null); addSupplier(ctx, name, phone).then(() => { setName(''); setPhone('') }).catch((x: Error) => setErr(x.message)) }} className="flex flex-col gap-2 rounded border border-slate-200 p-3">
+        <form onSubmit={(e) => { e.preventDefault(); setErr(null); addSupplier(ctx, name, phone).then(() => { setName(''); setPhone('') }).catch((x: Error) => setErr(x.message)) }} className="panel stack">
           <input className={input} placeholder={t('purch.supplierName')} value={name} onChange={(e) => setName(e.target.value)} />
           <input className={input} placeholder={t('purch.phone')} inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          {err && <p role="alert" className="text-red-700">{err}</p>}
+          {err && <p role="alert" className="field__error">{err}</p>}
           <button className={btn}>+ {t('purch.newSupplier')}</button>
         </form>
       )}
-      {rows.length === 0 && <p className="text-slate-500">{t('purch.noSuppliers')}</p>}
-      <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+      {rows.length === 0 && <p className="body-md muted">{t('purch.noSuppliers')}</p>}
+      <ul className="list-wrap">
         {rows.map(({ s, owed }) => (
-          <li key={s.id}>
-            <button onClick={() => setSel(s.id)} className="flex min-h-14 w-full items-center justify-between py-2 text-left">
+          <li key={s.id} style={{ padding: 0 }}>
+            <button onClick={() => setSel(s.id)} className="flex w-full items-center justify-between text-left" style={{ padding: '15px 20px' }}>
               <span>{s.name}</span>
-              <span className={owed > 0 ? 'font-semibold text-red-700' : 'text-slate-500'}>{owed > 0 ? formatXaf(owed) : owed < 0 ? `+${formatXaf(-owed)}` : '—'}</span>
+              <span className={owed > 0 ? 'label-lg' : 'body-md muted'}>{owed > 0 ? `! ${formatXaf(owed)}` : owed < 0 ? `+${formatXaf(-owed)}` : '—'}</span>
             </button>
           </li>
         ))}

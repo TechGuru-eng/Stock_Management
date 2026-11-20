@@ -14,17 +14,17 @@ export function ProductSuppliers({ productId }: { productId: string }) {
   if (!data || data.prices.length === 0) return null
   const best = bestSuppliers(productId, currentQuotes(data.prices), data.units)
   return (
-    <section className="rounded border border-slate-200 p-3 text-sm dark:border-slate-700">
-      <h4 className="mb-1 font-semibold">{t('sprice.suppliers')}</h4>
-      <ul className="flex flex-col gap-1">
+    <section className="panel body-sm">
+      <h4 className="h6" style={{ marginBottom: 4 }}>{t('sprice.suppliers')}</h4>
+      <ul className="stack" style={{ gap: 4 }}>
         {best.rows.map((r, i) => (
           <li key={r.supplierId} className="flex justify-between gap-2">
-            <span>{data.names.get(r.supplierId) ?? '—'}{i === 0 && best.rows.length > 1 && <span className="ml-2 rounded bg-teal-100 px-1.5 py-0.5 text-xs font-medium text-teal-800">{t('sprice.cheapest')}</span>}</span>
-            <span className="tabular-nums">{formatXaf(r.price)} / {r.unitName}<span className="block text-right text-xs text-slate-500">{formatXaf(r.perBase)} / {t('sprice.base')} · {new Date(r.recordedAt).toLocaleDateString(i18n.language)}</span></span>
+            <span>{data.names.get(r.supplierId) ?? '—'}{i === 0 && best.rows.length > 1 && <span className="tag tag--solid" style={{ marginLeft: 8 }}>{t('sprice.cheapest')}</span>}</span>
+            <span className="num">{formatXaf(r.price)} / {r.unitName}<span className="block text-right label-lg muted">{formatXaf(r.perBase)} / {t('sprice.base')} · {new Date(r.recordedAt).toLocaleDateString(i18n.language)}</span></span>
           </li>
         ))}
       </ul>
-      {best.cheapestSavingBp !== null && best.cheapestSavingBp < 0 && <p className="mt-1 text-xs text-slate-500">{t('sprice.saving', { pct: Math.abs(best.cheapestSavingBp / 100).toFixed(0) })}</p>}
+      {best.cheapestSavingBp !== null && best.cheapestSavingBp < 0 && <p className="label-lg muted" style={{ marginTop: 4 }}>{t('sprice.saving', { pct: Math.abs(best.cheapestSavingBp / 100).toFixed(0) })}</p>}
     </section>
   )
 }

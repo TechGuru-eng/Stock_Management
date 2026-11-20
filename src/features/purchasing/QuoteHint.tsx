@@ -29,15 +29,15 @@ export function QuoteHint({ supplierId, productId, unitId, quantity, totalCost, 
   const warn = enteredPerBase !== null ? costWarning(enteredPerBase, info.quote ? perBaseUnit(info.quote.price, info.factor) : null, info.paid?.baseCost ?? null) : null
 
   return (
-    <div className="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-300">
+    <div className="stack body-sm muted" style={{ gap: 4 }}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         {info.quote && <span>{t('sprice.quoted', { price: formatXaf(info.quote.price), unit: info.unitName })}</span>}
         {info.paid && <span>{t('sprice.lastPaid', { cost: formatXaf(info.paid.baseCost), date: new Date(info.paid.at).toLocaleDateString(i18n.language) })}</span>}
         {info.quote && quantity > 0 && (
-          <button type="button" className="font-medium text-teal-700 underline" onClick={() => onUse(suggestedTotal(info.quote!.price, quantity))}>{t('sprice.use', { total: formatXaf(suggestedTotal(info.quote.price, quantity)) })}</button>
+          <button type="button" className="btn btn--tertiary" style={{ height: 'auto', padding: 0 }} onClick={() => onUse(suggestedTotal(info.quote!.price, quantity))}>{t('sprice.use', { total: formatXaf(suggestedTotal(info.quote.price, quantity)) })}</button>
         )}
       </div>
-      {warn && <p role="alert" className="rounded bg-amber-50 p-1 text-amber-900 dark:bg-amber-950 dark:text-amber-100">{t(`sprice.warn.${warn}`)}</p>}
+      {warn && <p role="alert" className="field__error">{t(`sprice.warn.${warn}`)}</p>}
     </div>
   )
 }

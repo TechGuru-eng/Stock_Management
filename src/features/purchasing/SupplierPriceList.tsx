@@ -12,9 +12,9 @@ import { can } from '../../domain/permissions'
 import { planSupplierImport, type SupplierPlan } from '../../domain/supplierPriceImport'
 import { changeBp, currentQuotes, isStale, lastPaid, perBaseUnit, quoteHistory } from '../../domain/supplierPrices'
 
-const input = 'min-h-12 w-full rounded border border-slate-300 bg-transparent px-3'
-const btn = 'min-h-12 rounded bg-teal-700 px-4 font-semibold text-white disabled:opacity-60'
-const btn2 = 'min-h-12 rounded border border-slate-300 px-4'
+const input = 'input'
+const btn = 'btn btn--primary'
+const btn2 = 'btn btn--secondary'
 
 /** A supplier's price list: what they quote, what we really paid last time, how it moved. Quotes can be typed or imported from a file. */
 export function SupplierPriceList({ ctx, supplierId }: { ctx: Ctx; supplierId: string }) {
@@ -67,12 +67,12 @@ export function SupplierPriceList({ ctx, supplierId }: { ctx: Ctx; supplierId: s
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded border border-slate-200 p-3 dark:border-slate-700">
-      <h4 className="font-semibold">{t('sprice.title')}</h4>
-      <p className="text-xs text-slate-500">{t('sprice.hint')}</p>
+    <section className="panel stack">
+      <h4 className="h6">{t('sprice.title')}</h4>
+      <p className="body-sm muted">{t('sprice.hint')}</p>
 
-      {rows.length === 0 && <p className="text-sm text-slate-500">{t('sprice.none')}</p>}
-      <ul className="flex flex-col gap-2">
+      {rows.length === 0 && <p className="body-md muted">{t('sprice.none')}</p>}
+      <ul className="stack" style={{ gap: 8 }}>
         {rows.map((q) => {
           const u = unitOf.get(q.unitId)
           const hist = quoteHistory(data.prices, q)
@@ -81,29 +81,29 @@ export function SupplierPriceList({ ctx, supplierId }: { ctx: Ctx; supplierId: s
           const p = paid.get(`${supplierId}|${q.productId}`)
           const k = `${q.productId}|${q.unitId}`
           return (
-            <li key={k} className="rounded border border-slate-200 p-2 text-sm dark:border-slate-700">
+            <li key={k} className="panel body-sm" style={{ padding: 10 }}>
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="font-medium">{productName.get(q.productId) ?? '—'} <span className="text-slate-500">({u?.name})</span></div>
-                  <div className="text-xs text-slate-500">
+                  <div className="body-md">{productName.get(q.productId) ?? '—'} <span className="muted">({u?.name})</span></div>
+                  <div className="body-sm muted">
                     {u && u.factor > 1 && `${formatXaf(perBaseUnit(q.price, u.factor))} / ${t('sprice.base')} · `}
                     {p && `${t('sprice.lastPaid', { cost: formatXaf(p.baseCost), date: new Date(p.at).toLocaleDateString(i18n.language) })} · `}
-                    {isStale(q.recordedAt, new Date()) ? <span className="text-amber-700">{t('sprice.stale')}</span> : new Date(q.recordedAt).toLocaleDateString(i18n.language)}
+                    {isStale(q.recordedAt, new Date()) ? <span>! {t('sprice.stale')}</span> : new Date(q.recordedAt).toLocaleDateString(i18n.language)}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-semibold tabular-nums">{formatXaf(q.price)}</div>
-                  {move !== null && move !== 0 && <div className={`text-xs ${move > 0 ? 'text-red-700' : 'text-teal-700'}`}>{move > 0 ? '▲' : '▼'} {Math.abs(move / 100).toFixed(1)} %</div>}
+                  <div className="num">{formatXaf(q.price)}</div>
+                  {move !== null && move !== 0 && <div className="label-lg muted">{move > 0 ? '▲' : '▼'} {Math.abs(move / 100).toFixed(1)} %</div>}
                 </div>
               </div>
               {allowed && (
-                <div className="mt-2 flex gap-2">
-                  <input aria-label={t('sprice.newPrice')} inputMode="numeric" className={`${input} !min-h-10 w-28 text-right`} placeholder={t('sprice.newPrice')} value={edit[k] ?? ''} onChange={(e) => setEdit({ ...edit, [k]: e.target.value.replace(/\D/g, '') })} />
-                  <button className={`${btn2} !min-h-10`} disabled={!edit[k]} onClick={() => void run(async () => { await setSupplierPrice(ctx, { supplierId, productId: q.productId, unitId: q.unitId, price: Number(edit[k]) }); setEdit({ ...edit, [k]: '' }) })}>{t('sprice.update')}</button>
-                  {hist.length > 1 && <button className="text-xs text-teal-700 underline" onClick={() => setOpen(open === k ? null : k)}>{t('sprice.history')}</button>}
+                <div className="flex gap-2" style={{ marginTop: 8 }}>
+                  <input aria-label={t('sprice.newPrice')} inputMode="numeric" className={`${input} text-right`} style={{ maxWidth: 110 }} placeholder={t('sprice.newPrice')} value={edit[k] ?? ''} onChange={(e) => setEdit({ ...edit, [k]: e.target.value.replace(/\D/g, '') })} />
+                  <button className={btn2} disabled={!edit[k]} onClick={() => void run(async () => { await setSupplierPrice(ctx, { supplierId, productId: q.productId, unitId: q.unitId, price: Number(edit[k]) }); setEdit({ ...edit, [k]: '' }) })}>{t('sprice.update')}</button>
+                  {hist.length > 1 && <button className="btn btn--tertiary" onClick={() => setOpen(open === k ? null : k)}>{t('sprice.history')}</button>}
                 </div>
               )}
-              {open === k && <ul className="mt-1 text-xs text-slate-600 dark:text-slate-300">{hist.map((h) => <li key={h.id}>{new Date(h.recordedAt).toLocaleDateString(i18n.language)} · {formatXaf(h.price)}{h.source === 'import' ? ` · ${t('sprice.imported')}` : ''}</li>)}</ul>}
+              {open === k && <ul className="body-sm muted stack" style={{ gap: 2, marginTop: 4 }}>{hist.map((h) => <li key={h.id}>{new Date(h.recordedAt).toLocaleDateString(i18n.language)} · {formatXaf(h.price)}{h.source === 'import' ? ` · ${t('sprice.imported')}` : ''}</li>)}</ul>}
             </li>
           )
         })}
@@ -113,9 +113,9 @@ export function SupplierPriceList({ ctx, supplierId }: { ctx: Ctx; supplierId: s
         <>
           <form
             onSubmit={(e) => { e.preventDefault(); void run(async () => { await setSupplierPrice(ctx, { supplierId, productId, unitId: unitId || chosenUnits.find((u) => u.isBase)!.id, price: Number(price) }); setPrice('') }) }}
-            className="flex flex-col gap-2 border-t border-slate-200 pt-3 dark:border-slate-700"
+            className="stack" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 15 }}
           >
-            <h5 className="text-sm font-medium">{t('sprice.add')}</h5>
+            <h5 className="label-lg">{t('sprice.add')}</h5>
             <select className={input} value={productId} onChange={(e) => { setProductId(e.target.value); setUnitId('') }} aria-label={t('purch.product')} required>
               <option value="">{t('purch.product')}</option>
               {products.filter((p) => p.active && !p.isService).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -131,23 +131,23 @@ export function SupplierPriceList({ ctx, supplierId }: { ctx: Ctx; supplierId: s
             </div>
           </form>
 
-          <div className="flex flex-col gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
-            <h5 className="text-sm font-medium">{t('sprice.import')}</h5>
-            <p className="text-xs text-slate-500">{t('sprice.importHint')}</p>
+          <div className="stack" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 15 }}>
+            <h5 className="label-lg">{t('sprice.import')}</h5>
+            <p className="body-sm muted">{t('sprice.importHint')}</p>
             <div className="flex gap-2">
               <button className={btn2} onClick={() => downloadText('stockcm-supplier-prices-template.csv', '﻿name;barcode;unit;price\r\nEau 1.5L;5449000000996;carton;7000\r\n')}>{t('importStock.template')}</button>
-              <label className={`${btn} flex cursor-pointer items-center`}>{t('import.choose')}<input type="file" accept=".csv,.txt,text/csv" className="sr-only" onChange={(e) => void onFile(e)} /></label>
+              <label className="btn btn--primary" style={{ cursor: 'pointer' }}>{t('import.choose')}<input type="file" accept=".csv,.txt,text/csv" className="sr-only" onChange={(e) => void onFile(e)} /></label>
             </div>
-            {plan?.fatal && <p role="alert" className="rounded bg-red-50 p-2 text-sm text-red-800">{t(`import.fatal.${plan.fatal}`)}</p>}
+            {plan?.fatal && <p role="alert" className="field__error">{t(`import.fatal.${plan.fatal}`)}</p>}
             {plan && !plan.fatal && !result && (
-              <div className="flex flex-col gap-2">
-                <p className="text-sm"><strong>{fileName}</strong> — {t('sprice.summary', { newQuotes: plan.counts.newQuotes, changed: plan.counts.changed, unchanged: plan.counts.unchanged, error: plan.counts.error })}</p>
-                {plan.counts.flagged > 0 && <label className="flex items-start gap-2 rounded bg-amber-50 p-2 text-sm text-amber-900"><input type="checkbox" className="mt-1" checked={includeFlagged} onChange={(e) => setIncludeFlagged(e.target.checked)} /> {t('sprice.flagged', { n: plan.counts.flagged })}</label>}
-                <ul className="flex flex-col gap-1 text-sm">
+              <div className="stack">
+                <p className="body-md"><strong>{fileName}</strong> — {t('sprice.summary', { newQuotes: plan.counts.newQuotes, changed: plan.counts.changed, unchanged: plan.counts.unchanged, error: plan.counts.error })}</p>
+                {plan.counts.flagged > 0 && <label className="check-row body-md panel panel--flag" style={{ alignItems: 'flex-start' }}><input type="checkbox" checked={includeFlagged} onChange={(e) => setIncludeFlagged(e.target.checked)} /> {t('sprice.flagged', { n: plan.counts.flagged })}</label>}
+                <ul className="stack" style={{ gap: 4 }}>
                   {plan.rows.filter((r) => r.kind !== 'unchanged').slice(0, 200).map((r) => (
-                    <li key={r.line} className={`rounded border p-2 ${r.kind === 'error' ? 'border-red-300 bg-red-50' : r.kind === 'set' && r.flagged ? 'border-amber-300 bg-amber-50' : 'border-slate-200'}`}>
-                      <span className="text-xs text-slate-500">{t('import.line', { n: r.line })} · </span>
-                      {r.kind === 'error' && <><strong>{r.name || '—'}</strong>: <span className="text-red-800">{t(`sprice.problem.${r.problem}`)}</span></>}
+                    <li key={r.line} className={`body-sm panel${r.kind === 'error' || (r.kind === 'set' && r.flagged) ? ' panel--flag' : ''}`} style={{ padding: 10 }}>
+                      <span className="muted">{t('import.line', { n: r.line })} · </span>
+                      {r.kind === 'error' && <><strong>{r.name || '—'}</strong>: <span>! {t(`sprice.problem.${r.problem}`)}</span></>}
                       {r.kind === 'set' && <><strong>{r.name}</strong> ({r.unitName}) — {r.oldPrice === null ? t('sprice.new') : formatXaf(r.oldPrice)} → {formatXaf(r.newPrice)}{r.changeBp !== null && ` (${r.changeBp > 0 ? '+' : ''}${(r.changeBp / 100).toFixed(1)} %)`}</>}
                     </li>
                   ))}
@@ -162,15 +162,15 @@ export function SupplierPriceList({ ctx, supplierId }: { ctx: Ctx; supplierId: s
               </div>
             )}
             {result && (
-              <div className="text-sm"><p role="status" className="font-semibold text-teal-700">{t('sprice.done', { n: result.saved })}</p>
-                {result.skipped > 0 && <p className="text-amber-800">{t('sprice.skipped', { n: result.skipped })}</p>}
-                {result.failed.map((f) => <p key={f.line} className="text-red-800">{t('import.line', { n: f.line })} · {f.name}: {f.message}</p>)}
+              <div className="body-sm"><p role="status" className="label-lg">{t('sprice.done', { n: result.saved })}</p>
+                {result.skipped > 0 && <p className="muted">{t('sprice.skipped', { n: result.skipped })}</p>}
+                {result.failed.map((f) => <p key={f.line} className="field__error">{t('import.line', { n: f.line })} · {f.name}: {f.message}</p>)}
               </div>
             )}
           </div>
         </>
       )}
-      {msg && <p role="status" className="text-sm">{msg}</p>}
+      {msg && <p role="status" className="label-lg">{msg}</p>}
     </section>
   )
 }
