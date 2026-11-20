@@ -27,14 +27,14 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]) {
   return { ...state, reload: run }
 }
 
-export const inputCls = 'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 disabled:bg-slate-100'
+export const inputCls = 'field__input'
 
 export function Button({ children, onClick, kind = 'primary', disabled, type = 'button' }: {
   children: ReactNode; onClick?: () => void; kind?: 'primary' | 'secondary' | 'danger'; disabled?: boolean; type?: 'button' | 'submit'
 }) {
-  const k = kind === 'primary' ? 'bg-teal-700 text-white hover:bg-teal-800' : kind === 'danger' ? 'bg-red-600 text-white hover:bg-red-700' : 'border border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+  const k = kind === 'primary' ? 'btn--primary' : kind === 'danger' ? 'btn--danger' : 'btn--secondary'
   return (
-    <button type={type} disabled={disabled} onClick={onClick} className={`rounded-md px-3 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 ${k}`}>
+    <button type={type} disabled={disabled} onClick={onClick} className={`btn ${k}`}>
       {children}
     </button>
   )
@@ -42,10 +42,10 @@ export function Button({ children, onClick, kind = 'primary', disabled, type = '
 
 export function Card({ title, children, action }: { title?: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <section className="panel">
       {(title || action) && (
-        <div className="mb-3 flex items-center justify-between gap-2">
-          {title && <h2 className="text-sm font-semibold text-slate-900">{title}</h2>}
+        <div className="panel__head">
+          {title && <h2 className="h6">{title}</h2>}
           {action}
         </div>
       )}
@@ -55,33 +55,32 @@ export function Card({ title, children, action }: { title?: string; children: Re
 }
 
 export function Stat({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: string; tone?: 'warn' | 'bad' }) {
-  const c = tone === 'bad' ? 'text-red-700' : tone === 'warn' ? 'text-amber-700' : 'text-slate-900'
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="text-xs font-medium text-slate-500">{label}</div>
-      <div className={`mt-1 text-2xl font-semibold tabular-nums ${c}`}>{value}</div>
-      {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
+    <div className={`stat-tile${tone ? ' stat-tile--flag' : ''}`}>
+      <div className="label-lg muted">{label}</div>
+      <div className="stat-tile__value h3">{value}</div>
+      {hint && <div className="stat-tile__hint body-sm">{hint}</div>}
     </div>
   )
 }
 
 const BADGE: Record<string, string> = {
-  trial: 'bg-sky-100 text-sky-800', active: 'bg-emerald-100 text-emerald-800', grace: 'bg-amber-100 text-amber-800',
-  expired: 'bg-red-100 text-red-800', suspended: 'bg-slate-800 text-white',
-  pending: 'bg-amber-100 text-amber-800', recorded: 'bg-emerald-100 text-emerald-800', provider_verified: 'bg-emerald-100 text-emerald-800',
-  failed: 'bg-red-100 text-red-800', refunded: 'bg-slate-200 text-slate-800',
+  trial: 'tag--outline', active: 'tag--solid', grace: 'tag--flag',
+  expired: 'tag--flag', suspended: 'tag--flag',
+  pending: 'tag--outline', recorded: 'tag--solid', provider_verified: 'tag--solid',
+  failed: 'tag--flag', refunded: '',
 }
 export function Badge({ value }: { value: SubState | string }) {
-  return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${BADGE[value] ?? 'bg-slate-100 text-slate-700'}`}>{value.replace('_', ' ')}</span>
+  return <span className={`tag ${BADGE[value] ?? ''}`}>{value.replace('_', ' ')}</span>
 }
 
 export function ErrorNote({ message }: { message: string | null }) {
   if (!message) return null
-  return <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{message}</p>
+  return <p role="alert" className="field__error">{message}</p>
 }
 
 export function Loading() {
-  return <p className="py-6 text-center text-sm text-slate-500">Loading…</p>
+  return <p className="body-md muted" style={{ padding: '24px 0', textAlign: 'center' }}>Loading…</p>
 }
 
 /** Asks for a written reason before a sensitive action. The reason is stored in the audit log. */
@@ -96,17 +95,17 @@ export function ReasonDialog({ title, description, label = 'Reason', minLength =
   useEffect(() => ref.current?.focus(), [])
   const ok = reason.trim().length >= minLength
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
-        <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-        {description && <p className="mt-1 text-sm text-slate-600">{description}</p>}
-        {extra && <div className="mt-3">{extra}</div>}
-        <label className="mt-3 block text-sm font-medium text-slate-700">
-          {label} <span className="font-normal text-slate-500">(at least {minLength} characters, saved in the audit log)</span>
-          <textarea ref={ref} rows={3} value={reason} onChange={(e) => setReason(e.target.value)} className={`${inputCls} mt-1`} />
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="modal">
+        <h3 className="h5">{title}</h3>
+        {description && <p className="body-md muted">{description}</p>}
+        {extra}
+        <label className="field">
+          <span>{label} <span style={{ textTransform: 'none' }}>(at least {minLength} characters, saved in the audit log)</span></span>
+          <textarea ref={ref} rows={3} value={reason} onChange={(e) => setReason(e.target.value)} className="input" />
         </label>
-        <div className="mt-3"><ErrorNote message={error} /></div>
-        <div className="mt-4 flex justify-end gap-2">
+        <ErrorNote message={error} />
+        <div className="btn-row" style={{ justifyContent: 'flex-end' }}>
           <Button kind="secondary" onClick={onClose} disabled={busy}>Cancel</Button>
           <Button
             kind={danger ? 'danger' : 'primary'}

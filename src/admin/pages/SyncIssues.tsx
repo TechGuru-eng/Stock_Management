@@ -13,30 +13,30 @@ export function SyncIssues() {
   const [act, setAct] = useState<SyncIssueRow | null>(null)
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-slate-600">
+    <div className="stack">
+      <p className="body-sm muted">
         A device reports an issue here when it tries to sync an operation the server rejects (e.g. a blocked oversell)
         or that conflicts with another device's edit. Most clear on their own once the business fixes the underlying
         problem and syncs again; resolve one here only once you have confirmed it is handled.
       </p>
       {list.loading && !list.data ? <Loading /> : <ErrorNote message={list.error} />}
       {list.data && (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-          <table className="w-full min-w-[48rem] text-sm">
-            <thead className="bg-slate-50 text-left text-xs text-slate-500"><tr><th className="p-3 font-medium">Business</th><th className="p-3 font-medium">Kind</th><th className="p-3 font-medium">Error</th><th className="p-3 font-medium">Device</th><th className="p-3 font-medium">First seen</th><th className="p-3 font-medium">Last seen</th><th className="p-3" /></tr></thead>
+        <div className="table-wrap">
+          <table className="table" style={{ minWidth: '48rem' }}>
+            <thead><tr><th>Business</th><th>Kind</th><th>Error</th><th>Device</th><th>First seen</th><th>Last seen</th><th /></tr></thead>
             <tbody>
               {list.data.map((i) => (
-                <tr key={i.id} className="border-t border-slate-100 align-top">
-                  <td className="p-3 font-medium">{i.business}</td>
-                  <td className="p-3">{KIND_LABEL[i.kind]}</td>
-                  <td className="p-3 max-w-[20rem] text-xs text-slate-600">{i.error ?? '—'}</td>
-                  <td className="p-3 text-xs text-slate-500">{i.device ?? '—'}</td>
-                  <td className="p-3">{fmtTime(i.first_seen)}</td>
-                  <td className="p-3">{fmtTime(i.last_seen)}</td>
-                  <td className="p-3 text-right"><button className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100" onClick={() => setAct(i)}>Resolve</button></td>
+                <tr key={i.id}>
+                  <td className="body-md">{i.business}</td>
+                  <td>{KIND_LABEL[i.kind]}</td>
+                  <td className="body-sm muted" style={{ maxWidth: '20rem' }}>{i.error ?? '—'}</td>
+                  <td className="body-sm muted">{i.device ?? '—'}</td>
+                  <td>{fmtTime(i.first_seen)}</td>
+                  <td>{fmtTime(i.last_seen)}</td>
+                  <td style={{ textAlign: 'right' }}><button className="btn btn--secondary btn--sm" onClick={() => setAct(i)}>Resolve</button></td>
                 </tr>
               ))}
-              {list.data.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-slate-500">No open sync issues.</td></tr>}
+              {list.data.length === 0 && <tr><td colSpan={7} className="table-empty">No open sync issues.</td></tr>}
             </tbody>
           </table>
         </div>

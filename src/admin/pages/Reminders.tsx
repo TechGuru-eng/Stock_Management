@@ -31,44 +31,44 @@ export function Reminders() {
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-slate-600">
+    <div className="stack">
+      <p className="body-sm muted">
         Businesses whose subscription ends within 5 days or ended in the last 30 days. “Open WhatsApp” opens a chat with the message already
         typed; you press Send. Nothing is sent automatically. The wording comes from System settings → Message templates (or the built-in text).
         Viewing this list and opening a chat are recorded in the audit log.
       </p>
       <ErrorNote message={error} />
-      {rows.length === 0 && <p className="rounded-lg border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">Nobody needs a reminder right now.</p>}
-      <ul className="space-y-3">
+      {rows.length === 0 && <p className="panel body-md muted" style={{ textAlign: 'center' }}>Nobody needs a reminder right now.</p>}
+      <ul className="stack">
         {rows.map((r) => {
           const l: Lang = lang[r.tenant_id] ?? (r.language === 'en' ? 'en' : 'fr')
           const b = build(r, l)
           return (
-            <li key={r.tenant_id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="flex flex-wrap items-start justify-between gap-2">
+            <li key={r.tenant_id} className="panel">
+              <div className="panel__head" style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 <div>
-                  <div className="font-medium">{r.business}</div>
-                  <div className="text-sm text-slate-600">{r.owner_name ?? '—'} · {r.owner_phone ?? 'no phone'} · {r.plan_code}</div>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                    <Badge value={r.state} /> ends {fmtDate(r.period_end)} ({b.days >= 0 ? `${b.days} days left` : `${-b.days} days ago`}) · {KIND_LABEL[b.kind]}
-                    {r.last_reminder && <span>· last reminder {fmtDate(r.last_reminder)}</span>}
+                  <div className="body-md">{r.business}</div>
+                  <div className="body-sm muted">{r.owner_name ?? '—'} · {r.owner_phone ?? 'no phone'} · {r.plan_code}</div>
+                  <div className="btn-row" style={{ alignItems: 'center', marginTop: 4 }}>
+                    <Badge value={r.state} /> <span className="body-sm muted">ends {fmtDate(r.period_end)} ({b.days >= 0 ? `${b.days} days left` : `${-b.days} days ago`}) · {KIND_LABEL[b.kind]}
+                    {r.last_reminder && ` · last reminder ${fmtDate(r.last_reminder)}`}</span>
                   </div>
                 </div>
-                <select aria-label="Message language" className="rounded-md border border-slate-300 px-2 py-1 text-sm" value={l} onChange={(e) => setLang({ ...lang, [r.tenant_id]: e.target.value as Lang })}>
+                <select aria-label="Message language" className="input" style={{ maxWidth: 140 }} value={l} onChange={(e) => setLang({ ...lang, [r.tenant_id]: e.target.value as Lang })}>
                   <option value="fr">Français</option><option value="en">English</option>
                 </select>
               </div>
-              <p className="mt-2 whitespace-pre-wrap rounded-md bg-slate-50 p-2 text-sm text-slate-700">{b.text}</p>
-              <div className="mt-2">
+              <p className="body-sm" style={{ whiteSpace: 'pre-wrap', background: 'var(--bg-base)', borderRadius: 'var(--radius-10)', padding: 10, marginTop: 10 }}>{b.text}</p>
+              <div style={{ marginTop: 10 }}>
                 {b.link ? (
                   <a
                     href={b.link} target="_blank" rel="noopener noreferrer"
                     onClick={() => { setError(null); api.noteReminder(r.tenant_id, b.kind).then(data.reload, (e: unknown) => setError(e instanceof Error ? e.message : 'Failed')) }}
-                    className="inline-block rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+                    className="btn btn--primary"
                   >
                     Open WhatsApp
                   </a>
-                ) : <span className="text-sm text-amber-700">No usable phone number on file.</span>}
+                ) : <span className="field__error">No usable phone number on file.</span>}
               </div>
             </li>
           )

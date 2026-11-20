@@ -12,8 +12,8 @@ export function Overview() {
   const d = o.data
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="stack">
+      <div className="panel-grid">
         <Stat label="Businesses" value={d.businesses} hint={`${d.active_shops} active shops`} />
         <Stat label="Paying" value={d.paying} hint={`${d.trial} on trial`} />
         <Stat label="In grace period" value={d.grace} tone={d.grace > 0 ? 'warn' : undefined} hint="Payment overdue, still working" />
@@ -25,17 +25,17 @@ export function Overview() {
       </div>
 
       <Card title="Device sync health">
-        <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <div><div className="text-slate-500">Devices</div><div className="text-lg font-semibold tabular-nums">{d.devices.total}</div></div>
-          <div><div className="text-slate-500">Synced in 24 h</div><div className="text-lg font-semibold tabular-nums">{d.devices.synced_24h}</div></div>
-          <div><div className="text-slate-500">Silent over 48 h</div><div className="text-lg font-semibold tabular-nums">{d.devices.stale_over_48h}</div></div>
-          <div><div className="text-slate-500">Silent over 30 days</div><div className={`text-lg font-semibold tabular-nums ${d.devices.stale_over_30d ? 'text-red-700' : ''}`}>{d.devices.stale_over_30d}</div></div>
+        <div className="panel-grid">
+          <div><div className="label-lg muted">Devices</div><div className="h5">{d.devices.total}</div></div>
+          <div><div className="label-lg muted">Synced in 24 h</div><div className="h5">{d.devices.synced_24h}</div></div>
+          <div><div className="label-lg muted">Silent over 48 h</div><div className="h5">{d.devices.stale_over_48h}</div></div>
+          <div><div className="label-lg muted">Silent over 30 days</div><div className="h5">{d.devices.stale_over_30d > 0 ? `! ${d.devices.stale_over_30d}` : d.devices.stale_over_30d}</div></div>
         </div>
-        <p className="mt-2 text-xs text-slate-500">Devices silent for 30 days are in read-only mode until they connect.</p>
+        <p className="body-sm muted" style={{ marginTop: 10 }}>Devices silent for 30 days are in read-only mode until they connect.</p>
       </Card>
 
       {rev.data && (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="panel-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
           <Card title="Revenue by month">
             <Table head={['Month', 'Invoices', 'Amount']} rows={rev.data.by_month.map((m) => [m.month, String(m.invoices), fmtXaf(m.amount)])} empty="No invoices yet." />
           </Card>
@@ -49,11 +49,11 @@ export function Overview() {
 }
 
 function Table({ head, rows, empty }: { head: string[]; rows: string[][]; empty: string }) {
-  if (!rows.length) return <p className="text-sm text-slate-500">{empty}</p>
+  if (!rows.length) return <p className="body-sm muted">{empty}</p>
   return (
-    <table className="w-full text-sm">
-      <thead><tr className="text-left text-xs text-slate-500">{head.map((h, i) => <th key={h} className={`pb-1 font-medium ${i ? 'text-right' : ''}`}>{h}</th>)}</tr></thead>
-      <tbody>{rows.map((r) => <tr key={r[0]} className="border-t border-slate-100">{r.map((c, i) => <td key={i} className={`py-1.5 tabular-nums ${i ? 'text-right' : ''}`}>{c}</td>)}</tr>)}</tbody>
+    <table className="table">
+      <thead><tr>{head.map((h, i) => <th key={h} className={i ? 'num' : undefined}>{h}</th>)}</tr></thead>
+      <tbody>{rows.map((r) => <tr key={r[0]}>{r.map((c, i) => <td key={i} className={i ? 'num' : undefined}>{c}</td>)}</tr>)}</tbody>
     </table>
   )
 }

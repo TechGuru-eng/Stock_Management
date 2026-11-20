@@ -6,23 +6,23 @@ export function Audit() {
   const log = useAsync(() => api.audit(200), [api])
   if (log.loading && !log.data) return <Loading />
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-slate-600">Every administrator action and every sensitive view, newest first. This record cannot be edited or deleted.</p>
+    <div className="stack">
+      <p className="body-sm muted">Every administrator action and every sensitive view, newest first. This record cannot be edited or deleted.</p>
       <ErrorNote message={log.error} />
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table className="w-full min-w-[40rem] text-sm">
-          <thead className="bg-slate-50 text-left text-xs text-slate-500"><tr><th className="p-3 font-medium">When</th><th className="p-3 font-medium">Action</th><th className="p-3 font-medium">Business</th><th className="p-3 font-medium">Details</th><th className="p-3 font-medium">Admin</th></tr></thead>
+      <div className="table-wrap">
+        <table className="table" style={{ minWidth: '40rem' }}>
+          <thead><tr><th>When</th><th>Action</th><th>Business</th><th>Details</th><th>Admin</th></tr></thead>
           <tbody>
             {log.data?.map((r) => (
-              <tr key={r.id} className="border-t border-slate-100 align-top">
-                <td className="whitespace-nowrap p-3">{fmtTime(r.at)}</td>
-                <td className="p-3 font-mono text-xs">{r.action}</td>
-                <td className="p-3">{r.business ?? '—'}</td>
-                <td className="max-w-xs break-words p-3 text-xs text-slate-600">{r.detail ? Object.entries(r.detail).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : String(v)}`).join(' · ') : ''}</td>
-                <td className="p-3 font-mono text-xs text-slate-500">{r.admin_id.slice(0, 8)}</td>
+              <tr key={r.id}>
+                <td style={{ whiteSpace: 'nowrap' }}>{fmtTime(r.at)}</td>
+                <td className="body-sm" style={{ fontFamily: 'var(--font-ui)' }}>{r.action}</td>
+                <td>{r.business ?? '—'}</td>
+                <td className="body-sm muted" style={{ maxWidth: '20rem', wordBreak: 'break-word' }}>{r.detail ? Object.entries(r.detail).map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : String(v)}`).join(' · ') : ''}</td>
+                <td className="body-sm muted" style={{ fontFamily: 'var(--font-ui)' }}>{r.admin_id.slice(0, 8)}</td>
               </tr>
             ))}
-            {log.data?.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-slate-500">Nothing recorded yet.</td></tr>}
+            {log.data?.length === 0 && <tr><td colSpan={5} className="table-empty">Nothing recorded yet.</td></tr>}
           </tbody>
         </table>
       </div>

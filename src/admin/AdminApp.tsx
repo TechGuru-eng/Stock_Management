@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import '../marketing/editorial/styles.css'
+import { useEditorialFonts } from '../marketing/editorial/fonts'
 import type { AdminApi, Whoami } from './api'
 import { AdminContext } from './ctx'
 import { Login } from './Login'
@@ -22,6 +24,7 @@ const TITLES: Record<AdminPage, string> = {
 type Phase = 'boot' | 'credentials' | 'code' | 'ready'
 
 export function AdminApp({ api }: { api: AdminApi }) {
+  useEditorialFonts()
   const [phase, setPhase] = useState<Phase>('boot')
   const [me, setMe] = useState<Whoami | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -61,14 +64,14 @@ export function AdminApp({ api }: { api: AdminApi }) {
     return () => { evs.forEach((e) => window.removeEventListener(e, reset)); if (timer.current) clearTimeout(timer.current) }
   }, [phase, signOut])
 
-  if (phase === 'boot') return <p className="p-8 text-center text-sm text-slate-500">Loading…</p>
+  if (phase === 'boot') return <div className="editorial-taste"><p className="body-md muted" style={{ padding: 32, textAlign: 'center' }}>Loading…</p></div>
 
   if (phase === 'credentials' || phase === 'code') {
     return (
-      <>
-        {notice && <p role="status" className="bg-amber-100 px-4 py-2 text-center text-sm text-amber-900">{notice}</p>}
+      <div className="editorial-taste">
+        {notice && <p role="status" className="notice notice--amber label-lg" style={{ textAlign: 'center', borderRadius: 0 }}>{notice}</p>}
         <Login api={api} step={phase} onDone={() => { setNotice(null); void check() }} />
-      </>
+      </div>
     )
   }
 
@@ -78,25 +81,25 @@ export function AdminApp({ api }: { api: AdminApi }) {
 
   return (
     <AdminContext.Provider value={{ api, role }}>
-      <div className="min-h-dvh bg-slate-50 text-slate-900 md:flex">
-        <nav className="border-b border-slate-200 bg-white md:w-56 md:shrink-0 md:border-b-0 md:border-r" aria-label="Sections">
-          <div className="flex items-center justify-between px-4 py-3 md:block">
+      <div className="editorial-taste app-shell">
+        <nav className="app-nav" aria-label="Sections">
+          <div className="app-nav__head">
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-teal-700">StockCM</div>
-              <div className="text-sm font-semibold">Administration</div>
+              <span className="eyebrow muted">Stockora</span>
+              <div className="h6">Administration</div>
             </div>
-            <div className="text-right md:mt-3 md:text-left">
-              <div className="inline-block rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">{role}</div>
-              <button className="ml-2 text-xs text-slate-500 underline md:ml-0 md:mt-1 md:block" onClick={() => void signOut()}>Sign out</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="app-nav__role">{role}</span>
+              <button className="app-nav__signout" onClick={() => void signOut()}>Sign out</button>
             </div>
           </div>
-          <ul className="flex gap-1 overflow-x-auto px-2 pb-2 md:block md:space-y-1 md:px-3">
+          <ul className="app-nav__list">
             {pages.map((p) => (
               <li key={p}>
                 <button
                   onClick={() => setPage(p)}
                   aria-current={p === current ? 'page' : undefined}
-                  className={`w-full whitespace-nowrap rounded-md px-3 py-2 text-left text-sm font-medium ${p === current ? 'bg-teal-50 text-teal-800' : 'text-slate-700 hover:bg-slate-100'}`}
+                  className="app-nav__link"
                 >
                   {TITLES[p]}
                 </button>
@@ -104,8 +107,8 @@ export function AdminApp({ api }: { api: AdminApi }) {
             ))}
           </ul>
         </nav>
-        <main className="min-w-0 flex-1 p-4 md:p-6">
-          <h1 className="mb-4 text-xl font-semibold">{TITLES[current]}</h1>
+        <main className="app-main">
+          <h1 className="h3 app-main__title">{TITLES[current]}</h1>
           {current === 'overview' && <Overview />}
           {current === 'businesses' && <Businesses />}
           {current === 'payments' && <Payments />}
@@ -114,7 +117,7 @@ export function AdminApp({ api }: { api: AdminApi }) {
           {current === 'syncIssues' && <SyncIssues />}
           {current === 'audit' && <Audit />}
           {current === 'settings' && <SettingsPage />}
-          <div className="mt-8"><Button kind="secondary" onClick={() => void signOut()}>Sign out</Button></div>
+          <div style={{ marginTop: 32 }}><Button kind="secondary" onClick={() => void signOut()}>Sign out</Button></div>
         </main>
       </div>
     </AdminContext.Provider>

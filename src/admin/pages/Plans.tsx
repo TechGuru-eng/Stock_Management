@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { PlanInput, PlanRow } from '../api'
 import { useAdmin } from '../ctx'
-import { Button, Card, ErrorNote, fmtXaf, inputCls, Loading, useAsync } from '../ui'
+import { Button, Card, ErrorNote, fmtXaf, Loading, useAsync } from '../ui'
 
 const num = (v: string): number | null => (v.trim() === '' ? null : Number(v))
 const show = (n: number | null) => (n == null ? '' : String(n))
@@ -17,27 +17,27 @@ export function Plans() {
 
   if (list.loading && !list.data) return <Loading />
   return (
-    <div className="space-y-4">
+    <div className="stack">
       <ErrorNote message={list.error} />
-      <p className="text-sm text-slate-600">An empty limit means “unlimited”. A price change applies to the next payment; it never changes a payment already made. Businesses on a plan keep their limits from the signed licence on their devices until they next connect.</p>
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table className="w-full min-w-[40rem] text-sm">
-          <thead className="bg-slate-50 text-left text-xs text-slate-500"><tr><th className="p-3 font-medium">Plan</th><th className="p-3 font-medium">Price / month</th><th className="p-3 font-medium">Shops</th><th className="p-3 font-medium">Staff</th><th className="p-3 font-medium">Products</th><th className="p-3 font-medium">Features</th><th className="p-3 font-medium">Subscribers</th><th className="p-3" /></tr></thead>
+      <p className="body-sm muted">An empty limit means “unlimited”. A price change applies to the next payment; it never changes a payment already made. Businesses on a plan keep their limits from the signed licence on their devices until they next connect.</p>
+      <div className="table-wrap">
+        <table className="table" style={{ minWidth: '40rem' }}>
+          <thead><tr><th>Plan</th><th>Price / month</th><th>Shops</th><th>Staff</th><th>Products</th><th>Features</th><th>Subscribers</th><th /></tr></thead>
           <tbody>
             {list.data?.map((p) => (
-              <tr key={p.code} className="border-t border-slate-100">
-                <td className="p-3"><div className="font-medium">{p.name}</div><div className="text-xs text-slate-500">{p.code}{p.active ? '' : ' · hidden'}</div></td>
-                <td className="p-3 tabular-nums">{p.price_xaf == null ? 'Custom' : fmtXaf(p.price_xaf)}</td>
-                <td className="p-3">{p.max_shops ?? '∞'}</td><td className="p-3">{p.max_staff ?? '∞'}</td><td className="p-3">{p.max_products ?? '∞'}</td>
-                <td className="p-3 text-xs text-slate-500">{p.features.length ? p.features.join(', ') : '—'}</td>
-                <td className="p-3">{p.subscribers}</td>
-                <td className="p-3 text-right"><Button kind="secondary" onClick={() => setEdit(p)}>Edit</Button></td>
+              <tr key={p.code}>
+                <td><div className="body-md">{p.name}</div><div className="body-sm muted">{p.code}{p.active ? '' : ' · hidden'}</div></td>
+                <td className="num">{p.price_xaf == null ? 'Custom' : fmtXaf(p.price_xaf)}</td>
+                <td>{p.max_shops ?? '∞'}</td><td>{p.max_staff ?? '∞'}</td><td>{p.max_products ?? '∞'}</td>
+                <td className="body-sm muted">{p.features.length ? p.features.join(', ') : '—'}</td>
+                <td>{p.subscribers}</td>
+                <td style={{ textAlign: 'right' }}><Button kind="secondary" onClick={() => setEdit(p)}>Edit</Button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <Button onClick={() => setEdit('new')}>Add a plan</Button>
+      <div><Button onClick={() => setEdit('new')}>Add a plan</Button></div>
       {edit && <PlanForm plan={edit === 'new' ? null : edit} onDone={() => { setEdit(null); list.reload() }} />}
     </div>
   )
@@ -62,34 +62,36 @@ function PlanForm({ plan, onDone }: { plan: PlanRow | null; onDone: () => void }
   }
 
   const field = (k: 'name' | 'price' | 'shops' | 'staff' | 'products', label: string, hint?: string) => (
-    <label className="block text-sm font-medium text-slate-700">{label}{hint && <span className="font-normal text-slate-500"> ({hint})</span>}
-      <input className={`${inputCls} mt-1`} value={f[k]} inputMode={k === 'name' ? 'text' : 'numeric'} onChange={(e) => set(k, e.target.value)} />
+    <label className="field"><span>{label}{hint && <span style={{ textTransform: 'none' }}> ({hint})</span>}</span>
+      <input className="input" value={f[k]} inputMode={k === 'name' ? 'text' : 'numeric'} onChange={(e) => set(k, e.target.value)} />
     </label>
   )
 
   return (
     <Card title={plan ? `Edit ${plan.name}` : 'New plan'}>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block text-sm font-medium text-slate-700">Code <span className="font-normal text-slate-500">(lowercase letters, cannot change later)</span>
-          <input className={`${inputCls} mt-1`} value={f.code} disabled={Boolean(plan)} onChange={(e) => set('code', e.target.value)} />
-        </label>
-        {field('name', 'Name')}
-        {field('price', 'Price per month in FCFA', 'empty = custom quote')}
-        {field('shops', 'Max shops', 'empty = unlimited')}
-        {field('staff', 'Max staff', 'empty = unlimited')}
-        {field('products', 'Max products', 'empty = unlimited')}
-      </div>
-      <fieldset className="mt-3">
-        <legend className="text-sm font-medium text-slate-700">Features</legend>
-        {FEATURES.map((ft) => (
-          <label key={ft.key} className="mt-1 flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={features.has(ft.key)} onChange={() => toggleFeature(ft.key)} /> {ft.label}
+      <div className="stack">
+        <div className="panel-grid">
+          <label className="field"><span>Code <span style={{ textTransform: 'none' }}>(lowercase letters, cannot change later)</span></span>
+            <input className="input" value={f.code} disabled={Boolean(plan)} onChange={(e) => set('code', e.target.value)} />
           </label>
-        ))}
-      </fieldset>
-      <label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" checked={f.active} onChange={(e) => set('active', e.target.checked)} /> Offer this plan to businesses</label>
-      <div className="mt-3"><ErrorNote message={error} /></div>
-      <div className="mt-3 flex gap-2"><Button disabled={busy} onClick={() => void save()}>{busy ? 'Saving…' : 'Save plan'}</Button><Button kind="secondary" onClick={onDone}>Cancel</Button></div>
+          {field('name', 'Name')}
+          {field('price', 'Price per month in FCFA', 'empty = custom quote')}
+          {field('shops', 'Max shops', 'empty = unlimited')}
+          {field('staff', 'Max staff', 'empty = unlimited')}
+          {field('products', 'Max products', 'empty = unlimited')}
+        </div>
+        <fieldset className="stack" style={{ gap: 8 }}>
+          <legend className="label-lg muted" style={{ marginBottom: 4 }}>Features</legend>
+          {FEATURES.map((ft) => (
+            <label key={ft.key} className="check-row body-md">
+              <input type="checkbox" checked={features.has(ft.key)} onChange={() => toggleFeature(ft.key)} /> {ft.label}
+            </label>
+          ))}
+        </fieldset>
+        <label className="check-row body-md"><input type="checkbox" checked={f.active} onChange={(e) => set('active', e.target.checked)} /> Offer this plan to businesses</label>
+        <ErrorNote message={error} />
+        <div className="btn-row"><Button disabled={busy} onClick={() => void save()}>{busy ? 'Saving…' : 'Save plan'}</Button><Button kind="secondary" onClick={onDone}>Cancel</Button></div>
+      </div>
     </Card>
   )
 }
