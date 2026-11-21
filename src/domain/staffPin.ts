@@ -1,5 +1,5 @@
 /**
- * Staff PIN rules. The SAME rules are enforced on the server (supabase/migrations/0010_staff_pin.sql)
+ * Staff PIN rules. The SAME rules are enforced on the server (supabase/migrations/20261117192912_staff_pin.sql)
  * and here, so a weak PIN is refused before it is ever sent and cannot be saved by a modified client.
  */
 

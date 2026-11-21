@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import sql from '../../supabase/migrations/0014_admin.sql?raw'
+import sql from '../../supabase/migrations/20261117203753_admin.sql?raw'
 import { can, pagesFor, type AdminPerm, type AdminRole } from './permissions'
 
 const roles: AdminRole[] = ['super', 'finance', 'support']

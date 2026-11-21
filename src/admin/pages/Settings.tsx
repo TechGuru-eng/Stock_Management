@@ -33,7 +33,7 @@ export function SettingsPage() {
   const save = async (key: string, value: unknown) => { await api.setSetting(key, value); s.reload() }
 
   return (
-    <div className="panel-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' }}>
+    <div className="panel-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))' }}>
       <Rules st={st} save={save} />
       <Terms st={st} save={save} />
       <Payment st={st} save={save} />
@@ -65,7 +65,7 @@ function Terms({ st, save }: P) {
   return (
     <Section title="Payment terms" hint="What a business can pay for at once, with free bonus months (for example 12 months + 2 free)." onSave={() => save('billing_terms', rows.map((r) => ({ months: Number(r.months), bonus: Number(r.bonus) })))}>
       {rows.map((r, i) => (
-        <div key={i} className="btn-row" style={{ alignItems: 'flex-end' }}>
+        <div key={i} className="term-row">
           <Label text="Months"><input className="input" inputMode="numeric" value={r.months} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, months: e.target.value } : x)))} /></Label>
           <Label text="Free months"><input className="input" inputMode="numeric" value={r.bonus} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, bonus: e.target.value } : x)))} /></Label>
           <Button kind="secondary" onClick={() => setRows(rows.filter((_, j) => j !== i))}>Remove</Button>

@@ -26,16 +26,16 @@ export function Overview() {
 
       <Card title="Device sync health">
         <div className="panel-grid">
-          <div><div className="label-lg muted">Devices</div><div className="h5">{d.devices.total}</div></div>
-          <div><div className="label-lg muted">Synced in 24 h</div><div className="h5">{d.devices.synced_24h}</div></div>
-          <div><div className="label-lg muted">Silent over 48 h</div><div className="h5">{d.devices.stale_over_48h}</div></div>
-          <div><div className="label-lg muted">Silent over 30 days</div><div className="h5">{d.devices.stale_over_30d > 0 ? `! ${d.devices.stale_over_30d}` : d.devices.stale_over_30d}</div></div>
+          <Stat label="Devices" value={d.devices.total} />
+          <Stat label="Synced in 24 h" value={d.devices.synced_24h} />
+          <Stat label="Silent over 48 h" value={d.devices.stale_over_48h} tone={d.devices.stale_over_48h > 0 ? 'warn' : undefined} />
+          <Stat label="Silent over 30 days" value={d.devices.stale_over_30d} tone={d.devices.stale_over_30d > 0 ? 'bad' : undefined} />
         </div>
         <p className="body-sm muted" style={{ marginTop: 10 }}>Devices silent for 30 days are in read-only mode until they connect.</p>
       </Card>
 
       {rev.data && (
-        <div className="panel-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+        <div className="panel-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))' }}>
           <Card title="Revenue by month">
             <Table head={['Month', 'Invoices', 'Amount']} rows={rev.data.by_month.map((m) => [m.month, String(m.invoices), fmtXaf(m.amount)])} empty="No invoices yet." />
           </Card>

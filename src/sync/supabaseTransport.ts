@@ -5,7 +5,7 @@ function fail(error: { code?: string | null; message?: string | null }): never {
   throw new TransportError(classifyServerError(error), error.message ?? 'sync error', error.code ?? undefined)
 }
 
-/** The real transport: Supabase database functions (see supabase/migrations/0005_sync.sql). */
+/** The real transport: Supabase database functions (see supabase/migrations/20261117051456_sync.sql). */
 export const supabaseTransport: SyncTransport = {
   async registerDevice(deviceId, tenantId, name) {
     if (!supabase) throw new TransportError('network', 'not configured')

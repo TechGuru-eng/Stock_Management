@@ -29,6 +29,7 @@ export function AdminApp({ api }: { api: AdminApi }) {
   const [me, setMe] = useState<Whoami | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [page, setPage] = useState<AdminPage>('overview')
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const check = useCallback(async () => {
     if (!(await api.auth.hasSession())) { setPhase('credentials'); return }
@@ -44,6 +45,13 @@ export function AdminApp({ api }: { api: AdminApi }) {
   }, [api])
 
   useEffect(() => { void check() }, [check])
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [menuOpen])
 
   const signOut = useCallback(async () => {
     await api.auth.signOut()
@@ -87,9 +95,11 @@ export function AdminApp({ api }: { api: AdminApi }) {
             <div>
               <span className="eyebrow muted">Stockora</span>
               <div className="h6">Administration</div>
+              <div className="app-nav__current">{TITLES[current]}</div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span className="app-nav__role">{role}</span>
+              <button className="app-nav__menu-btn" aria-expanded={menuOpen} aria-controls="app-nav-drawer" onClick={() => setMenuOpen(true)}>Menu</button>
               <button className="app-nav__signout" onClick={() => void signOut()}>Sign out</button>
             </div>
           </div>
@@ -107,6 +117,30 @@ export function AdminApp({ api }: { api: AdminApi }) {
             ))}
           </ul>
         </nav>
+        {menuOpen && (
+          <div className="side-panel-overlay" role="dialog" aria-modal="true" aria-label="Sections" id="app-nav-drawer" onClick={() => setMenuOpen(false)}>
+            <div className="side-panel" onClick={(e) => e.stopPropagation()}>
+              <div className="panel__head">
+                <span className="eyebrow muted">Sections</span>
+                <Button kind="secondary" onClick={() => setMenuOpen(false)}>Close</Button>
+              </div>
+              <ul className="app-nav__drawer-list">
+                {pages.map((p) => (
+                  <li key={p}>
+                    <button
+                      onClick={() => { setPage(p); setMenuOpen(false) }}
+                      aria-current={p === current ? 'page' : undefined}
+                      className="app-nav__link"
+                    >
+                      {TITLES[p]}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <button className="app-nav__signout" onClick={() => void signOut()}>Sign out</button>
+            </div>
+          </div>
+        )}
         <main className="app-main">
           <h1 className="h3 app-main__title">{TITLES[current]}</h1>
           {current === 'overview' && <Overview />}
